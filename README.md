@@ -6,6 +6,11 @@
 
 To make it easy for you to get started with GitLab, here's a list of recommended next steps.
 
+1. Go inside the backend folder and run "npm install" to install all dependencies.
+2. Go inside the frontend folder and run "npm install" to install all dependencies.
+3. To start the server run "npm run dev withn the "team-13-group-project" folder.
+4. Server then can be accessed at localhost:5173.
+
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
 ## Add your files
