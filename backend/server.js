@@ -7,6 +7,7 @@ import './models/index.js';
 import './models/User.js';
 import './models/Games.js';
 import { seedGames } from './config/seedGames.js';
+import { createDatabaseIfNotExists } from './config/createDatabase.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -18,6 +19,9 @@ const PORT = Number(process.env.PORT) || 5000;
 
 async function start() {
     try {
+        // Ensure the database exists before connecting
+        await createDatabaseIfNotExists();
+
         await sequelize.authenticate();
         await sequelize.sync({ alter: true });
 
