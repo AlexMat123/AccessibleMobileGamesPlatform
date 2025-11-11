@@ -5,7 +5,6 @@ const Game = sequelize.define(
     'Game',
     {
         title: { type: DataTypes.STRING, allowNull: false },
-        tags: { type: DataTypes.STRING },
         platform: { type: DataTypes.STRING },
         releaseDate: { type: DataTypes.DATE },
         rating: { type: DataTypes.FLOAT }

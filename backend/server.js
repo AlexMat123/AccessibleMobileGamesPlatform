@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { sequelize } from './config/db.js';
+import './models/index.js';
 import './models/User.js';
 import './models/Games.js';
 import { seedGames } from './config/seedGames.js';
