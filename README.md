@@ -4,7 +4,17 @@
 
 ## Getting started
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+To make it easy for you to get started:
+
+1. (First time) Run one of the helper scripts from the project root:
+   - PowerShell: `./start.ps1`
+   - Cmd: `start.bat`
+   These install root, backend and frontend dependencies and start both servers.
+2. Or manually:
+   - `npm install --prefix backend`
+   - `npm install --prefix frontend`
+   - `npm run start` (runs setup + dev concurrently) or `npm run dev`
+3. Frontend accessible at http://localhost:5173 (default Vite port). Backend runs on its configured port (check `backend/server.js`).
 
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
