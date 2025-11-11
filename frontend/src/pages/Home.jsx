@@ -139,7 +139,8 @@ export default function Home() {
               {/* Buttons */}
               <div className="flex gap-3 mt-6">
                 <button className="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2 rounded-lg font-medium transition">View More</button>
-                <button className="bg-pink-400 hover:bg-pink-600 text-white px-5 py-2 rounded-lg font-medium transition">❤️ Add to Wishlist</button>
+                <button className="bg-orange-400 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-medium transition"> Add to Wishlist</button>
+                <button className="bg-pink-400 hover:bg-pink-600 text-white px-5 py-2 rounded-lg font-medium transition"> Add to Favourites</button>
               </div>
             </div>
           </div>
@@ -149,7 +150,6 @@ export default function Home() {
         <section className="mb-10">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800">Adventure Games</h2>
-            <button className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md text-sm bg-white hover:bg-gray-100"><span>Filter By</span> ⚙️</button>
           </div>
           <div className="flex items-center justify-center gap-4">
             <button aria-label="Previous adventure game" onClick={prevAdv} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
@@ -164,7 +164,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Blind-friendly Games */}
         <section>
           <h2 className="text-xl font-bold text-gray-800 mb-4">Blind-friendly Games</h2>
           <div className="flex items-center justify-center gap-4">
