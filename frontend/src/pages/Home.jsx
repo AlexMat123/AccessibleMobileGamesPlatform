@@ -11,19 +11,19 @@ import sudoku from "../assets/sudoku.jpg";
 export default function Home() {
   // Carousel data
   const adventureGames = [
-    { id: 1, title: "Adventure 1", img: adventure1 },
-    { id: 2, title: "Adventure 2", img: adventure2 },
-    { id: 3, title: "Adventure 3", img: adventure3 },
-    { id: 4, title: "Adventure 4", img: adventure4 },
-    { id: 5, title: "Adventure 5", img: adventure5 },
+    { id: 1, title: "Adventure 1", developer: "Dev A", category: "Action", rating: 4.3, ratingCount: 210, tags: ["Action","Exploration"], img: adventure1 },
+    { id: 2, title: "Adventure 2", developer: "Dev B", category: "RPG", rating: 4.7, ratingCount: 980, tags: ["RPG","Story"], img: adventure2 },
+    { id: 3, title: "Adventure 3", developer: "Dev C", category: "Puzzle", rating: 3.9, ratingCount: 150, tags: ["Puzzle","Indie"], img: adventure3 },
+    { id: 4, title: "Adventure 4", developer: "Dev D", category: "Survival", rating: 4.1, ratingCount: 340, tags: ["Survival","Craft"], img: adventure4 },
+    { id: 5, title: "Adventure 5", developer: "Dev E", category: "Platformer", rating: 4.5, ratingCount: 605, tags: ["Platform","Retro"], img: adventure5 },
   ];
 
   const blindGames = [
-    { id: 1, title: "Blind 1", img: adventure1 },
-    { id: 2, title: "Blind 2", img: adventure2 },
-    { id: 3, title: "Blind 3", img: adventure3 },
-    { id: 4, title: "Blind 4", img: adventure4 },
-    { id: 5, title: "Blind 5", img: adventure5 },
+    { id: 1, title: "Blind 1", developer: "Access Dev", category: "Audio", rating: 4.6, ratingCount: 430, tags: ["Audio","Accessible"], img: adventure1 },
+    { id: 2, title: "Blind 2", developer: "Access Dev", category: "Narrative", rating: 4.2, ratingCount: 210, tags: ["Story","Accessible"], img: adventure2 },
+    { id: 3, title: "Blind 3", developer: "Access Dev", category: "Puzzle", rating: 4.0, ratingCount: 120, tags: ["Puzzle","Audio"], img: adventure3 },
+    { id: 4, title: "Blind 4", developer: "Access Dev", category: "Adventure", rating: 4.4, ratingCount: 300, tags: ["Exploration","Accessible"], img: adventure4 },
+    { id: 5, title: "Blind 5", developer: "Access Dev", category: "Learning", rating: 3.8, ratingCount: 90, tags: ["Education","Audio"], img: adventure5 },
   ];
 
   // New featured games carousel data
@@ -67,6 +67,8 @@ export default function Home() {
   const [advIndex, setAdvIndex] = useState(0);
   const [blindIndex, setBlindIndex] = useState(0);
   const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [hoveredAdv, setHoveredAdv] = useState(null);
+  const [hoveredBlind, setHoveredBlind] = useState(null);
 
   const prevAdv = () => setAdvIndex((i) => (i - 1 + adventureGames.length) % adventureGames.length);
   const nextAdv = () => setAdvIndex((i) => (i + 1) % adventureGames.length);
@@ -80,6 +82,10 @@ export default function Home() {
     Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
 
   const fg = featuredGames[featuredIndex];
+
+  const renderStars = (rating) => Array.from({ length: 5 }, (_, i) => (
+    <span key={i} className={i < Math.round(rating) ? "text-yellow-500" : "text-gray-300"}>★</span>
+  ));
 
   return (
     <div className="bg-sky-100 min-h-screen flex justify-center py-10">
@@ -155,8 +161,31 @@ export default function Home() {
             <button aria-label="Previous adventure game" onClick={prevAdv} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
             <div className="flex gap-4">
               {getWindow(adventureGames, advIndex, VISIBLE).map((g) => (
-                <div key={g.id} className="flex-none bg-white w-48 h-32 rounded-md shadow-md overflow-hidden hover:scale-105 transition">
-                  <img src={g.img} alt={g.title} className="w-full h-full object-cover" />
+                <div
+                  key={g.id}
+                  className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                  onMouseEnter={() => setHoveredAdv(g.id)}
+                  onMouseLeave={() => setHoveredAdv(null)}
+                >
+                  <div className="overflow-hidden rounded-t-md">
+                    <img
+                      src={g.img}
+                      alt={g.title}
+                      className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                    />
+                  </div>
+                  {hoveredAdv === g.id && (
+                    <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                      <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                      <p className="text-gray-600 truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
+                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 text-gray-500">({g.ratingCount})</span></div>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {g.tags.slice(0,3).map(t => (
+                          <span key={t} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -170,8 +199,31 @@ export default function Home() {
             <button aria-label="Previous blind-friendly game" onClick={prevBlind} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
             <div className="flex gap-4">
               {getWindow(blindGames, blindIndex, VISIBLE).map((g) => (
-                <div key={g.id} className="flex-none bg-white w-48 h-32 rounded-md shadow-md overflow-hidden hover:scale-105 transition">
-                  <img src={g.img} alt={g.title} className="w-full h-full object-cover" />
+                <div
+                  key={g.id}
+                  className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                  onMouseEnter={() => setHoveredBlind(g.id)}
+                  onMouseLeave={() => setHoveredBlind(null)}
+                >
+                  <div className="overflow-hidden rounded-t-md">
+                    <img
+                      src={g.img}
+                      alt={g.title}
+                      className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                    />
+                  </div>
+                  {hoveredBlind === g.id && (
+                    <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                      <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                      <p className="text-gray-600 truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
+                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 text-gray-500">({g.ratingCount})</span></div>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {g.tags.slice(0,3).map(t => (
+                          <span key={t} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
