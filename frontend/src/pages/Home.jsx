@@ -113,7 +113,7 @@ export default function Home() {
   ));
 
   return (
-    <div className="bg-sky-100 min-h-screen flex justify-center py-10">
+    <div className="bg-sky-100 min-h-screen flex justify-center py-10 lg:pb-20">
       {/* Main container */}
       <div className="bg-gray-100 rounded-2xl shadow-lg p-8 w-full max-w-6xl">
         {/* Featured / Newest Games (carousel) */}
