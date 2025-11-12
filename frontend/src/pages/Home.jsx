@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import adventure1 from "../assets/adventure1.jpg";
 import adventure2 from "../assets/adventure2.jpg";
 import adventure3 from "../assets/adventure3.jpg";
@@ -69,19 +69,44 @@ export default function Home() {
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [hoveredAdv, setHoveredAdv] = useState(null);
   const [hoveredBlind, setHoveredBlind] = useState(null);
+  const autoplayRef = useRef(null);
+  const AUTOPLAY_MS = 5000;
+
+  const startAutoplay = () => {
+    if (autoplayRef.current) clearInterval(autoplayRef.current);
+    autoplayRef.current = setInterval(() => {
+      setFeaturedIndex(i => (i + 1) % featuredGames.length);
+    }, AUTOPLAY_MS);
+  };
+
+  useEffect(() => {
+    startAutoplay();
+    return () => autoplayRef.current && clearInterval(autoplayRef.current);
+  }, [featuredGames.length]);
 
   const prevAdv = () => setAdvIndex((i) => (i - 1 + adventureGames.length) % adventureGames.length);
   const nextAdv = () => setAdvIndex((i) => (i + 1) % adventureGames.length);
   const prevBlind = () => setBlindIndex((i) => (i - 1 + blindGames.length) % blindGames.length);
   const nextBlind = () => setBlindIndex((i) => (i + 1) % blindGames.length);
-  const prevFeatured = () => setFeaturedIndex((i) => (i - 1 + featuredGames.length) % featuredGames.length);
-  const nextFeatured = () => setFeaturedIndex((i) => (i + 1) % featuredGames.length);
+  const prevFeatured = () => {
+    setFeaturedIndex((i) => (i - 1 + featuredGames.length) % featuredGames.length);
+    startAutoplay();
+  };
+  const nextFeatured = () => {
+    setFeaturedIndex((i) => (i + 1) % featuredGames.length);
+    startAutoplay();
+  };
+  const goToFeatured = (i) => {
+    setFeaturedIndex(i);
+    startAutoplay();
+  };
 
   const VISIBLE = 5;
   const getWindow = (arr, start, size) =>
     Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
 
   const fg = featuredGames[featuredIndex];
+  const totalFeatured = featuredGames.length;
 
   const renderStars = (rating) => Array.from({ length: 5 }, (_, i) => (
     <span key={i} className={i < Math.round(rating) ? "text-yellow-500" : "text-gray-300"}>★</span>
@@ -96,26 +121,42 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Featured / Newest Games</h2>
           <div className="flex flex-col md:flex-row bg-white rounded-xl shadow p-6 gap-6">
             {/* Image + arrows */}
-            <div className="flex items-center justify-center md:w-1/2 gap-4">
-              <button
-                aria-label="Previous featured game"
-                onClick={prevFeatured}
-                className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
-              >
-                ←
-              </button>
-              <img
-                src={fg.img}
-                alt={fg.title}
-                className="rounded-lg shadow-md w-full max-w-md object-cover"
-              />
-              <button
-                aria-label="Next featured game"
-                onClick={nextFeatured}
-                className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
-              >
-                →
-              </button>
+            <div className="flex flex-col items-center md:w-1/2 gap-4">
+              <div className="flex items-center justify-center gap-4 w-full">
+                <button
+                  aria-label="Previous featured game"
+                  onClick={prevFeatured}
+                  className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                >
+                  ←
+                </button>
+                <img
+                  src={fg.img}
+                  alt={fg.title}
+                  className="rounded-lg shadow-md w-full max-w-md object-cover"
+                />
+                <button
+                  aria-label="Next featured game"
+                  onClick={nextFeatured}
+                  className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                >
+                  →
+                </button>
+              </div>
+              {/* Position indicator */}
+              <div className="w-full space-y-2" aria-live="polite">
+                {/* Dots */}
+                <div className="flex justify-center gap-2 mt-1">
+                  {featuredGames.map((g, i) => (
+                    <button
+                      key={g.id}
+                      aria-label={`Go to ${g.title}`}
+                      onClick={() => goToFeatured(i)}
+                      className={`w-3 h-3 rounded-full transition-colors ${i === featuredIndex ? 'bg-sky-600' : 'bg-gray-300 hover:bg-gray-400'}`}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Dynamic details */}
