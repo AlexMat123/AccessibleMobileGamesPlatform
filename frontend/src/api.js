@@ -23,3 +23,9 @@ export const fetchTagGroups = async () => {
   if (!res.ok) throw new Error("Unable to load tag groups");
   return res.json();
 };
+
+export const fetchGames = async () => {
+  const res = await fetch(`${API_URL}/games`);
+  if (!res.ok) throw new Error("Unable to load games");
+  return res.json();
+};

@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { fetchTagGroups } from '../api';
+import { fetchGames, fetchTagGroups } from '../api';
 
 export default function Search() {
   const [query, setQuery] = useState('');
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [games, setGames] = useState([]);
+  const [gamesLoading, setGamesLoading] = useState(true);
+  const [gamesError, setGamesError] = useState('');
 
   const focusRing =
     'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
@@ -24,6 +27,27 @@ export default function Search() {
         setError(e.message || 'Failed to load tag groups');
       } finally {
         if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        setGamesLoading(true);
+        setGamesError('');
+        const data = await fetchGames();
+        if (!isMounted) return;
+        setGames(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (!isMounted) return;
+        setGamesError(e.message || 'Failed to load games');
+      } finally {
+        if (isMounted) setGamesLoading(false);
       }
     })();
     return () => {
@@ -118,7 +142,45 @@ export default function Search() {
           <h2 id="results-heading" className="text-2xl font-semibold">
             Results
           </h2>
-          <p className="text-slate-700">Results will show here once filtering is implemented.</p>
+          {gamesLoading ? (
+            <p className="text-slate-700">Loading games…</p>
+          ) : gamesError ? (
+            <p role="alert" className="text-rose-700">{gamesError}</p>
+          ) : games.length === 0 ? (
+            <p className="text-slate-700">No games found.</p>
+          ) : (
+            <ul role="list" className="grid gap-4 sm:grid-cols-2">
+              {games.map((g) => (
+                <li key={g.id}>
+                  <article className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <header className="flex items-baseline justify-between gap-3">
+                      <h3 className="text-lg font-bold text-slate-900">{g.title}</h3>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
+                    </header>
+                    <dl className="mt-2 text-sm text-slate-700">
+                      <div className="flex flex-wrap gap-2">
+                        <dt className="font-semibold text-slate-900">Release:</dt>
+                        <dd>{g.releaseDate ? new Date(g.releaseDate).toLocaleDateString() : 'TBD'}</dd>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <dt className="font-semibold text-slate-900">Rating:</dt>
+                        <dd>{g.rating ?? 'N/A'}</dd>
+                      </div>
+                    </dl>
+                    {Array.isArray(g.tags) && g.tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2" aria-label="Tags">
+                        {g.tags.slice(0, 8).map((t) => (
+                          <span key={`${g.id}-${t}`} className="rounded-full border border-lime-600/40 bg-lime-50 px-3 py-1 text-xs font-semibold text-lime-800">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </main>
     </div>
