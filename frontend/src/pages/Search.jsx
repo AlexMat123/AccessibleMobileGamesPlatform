@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchGames, fetchTagGroups } from '../api';
 
 export default function Search() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,22 @@ export default function Search() {
     return () => { isMounted = false; };
   }, []);
 
+  // Initialize state from URL params once on mount
+  useEffect(() => {
+    const initialQ = searchParams.get('q') || '';
+    const initialTagsParam = searchParams.get('tags') || '';
+    const initialTags = new Set(
+      initialTagsParam
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+    );
+    if (initialQ) setQuery(initialQ);
+    if (initialTags.size > 0) setSelectedTags(initialTags);
+    // run only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -51,6 +69,16 @@ export default function Search() {
     })();
     return () => { isMounted = false; };
   }, []);
+
+  // Keep URL params in sync with current query and tags
+  useEffect(() => {
+    const next = {};
+    const q = query.trim();
+    const tags = Array.from(selectedTags).sort();
+    if (q) next.q = q;
+    if (tags.length > 0) next.tags = tags.join(',');
+    setSearchParams(next, { replace: true });
+  }, [query, selectedTags, setSearchParams]);
 
   const filteredGames = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -221,4 +249,3 @@ export default function Search() {
     </div>
   );
 }
-
