@@ -80,6 +80,26 @@ Within a particular ecosystem, there may be a common way of installing things, s
 ## Usage
 Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
+## Search Page (Tags + Accessibility)
+
+The project includes an accessible Search page to filter games by genre and accessibility tags.
+
+- Backend endpoints
+  - `GET /api/tag-groups` – canonical groups and tag names from `backend/models/tags.js`
+  - `GET /api/games` – games with associated tag names
+- Frontend route
+  - `/search` – keyboard-only friendly page with labelled inputs, visible focus, and polite live status updates
+- Keyboard usage
+  - Tab/Shift+Tab to move focus; Enter/Space to toggle tag buttons
+  - "Clear search & tags" resets input and selections
+- Shareable filters
+  - URL persists state: `?q=keyword&tags=Tag1,Tag2` (refresh/back/forward supported)
+- Dev run
+  - Backend: `npm run dev` in `backend/`
+  - Frontend: `npm run dev` in `frontend/`, then open `/search`
+- Seeding
+  - Seeds are idempotent and cover all tags for realistic testing (`backend/config/seedGames.js`).
+
 ## Support
 Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
