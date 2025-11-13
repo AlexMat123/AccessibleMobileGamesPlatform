@@ -8,12 +8,15 @@ import './models/User.js';
 import './models/Games.js';
 import { seedGames } from './config/seedGames.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
+import libraryRoutes from './routes/library.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 app.use(express.json());
+// Public API routes
+app.use('/api', libraryRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -23,7 +26,9 @@ async function start() {
         await createDatabaseIfNotExists();
 
         await sequelize.authenticate();
-        await sequelize.sync({ alter: true });
+        // Use a safe sync that creates tables if missing but does not alter existing schemas.
+        // This avoids MariaDB driver issues during ALTER operations in dev.
+        await sequelize.sync();
 
         // Populate only if empty
         await seedGames();
