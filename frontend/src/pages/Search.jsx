@@ -147,11 +147,48 @@ export default function Search() {
             <p role="alert" className="text-rose-700">{error}</p>
           ) : (
             <div className="space-y-6 mt-4">
-              {groups.map((g) => (
+              {groups.map((g) => {
+                const allSelected = g.tags.every((t) => selectedTags.has(t));
+                const anySelected = g.tags.some((t) => selectedTags.has(t));
+                return (
                 <section key={g.id} aria-labelledby={`${g.id}-title`} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h3 id={`${g.id}-title`} className="text-lg font-semibold text-slate-900">{g.label}</h3>
-                    <p className="text-sm text-slate-700">{g.tags.length} option{g.tags.length === 1 ? '' : 's'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-slate-700 hidden sm:block">{g.tags.length} option{g.tags.length === 1 ? '' : 's'}</p>
+                      <button
+                        type="button"
+                        className={`rounded-lg border px-3 py-1 text-sm font-semibold ${allSelected ? 'border-slate-300 text-slate-400 bg-white' : 'border-lime-600 text-lime-800 bg-lime-50 hover:bg-lime-100'} ${focusRing}`}
+                        onClick={() => {
+                          setSelectedTags((prev) => {
+                            const next = new Set(prev);
+                            g.tags.forEach((t) => next.add(t));
+                            return next;
+                          });
+                        }}
+                        disabled={allSelected}
+                        aria-disabled={allSelected}
+                        aria-label={`Select all tags in ${g.label}`}
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        className={`rounded-lg border px-3 py-1 text-sm font-semibold ${!anySelected ? 'border-slate-300 text-slate-400 bg-white' : 'border-slate-500 text-slate-800 bg-white hover:bg-slate-100'} ${focusRing}`}
+                        onClick={() => {
+                          setSelectedTags((prev) => {
+                            const next = new Set(prev);
+                            g.tags.forEach((t) => next.delete(t));
+                            return next;
+                          });
+                        }}
+                        disabled={!anySelected}
+                        aria-disabled={!anySelected}
+                        aria-label={`Clear all tags in ${g.label}`}
+                      >
+                        Clear
+                      </button>
+                    </div>
                   </div>
                   <ul role="list" aria-label={`${g.label} tag filters`} className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {g.tags.map((tag) => {
@@ -177,7 +214,8 @@ export default function Search() {
                     })}
                   </ul>
                 </section>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
