@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import cors from 'cors';
 import { sequelize } from './config/db.js';
 import './models/index.js';
 import './models/User.js';
@@ -14,6 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 // Public API routes
 app.use('/api', libraryRoutes);
