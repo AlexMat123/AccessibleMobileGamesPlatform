@@ -2,42 +2,88 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Game, Tag } from '../models/index.js';
-import { sequelize } from './db.js';
+import sequelize from './db.js'; // default import to match `server.js`
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
+// Clean sample data (include description)
 const sample = [
-    { title: 'Game A', tags: ['Action', 'Adventure'], platform: 'PC', releaseDate: new Date('2020-01-01'), rating: 4.5 },
-    { title: 'Game B', tags: ['RPG'], platform: 'Console', releaseDate: new Date('2019-05-15'), rating: 4.0 },
-    { title: 'Game C', tags: ['Strategy'], platform: 'Mobile', releaseDate: new Date('2021-07-20'), rating: 3.5 },
-    { title: 'Game D', tags: ['Strategy'], platform: 'Mobile', releaseDate: new Date('2021-07-20'), rating: 3.5 },
-    { title: 'Game E', tags: ['Strategy'], platform: 'Mobile', releaseDate: new Date('2021-07-20'), rating: 3.5 },
-    // Add new games here; they will be appended safely
-    { title: 'Game F', tags: ['Action'], platform: 'PC', releaseDate: new Date('2022-02-02'), rating: 4.2 }
+    {
+        title: 'Tetris',
+        tags: ['Classic', 'Puzzle', 'Retro'],
+        platform: 'NES',
+        developer: 'Alexey Pajitnov',
+        category: 'Puzzle',
+        releaseDate: new Date('1984-06-06'),
+        rating: 4.5,
+        description: 'Stack falling tetrominoes to clear lines and chase high scores.',
+        thumbImages: [
+            '/tetris-1.jpg',
+            '/tetris-2.avif',
+            '/tetris-3.png'
+        ]
+    },
+    {
+        title: 'Game A',
+        tags: ['Action', 'Adventure'],
+        platform: 'PC',
+        developer: 'Dev A',
+        category: 'Action',
+        releaseDate: new Date('2020-01-01'),
+        rating: 4.5,
+        description: 'An exciting action-adventure game.'
+    },
+    {
+        title: 'Game B',
+        tags: ['RPG'],
+        platform: 'Console',
+        developer: 'Dev B',
+        category: 'RPG',
+        releaseDate: new Date('2019-05-15'),
+        rating: 4.0,
+        description: 'A captivating role-playing game.'
+    }
 ];
 
 export async function seedGames({ reset = false } = {}) {
     await sequelize.transaction(async (t) => {
         if (reset) {
-            await Game.destroy({ where: {}, truncate: true, transaction: t });
-            await Tag.destroy({ where: {}, truncate: true, transaction: t });
+            await Game.destroy({ where: {}, truncate: true, cascade: true, transaction: t });
+            await Tag.destroy({ where: {}, truncate: true, cascade: true, transaction: t });
             console.log('Reset complete');
         }
 
         for (const g of sample) {
-            // Upsert game
-            const [game] = await Game.findOrCreate({
+            const [game, created] = await Game.findOrCreate({
                 where: { title: g.title },
                 defaults: {
-                    platform: g.platform,
-                    releaseDate: g.releaseDate,
-                    rating: g.rating
+                    platform: g.platform ?? null,
+                    developer: g.developer ?? null,
+                    category: g.category ?? null,
+                    releaseDate: g.releaseDate ?? null,
+                    rating: g.rating ?? null,
+                    description: g.description ?? null,
+                    thumbImages: g.thumbImages ?? []  // ensure default array
                 },
                 transaction: t
             });
 
-            // Upsert tags
+            if (!created) {
+                const patch = {};
+                for (const k of ['platform','developer','category','releaseDate','rating','description','thumbImages']) {
+                    const incoming = g[k];
+                    if (incoming != null && JSON.stringify(game[k]) !== JSON.stringify(incoming)) {
+                        patch[k] = incoming;
+                    }
+                }
+                if (Object.keys(patch).length) {
+                    await game.update(patch, { transaction: t });
+                    console.log(`Updated ${game.title}: ${Object.keys(patch).join(', ')}`);
+                }
+            }
+
+            // Ensure tags exist and are linked
             const tagRows = [];
             for (const tagName of g.tags) {
                 const [tag] = await Tag.findOrCreate({
@@ -48,7 +94,6 @@ export async function seedGames({ reset = false } = {}) {
                 tagRows.push(tag);
             }
 
-            // Link missing tag associations
             const existing = new Set(
                 (await game.getTags({ attributes: ['id'], transaction: t })).map(tr => tr.id)
             );

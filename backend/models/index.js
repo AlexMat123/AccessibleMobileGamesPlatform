@@ -1,19 +1,21 @@
-// Registers all models so Sequelize knows them before sync.
 import Game from './Games.js';
 import Tag from './Tag.js';
-import GameTag from './GameTag.js';
 
+// Define many\-to\-many associations after models are initialized
 Game.belongsToMany(Tag, {
-    through: GameTag,
+    through: 'GameTags',
+    as: 'tags',
     foreignKey: 'gameId',
-    otherKey: 'tagId',
-    as: 'tags'
-});
-Tag.belongsToMany(Game, {
-    through: GameTag,
-    foreignKey: 'tagId',
-    otherKey: 'gameId',
-    as: 'games'
+    otherKey: 'tagId'
 });
 
-export { Game, Tag, GameTag };
+Tag.belongsToMany(Game, {
+    through: 'GameTags',
+    as: 'games',
+    foreignKey: 'tagId',
+    otherKey: 'gameId'
+});
+
+// Export initialized models
+export { Game, Tag };
+export default { Game, Tag };
