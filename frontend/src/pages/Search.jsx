@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchGames, fetchTagGroups } from '../api';
 
 export default function Search() {
@@ -9,6 +9,7 @@ export default function Search() {
   const [games, setGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(true);
   const [gamesError, setGamesError] = useState('');
+  const [selectedTags, setSelectedTags] = useState(() => new Set());
 
   const focusRing =
     'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
@@ -29,9 +30,7 @@ export default function Search() {
         if (isMounted) setLoading(false);
       }
     })();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
@@ -50,20 +49,31 @@ export default function Search() {
         if (isMounted) setGamesLoading(false);
       }
     })();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
+
+  const filteredGames = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const tags = Array.from(selectedTags);
+    return (Array.isArray(games) ? games : []).filter((g) => {
+      const matchesQuery =
+        !q ||
+        g.title.toLowerCase().includes(q) ||
+        (g.platform || '').toLowerCase().includes(q) ||
+        (g.tags || []).some((t) => t.toLowerCase().includes(q));
+      const matchesTags = tags.length === 0 || tags.every((t) => (g.tags || []).includes(t));
+      return matchesQuery && matchesTags;
+    });
+  }, [games, query, selectedTags]);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
-
       <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
         <header className="space-y-4">
           <p className="text-sm uppercase tracking-wide text-lime-700">Accessible Game Search</p>
           <h1 className="text-3xl font-bold sm:text-4xl">Search and filter games</h1>
           <p className="max-w-2xl text-slate-700">
-            Keyboard friendly and screen-reader ready. Use the search box below. Filters and tag groups will appear here in the next step.
+            Keyboard friendly and screen-reader ready. Use the search box or toggle filters below.
           </p>
         </header>
 
@@ -89,22 +99,20 @@ export default function Search() {
           <button
             type="button"
             className={`rounded-xl border-2 border-lime-600 bg-lime-50 px-4 py-3 text-base font-semibold text-lime-800 hover:bg-lime-100 ${focusRing}`}
-            onClick={() => setQuery('')}
-            aria-disabled={!query}
-            disabled={!query}
+            onClick={() => { setQuery(''); setSelectedTags(new Set()); }}
+            aria-disabled={!query && selectedTags.size === 0}
+            disabled={!query && selectedTags.size === 0}
           >
-            Clear search
+            Clear search & tags
           </button>
         </form>
 
         <div role="status" aria-live="polite" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
-          {query ? `Searching for “${query}”… (filters coming next)` : 'No filters applied yet. Type to search; filters coming next.'}
+          {`${filteredGames.length} result${filteredGames.length === 1 ? '' : 's'} ${query ? `for "${query}"` : ''}${selectedTags.size ? ` with ${selectedTags.size} tag${selectedTags.size > 1 ? 's' : ''}` : ''}.`}
         </div>
 
         <section aria-labelledby="filter-heading" className="mt-10 space-y-2">
-          <h2 id="filter-heading" className="text-2xl font-semibold">
-            Filters
-          </h2>
+          <h2 id="filter-heading" className="text-2xl font-semibold">Filters</h2>
           {loading ? (
             <p className="text-slate-700">Loading tag groups…</p>
           ) : error ? (
@@ -118,19 +126,27 @@ export default function Search() {
                     <p className="text-sm text-slate-700">{g.tags.length} option{g.tags.length === 1 ? '' : 's'}</p>
                   </div>
                   <ul role="list" aria-label={`${g.label} tag filters`} className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {g.tags.map((tag) => (
-                      <li key={tag}>
-                        <button
-                          type="button"
-                          className={`w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-left font-semibold text-slate-900 hover:border-lime-400 ${focusRing}`}
-                          // Filtering logic will be added in a later step
-                          onClick={() => {}}
-                          aria-pressed={false}
-                        >
-                          {tag}
-                        </button>
-                      </li>
-                    ))}
+                    {g.tags.map((tag) => {
+                      const active = selectedTags.has(tag);
+                      return (
+                        <li key={tag}>
+                          <button
+                            type="button"
+                            className={`w-full rounded-xl border-2 px-4 py-3 text-left font-semibold ${active ? 'border-lime-600 bg-lime-50 text-lime-900' : 'border-slate-300 bg-white text-slate-900 hover:border-lime-400'} ${focusRing}`}
+                            onClick={() => {
+                              setSelectedTags((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(tag)) next.delete(tag); else next.add(tag);
+                                return next;
+                              });
+                            }}
+                            aria-pressed={active}
+                          >
+                            {tag}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </section>
               ))}
@@ -138,19 +154,38 @@ export default function Search() {
           )}
         </section>
 
+        {selectedTags.size > 0 && (
+          <section className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4" aria-labelledby="selected-tags-heading">
+            <h2 id="selected-tags-heading" className="text-xl font-semibold">Selected tags</h2>
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Selected tags">
+              {Array.from(selectedTags).map((t) => (
+                <li key={t}>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 rounded-full border border-lime-600/40 bg-lime-50 px-3 py-1 text-sm font-semibold text-lime-800 ${focusRing}`}
+                    onClick={() => setSelectedTags((prev) => { const next = new Set(prev); next.delete(t); return next; })}
+                    aria-label={`Remove tag ${t}`}
+                  >
+                    {t}
+                    <span aria-hidden>×</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section aria-labelledby="results-heading" className="mt-10 space-y-3">
-          <h2 id="results-heading" className="text-2xl font-semibold">
-            Results
-          </h2>
+          <h2 id="results-heading" className="text-2xl font-semibold">Results</h2>
           {gamesLoading ? (
             <p className="text-slate-700">Loading games…</p>
           ) : gamesError ? (
             <p role="alert" className="text-rose-700">{gamesError}</p>
-          ) : games.length === 0 ? (
+          ) : filteredGames.length === 0 ? (
             <p className="text-slate-700">No games found.</p>
           ) : (
             <ul role="list" className="grid gap-4 sm:grid-cols-2">
-              {games.map((g) => (
+              {filteredGames.map((g) => (
                 <li key={g.id}>
                   <article className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <header className="flex items-baseline justify-between gap-3">
@@ -186,3 +221,4 @@ export default function Search() {
     </div>
   );
 }
+
