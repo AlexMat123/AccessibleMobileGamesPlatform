@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Game, Tag } from '../models/index.js';
 import { sequelize } from './db.js';
+import { ALL_TAGS } from '../models/tags.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -25,6 +26,15 @@ export async function seedGames({ reset = false } = {}) {
             console.log('Reset complete');
         }
 
+        // Ensure all canonical tags exist (idempotent)
+        for (const tagName of ALL_TAGS) {
+            await Tag.findOrCreate({
+                where: { name: tagName },
+                defaults: { name: tagName },
+                transaction: t
+            });
+        }
+
         for (const g of sample) {
             // Upsert game
             const [game] = await Game.findOrCreate({
@@ -36,10 +46,20 @@ export async function seedGames({ reset = false } = {}) {
                 },
                 transaction: t
             });
+            // Keep fields updated on subsequent runs without recreating
+            await game.update(
+                {
+                    platform: g.platform,
+                    releaseDate: g.releaseDate,
+                    rating: g.rating
+                },
+                { transaction: t }
+            );
 
             // Upsert tags
             const tagRows = [];
             for (const tagName of g.tags) {
+                // By now tags should exist, but keep this idempotent
                 const [tag] = await Tag.findOrCreate({
                     where: { name: tagName },
                     defaults: { name: tagName },
@@ -66,7 +86,8 @@ export async function seedGames({ reset = false } = {}) {
 // Optional direct run
 if (process.argv[1]?.endsWith('seedGames.js')) {
     (async () => {
-        await sequelize.sync({ alter: true });
+        // Safe sync in dev scripts: avoid ALTER to prevent driver issues
+        await sequelize.sync();
         await seedGames({ reset: false });
         process.exit(0);
     })().catch(e => {
