@@ -29,3 +29,13 @@ export const fetchGames = async () => {
   if (!res.ok) throw new Error("Unable to load games");
   return res.json();
 };
+
+export const searchGames = async ({ q = "", tags = [] } = {}) => {
+  const params = new URLSearchParams();
+  if (q && q.trim()) params.set("q", q.trim());
+  if (Array.isArray(tags) && tags.length > 0) params.set("tags", tags.join(","));
+  const url = `${API_URL}/games/search${params.toString() ? `?${params.toString()}` : ""}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Unable to search games");
+  return res.json();
+};

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { fetchGames, fetchTagGroups } from '../api';
+import { fetchGames, fetchTagGroups, searchGames } from '../api';
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,6 +12,9 @@ export default function Search() {
   const [gamesLoading, setGamesLoading] = useState(true);
   const [gamesError, setGamesError] = useState('');
   const [selectedTags, setSelectedTags] = useState(() => new Set());
+  const [serverResults, setServerResults] = useState([]);
+  const [serverLoading, setServerLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   const focusRing =
     'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
@@ -94,6 +97,36 @@ export default function Search() {
     });
   }, [games, query, selectedTags]);
 
+  // Debounced server-side search; falls back to client filter on error
+  useEffect(() => {
+    let cancelled = false;
+    const timeout = setTimeout(async () => {
+      try {
+        setServerLoading(true);
+        setServerError('');
+        const tags = Array.from(selectedTags);
+        const data = await searchGames({ q: query, tags });
+        if (cancelled) return;
+        setServerResults(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (cancelled) return;
+        console.warn('Server search failed, using client filter:', e?.message || e);
+        setServerError(e?.message || 'Search failed');
+        setServerResults([]);
+      } finally {
+        if (!cancelled) setServerLoading(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [query, selectedTags]);
+
+  const finalResults = serverError || serverResults.length === 0 && (query.trim() || selectedTags.size)
+    ? filteredGames
+    : (query.trim() || selectedTags.size) ? serverResults : filteredGames;
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
@@ -136,7 +169,7 @@ export default function Search() {
         </form>
 
         <div role="status" aria-live="polite" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
-          {`${filteredGames.length} result${filteredGames.length === 1 ? '' : 's'} ${query ? `for "${query}"` : ''}${selectedTags.size ? ` with ${selectedTags.size} tag${selectedTags.size > 1 ? 's' : ''}` : ''}.`}
+          {`${finalResults.length} result${finalResults.length === 1 ? '' : 's'} ${query ? `for "${query}"` : ''}${selectedTags.size ? ` with ${selectedTags.size} tag${selectedTags.size > 1 ? 's' : ''}` : ''}.`}
         </div>
 
         <section aria-labelledby="filter-heading" className="mt-10 space-y-2">
@@ -243,15 +276,15 @@ export default function Search() {
 
         <section aria-labelledby="results-heading" className="mt-10 space-y-3">
           <h2 id="results-heading" className="text-2xl font-semibold">Results</h2>
-          {gamesLoading ? (
+          {gamesLoading || serverLoading ? (
             <p className="text-slate-700">Loading games…</p>
           ) : gamesError ? (
             <p role="alert" className="text-rose-700">{gamesError}</p>
-          ) : filteredGames.length === 0 ? (
+           ) : finalResults.length === 0 ? (
             <p className="text-slate-700">No games found.</p>
           ) : (
             <ul role="list" className="grid gap-4 sm:grid-cols-2">
-              {filteredGames.map((g) => (
+              {finalResults.map((g) => (
                 <li key={g.id}>
                   <article className="h-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <header className="flex items-baseline justify-between gap-3">
