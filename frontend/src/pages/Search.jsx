@@ -1,10 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchTagGroups } from '../api';
 
 export default function Search() {
   const [query, setQuery] = useState('');
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const focusRing =
     'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const { groups } = await fetchTagGroups();
+        if (!isMounted) return;
+        setGroups(groups || []);
+      } catch (e) {
+        if (!isMounted) return;
+        setError(e.message || 'Failed to load tag groups');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -56,7 +81,37 @@ export default function Search() {
           <h2 id="filter-heading" className="text-2xl font-semibold">
             Filters
           </h2>
-          <p className="text-slate-700">Tag groups will appear here in the next step.</p>
+          {loading ? (
+            <p className="text-slate-700">Loading tag groups…</p>
+          ) : error ? (
+            <p role="alert" className="text-rose-700">{error}</p>
+          ) : (
+            <div className="space-y-6 mt-4">
+              {groups.map((g) => (
+                <section key={g.id} aria-labelledby={`${g.id}-title`} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                    <h3 id={`${g.id}-title`} className="text-lg font-semibold text-slate-900">{g.label}</h3>
+                    <p className="text-sm text-slate-700">{g.tags.length} option{g.tags.length === 1 ? '' : 's'}</p>
+                  </div>
+                  <ul role="list" aria-label={`${g.label} tag filters`} className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {g.tags.map((tag) => (
+                      <li key={tag}>
+                        <button
+                          type="button"
+                          className={`w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-left font-semibold text-slate-900 hover:border-lime-400 ${focusRing}`}
+                          // Filtering logic will be added in a later step
+                          onClick={() => {}}
+                          aria-pressed={false}
+                        >
+                          {tag}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
         </section>
 
         <section aria-labelledby="results-heading" className="mt-10 space-y-3">
