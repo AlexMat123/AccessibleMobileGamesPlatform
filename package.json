@@ -8,7 +8,9 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "setup": "npm install --prefix backend && npm install --prefix frontend",
     "start": "npm run setup && npm run dev",
-    "test:backend": "npm --prefix backend test"
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "test:frontend:watch": "npm --prefix frontend run test:watch"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
