@@ -155,8 +155,9 @@ export default function Search() {
   };
 
   const genreOptions = (() => {
-    // Try various possible shapes: {name:'Genres', tags:[...] } or {group:'Genres', items:[...]}
-    const group = groups.find(g => (g.name || g.group) === 'Genres');
+    // Accept several shapes from API: { id:'genres', label:'Genres', tags:[...] }
+    // or legacy { name:'Genres', tags:[...] } or { group:'Genres', items:[...] }
+    const group = groups.find(g => g?.label === 'Genres' || g?.id === 'genres' || g?.name === 'Genres' || g?.group === 'Genres');
     if (!group) return [];
     const tags = group.tags || group.items || [];
     return Array.isArray(tags) ? tags : [];
@@ -338,4 +339,3 @@ export default function Search() {
     </div>
   );
 }
-
