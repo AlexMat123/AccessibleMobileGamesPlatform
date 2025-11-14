@@ -6,7 +6,6 @@ import Game from "./pages/Game.jsx";
 import Navbar from './components/Navbar.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
-import Game from "./pages/Game.jsx";
 import ToastHost from './components/ToastHost.jsx';
 
 

@@ -76,9 +76,9 @@ const sample = [
 ];
 
 const sampleUsers = [
-    { username: 'alice', password: 'password123' },
-    { username: 'bob', password: 'password456' },
-    { username: 'charlie', password: 'password789' }
+    { username: 'alice', password: 'password123', email: 'alice@example.local' },
+    { username: 'bob', password: 'password456', email: 'bob@example.local' },
+    { username: 'charlie', password: 'password789', email: 'charlie@example.local' }
 ];
 
 const sampleReviews = [
@@ -113,7 +113,7 @@ export async function seedGames({ reset = false } = {}) {
             const hashed = await bcrypt.hash(u.password, 10);
             await User.findOrCreate({
                 where: { username: u.username },
-                defaults: { username: u.username, password: hashed },
+                defaults: { username: u.username, email: u.email, password: hashed },
                 transaction: t
             });
         }
