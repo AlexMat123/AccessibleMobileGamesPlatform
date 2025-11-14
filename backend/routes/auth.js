@@ -9,25 +9,54 @@ const router = express.Router();
 
 // Register
 router.post("/register", async (req, res) => {
-  const { username, password } = req.body;
-  const hashed = await bcrypt.hash(password, 10);
-  const user = await User.create({ username, password: hashed });
-  res.json(user);
+  try {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "username, email and password are required" });
+    }
+
+    const existing = await User.findOne({ where: { email } });
+    if (existing) return res.status(409).json({ message: "Email already in use" });
+
+    const existingUser = await User.findOne({ where: { username } });
+    if (existingUser) return res.status(409).json({ message: "Username already in use" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, email, password: hashed });
+
+    // Optionally auto-login: issue token
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+    res.status(201).json({ id: user.id, username: user.username, email: user.email, token });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Registration failed" });
+  }
 });
 
-// Login
+// Login username or email
 router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ where: { username } });
-  if (!user) return res.status(404).json({ message: "User not found" });
+  try {
+    const { identifier, username, email, password } = req.body;
+    const idValue = identifier || username || email; // backward compatibility
+    if (!idValue || !password) return res.status(400).json({ message: "identifier (username or email) and password are required" });
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(401).json({ message: "Invalid password" });
+    const user = await User.findOne({ where: { username: idValue } })
+      || await User.findOne({ where: { email: idValue } });
 
-  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
-  });
-  res.json({ token });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: "Invalid password" });
+
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+    res.json({ token, id: user.id, username: user.username, email: user.email });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Login failed" });
+  }
 });
 
 export default router;
