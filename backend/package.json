@@ -30,6 +30,8 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/backend/tests/**/*.test.js"]
+    "testMatch": [
+      "**/backend/tests/**/*.test.js"
+    ]
   }
 }
