@@ -100,6 +100,22 @@ The project includes an accessible Search page to filter games by genre and acce
 - Seeding
   - Seeds are idempotent and cover all tags for realistic testing (`backend/config/seedGames.js`).
 
+## Testing
+
+- Backend tests (Jest)
+  - Run all: `npm run test:backend`
+  - What’s covered: tag-groups API, games API mapping, search query building (unit + SQLite integration). Integration tests use an in-memory SQLite DB via `DB_DIALECT=sqlite`.
+
+- Frontend tests (Vitest + React Testing Library)
+  - Run all: `npm run test:frontend`
+  - Watch mode: `npm run test:frontend:watch`
+  - What’s covered: Search page renders, keyboard accordion + tag toggles, debounced server search, loading status during in-flight requests, and selected genre/tags reflected in server calls.
+
+- Manual API checks (PowerShell)
+  - Tag groups: `Invoke-RestMethod http://localhost:5000/api/tag-groups | ConvertTo-Json -Depth 6`
+  - All games: `Invoke-RestMethod http://localhost:5000/api/games | ConvertTo-Json -Depth 6`
+  - Search: `Invoke-RestMethod "http://localhost:5000/api/games/search?q=puzzle&tags=Puzzle" | ConvertTo-Json -Depth 6`
+
 ## Support
 Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
