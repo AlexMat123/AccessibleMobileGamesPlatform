@@ -24,8 +24,10 @@ export default function Search() {
   const [serverError, setServerError] = useState('');
 
   // Curated checklists (clean ASCII only)
-  const curatedAccessibility = ['No Audio Needed','One-Handed','High Contrast','Simple Controls','Vision'];
-  const curatedCategories = ['Hearing','Motor','Cognitive'];
+  // Quick toggles: only actual tag names (no category labels here)
+  const curatedAccessibility = ['No Audio Needed','One-Handed','High Contrast','Simple Controls'];
+  // Category accordion open state
+  const [openCategories, setOpenCategories] = useState(() => new Set());
 
   // Load tag groups
   useEffect(() => {
@@ -163,6 +165,31 @@ export default function Search() {
     return Array.isArray(tags) ? tags : [];
   })();
 
+  // Build Accessibility Category -> Tags mapping from backend groups
+  const categories = useMemo(() => {
+    const catGroup = groups.find(g => g?.label === 'Accessibility Categories' || g?.id === 'accessibility-categories');
+    return Array.isArray(catGroup?.tags) ? catGroup.tags : [];
+  }, [groups]);
+
+  const tagsByCategory = useMemo(() => {
+    const map = {};
+    categories.forEach(cat => {
+      const idGuess = String(cat || '').toLowerCase();
+      const group = groups.find(g => g?.id === idGuess || g?.label === `${cat} Tags` || g?.name === `${cat} Tags`);
+      const tags = group?.tags || [];
+      map[cat] = Array.isArray(tags) ? tags : [];
+    });
+    return map;
+  }, [groups, categories]);
+
+  const toggleCategoryOpen = (cat) => {
+    setOpenCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      return next;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
@@ -230,22 +257,46 @@ export default function Search() {
                 </div>
               </section>
 
-              {/* Disability Categories */}
+              {/* Disability Categories (accordion to reveal specific tags) */}
               <section className="mt-5">
                 <h3 className="text-sm font-semibold text-slate-700">Disability Categories</h3>
                 <div className="mt-2 grid grid-cols-1 gap-2">
-                  {curatedCategories.map(tag => {
-                    const active = selectedTags.has(tag);
+                  {categories.map(cat => {
+                    const isOpen = openCategories.has(cat);
+                    const panelId = `cat-panel-${cat.replace(/\s+/g,'-').toLowerCase()}`;
                     return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
-                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
-                        aria-pressed={active}
-                      >
-                        {tag}
-                      </button>
+                      <div key={cat} className="rounded-lg border border-slate-300 bg-white">
+                        <button
+                          type="button"
+                          className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-slate-800 ${focusRing}`}
+                          aria-expanded={isOpen}
+                          aria-controls={panelId}
+                          onClick={() => toggleCategoryOpen(cat)}
+                        >
+                          <span>{cat}</span>
+                          <span aria-hidden className="ml-2 text-slate-500">{isOpen ? '▾' : '▸'}</span>
+                        </button>
+                        {isOpen && (
+                          <div id={panelId} className="border-t border-slate-200 p-2">
+                            <div className="grid grid-cols-1 gap-2">
+                              {(tagsByCategory[cat] || []).map(tag => {
+                                const active = selectedTags.has(tag);
+                                return (
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => toggleTag(tag)}
+                                    className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
+                                    aria-pressed={active}
+                                  >
+                                    {tag}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
