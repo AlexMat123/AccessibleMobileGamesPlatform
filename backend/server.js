@@ -1,24 +1,16 @@
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import express from 'express';
-import cors from 'cors';
+import app from './app.js';
 import { sequelize } from './config/db.js';
 import './models/index.js';
 import './models/User.js';
 import './models/Games.js';
 import { seedGames } from './config/seedGames.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
-import libraryRoutes from './routes/library.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-// Public API routes
-app.use('/api', libraryRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
