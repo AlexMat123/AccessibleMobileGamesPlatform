@@ -26,13 +26,19 @@ export default function Navbar() {
 
   useEffect(() => {
     const onStorage = () => setIsAuthenticated(!!localStorage.getItem('token'));
+    const onAuthChanged = () => setIsAuthenticated(!!localStorage.getItem('token'));
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener('auth-changed', onAuthChanged);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('auth-changed', onAuthChanged);
+    };
   }, []);
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
+    window.dispatchEvent(new Event('auth-changed'));
   };
 
   // Fetch search with debounce
