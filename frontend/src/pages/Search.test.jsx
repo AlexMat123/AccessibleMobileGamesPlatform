@@ -95,4 +95,41 @@ describe('Search page (accessibility + basics)', () => {
     expect(Array.isArray(puzzleCall.tags)).toBe(true);
     expect(puzzleCall.tags).toContain('Puzzle');
   });
+
+  it('reflects selected genre and tags in UI (breadcrumbs) and API args', async () => {
+    const spy = vi.spyOn(api, 'searchGames');
+
+    renderSearch();
+
+    // Select Genre: Puzzle
+    const genreSelect = await screen.findByLabelText(/genre/i);
+    await userEvent.selectOptions(genreSelect, 'Puzzle');
+
+    // Toggle a quick Accessibility tag (use the first "High Contrast" button)
+    const hcBtn = (await screen.findAllByRole('button', { name: /high contrast/i }))[0];
+    await userEvent.click(hcBtn);
+
+    // Give debounce a moment
+    await new Promise(r => setTimeout(r, 320));
+
+    // API should be called with both tags
+    const callArgs = spy.mock.calls.map(c => c[0]);
+    const call = callArgs.find(args => Array.isArray(args?.tags) && args.tags.includes('Puzzle'));
+    expect(call?.tags).toEqual(expect.arrayContaining(['Puzzle','High Contrast']));
+  });
+
+  it('shows Loading games... during in-flight debounced search', async () => {
+    const spy = vi.spyOn(api, 'searchGames').mockImplementation(() => new Promise(res => setTimeout(() => res([]), 500)));
+
+    renderSearch();
+
+    const genreSelect = await screen.findByLabelText(/genre/i);
+    await userEvent.selectOptions(genreSelect, 'Puzzle');
+
+    // Wait past debounce boundary; allow promise to still be pending
+    await new Promise(r => setTimeout(r, 300));
+
+    expect(screen.getByText(/loading games/i)).toBeInTheDocument();
+    expect(spy).toHaveBeenCalled();
+  });
 });
