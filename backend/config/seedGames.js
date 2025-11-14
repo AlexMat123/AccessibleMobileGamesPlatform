@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { sequelize } from './db.js';
 import { ALL_TAGS } from '../models/tags.js';
 import { Game, Tag, User, Review } from '../models/index.js';
-import sequelize from './db.js';
+// import sequelize from './db.js';
 import bcrypt from 'bcrypt';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
