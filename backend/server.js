@@ -11,6 +11,8 @@ import './models/index.js';
 import { seedGames } from './config/seedGames.js';
 import gamesRouter from './routes/games.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
+import authRouter from './routes/auth.js';
+import gamesRouter from './routes/games.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -21,13 +23,15 @@ app.use(cors());
 app.use(express.json());
 
 // API routes
-app.use('/api/games', gamesRouter);
+app.use(cors(),'/api/games', gamesRouter);
 
 // Error handler
 app.use((err, req, res, next) => {
     console.error('[Unhandled]', err);
     res.status(500).json({ error: 'Internal server error', detail: err.message });
 });
+app.use('/api/auth', authRouter);
+app.use('/api/games', gamesRouter);
 
 const PORT = Number(process.env.PORT) || 5000;
 

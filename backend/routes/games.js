@@ -1,8 +1,38 @@
 // javascript
 import express from 'express';
 import { Game, Tag, Review, User } from '../models/index.js';
+import { Op, literal } from 'sequelize';
+import sequelize from '../config/db.js';
+import Game from '../models/Games.js';
 
 const router = express.Router();
+
+// Search function
+router.get('/search', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return res.json([]);
+
+    
+    const escPrefix = sequelize.escape(`${q}%`);
+    const escAnywhere = sequelize.escape(`%${q}%`);
+
+    const results = await Game.findAll({
+      where: { title: { [Op.like]: `%${q}%` } },
+      attributes: ['id', 'title', 'platform', 'rating'],
+      order: [
+        [literal(`CASE WHEN title LIKE ${escPrefix} THEN 0 WHEN title LIKE ${escAnywhere} THEN 1 ELSE 2 END`), 'ASC'],
+        [literal('LENGTH(title)'), 'ASC']
+      ],
+      limit: 10
+    });
+
+    res.json(results);
+  } catch (err) {
+    console.error('Search error:', err);
+    res.status(500).json({ message: 'Search failed' });
+  }
+});
 
 const normalizePath = (p) => {
     if (p == null) return null;
