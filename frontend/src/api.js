@@ -1,3 +1,4 @@
+// export const API_URL = "http://localhost:5000/api";
 const API_URL = import.meta.env.VITE_API_BASE || "http://localhost:5000/api";
 
 export const registerUser = async (username, password) => {
@@ -18,6 +19,28 @@ export const loginUser = async (username, password) => {
     return res.json();
 };
 
+export const fetchTagGroups = async () => {
+  const res = await fetch(`${API_URL}/tag-groups`);
+  if (!res.ok) throw new Error("Unable to load tag groups");
+  return res.json();
+};
+
+export const fetchGames = async () => {
+  const res = await fetch(`${API_URL}/games`);
+  if (!res.ok) throw new Error("Unable to load games");
+  return res.json();
+};
+
+export const searchGames = async ({ q = "", tags = [] } = {}) => {
+  const params = new URLSearchParams();
+  if (q && q.trim()) params.set("q", q.trim());
+  if (Array.isArray(tags) && tags.length > 0) params.set("tags", tags.join(","));
+  const url = `${API_URL}/games/search${params.toString() ? `?${params.toString()}` : ""}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Unable to search games");
+  return res.json();
+};
+
 export async function getGame(id) {
     const res = await fetch(`${API_URL}/games/${id}`);
     if (!res.ok) throw new Error(`Failed to fetch game ${id}: ${res.status} ${res.statusText}`);
@@ -29,3 +52,4 @@ export async function getGames() {
     if (!res.ok) throw new Error(`Failed to fetch games: ${res.status} ${res.statusText}`);
     return res.json();
 }
+

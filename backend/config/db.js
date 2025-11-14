@@ -13,17 +13,27 @@ function assertEnv(name) {
 }
 ['DB_HOST','DB_USER','DB_PASS','DB_NAME'].forEach(assertEnv);
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASS,
-    {
-        host: process.env.DB_HOST || '127.0.0.1',
-        port: Number(process.env.DB_PORT) || 3306,
-        dialect: 'mariadb',
+let sequelize;
+if (process.env.DB_DIALECT === 'sqlite') {
+    // Integration tests: fast, hermetic in-memory database
+    sequelize = new Sequelize({
+        dialect: 'sqlite',
+        storage: process.env.DB_STORAGE || ':memory:',
         logging: false
-    }
-);
+    });
+} else {
+    sequelize = new Sequelize(
+        process.env.DB_NAME,
+        process.env.DB_USER,
+        process.env.DB_PASS,
+        {
+            host: process.env.DB_HOST || '127.0.0.1',
+            port: Number(process.env.DB_PORT) || 3306,
+            dialect: 'mariadb',
+            logging: false
+        }
+    );
+}
 
 export async function connectDB() {
     try {
