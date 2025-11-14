@@ -190,6 +190,8 @@ export default function Search() {
     });
   };
 
+  const slugify = (s = '') => String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
@@ -263,10 +265,13 @@ export default function Search() {
                 <div className="mt-2 grid grid-cols-1 gap-2">
                   {categories.map(cat => {
                     const isOpen = openCategories.has(cat);
-                    const panelId = `cat-panel-${cat.replace(/\s+/g,'-').toLowerCase()}`;
+                    const slug = slugify(cat);
+                    const btnId = `cat-btn-${slug}`;
+                    const panelId = `cat-panel-${slug}`;
                     return (
                       <div key={cat} className="rounded-lg border border-slate-300 bg-white">
                         <button
+                          id={btnId}
                           type="button"
                           className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-slate-800 ${focusRing}`}
                           aria-expanded={isOpen}
@@ -277,7 +282,7 @@ export default function Search() {
                           <span aria-hidden className="ml-2 text-slate-500">{isOpen ? '▾' : '▸'}</span>
                         </button>
                         {isOpen && (
-                          <div id={panelId} className="border-t border-slate-200 p-2">
+                          <div id={panelId} role="region" aria-labelledby={btnId} className="border-t border-slate-200 p-2">
                             <div className="grid grid-cols-1 gap-2">
                               {(tagsByCategory[cat] || []).map(tag => {
                                 const active = selectedTags.has(tag);
@@ -355,13 +360,13 @@ export default function Search() {
             </div>
 
             {gamesLoading || serverLoading ? (
-              <p className="text-slate-700">Loading games...</p>
+              <p className="text-slate-700" role="status" aria-live="polite">Loading games...</p>
             ) : gamesError ? (
               <p role="alert" className="text-rose-700">{gamesError}</p>
             ) : sortedResults.length === 0 ? (
               <p className="text-slate-700">No games found.</p>
             ) : (
-              <ul role="list" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <ul role="list" aria-live="polite" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {sortedResults.map(g => (
                   <li key={g.id}>
                     <article className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
