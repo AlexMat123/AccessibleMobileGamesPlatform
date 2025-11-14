@@ -39,5 +39,14 @@ describe('Integration: Games API with SQLite', () => {
       expect(g.tags).toEqual(expect.arrayContaining(['Puzzle']));
     }
   });
-});
 
+  it('GET /api/games/search?q=puzzle returns titles/platforms matching text', async () => {
+    const res = await request(app).get('/api/games/search?q=puzzle').expect(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    for (const g of res.body) {
+      const t = `${g.title} ${g.platform}`.toLowerCase();
+      expect(t).toContain('puzzle');
+    }
+  });
+});
