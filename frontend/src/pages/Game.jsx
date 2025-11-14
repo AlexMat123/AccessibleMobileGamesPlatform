@@ -58,13 +58,17 @@ export default function Game() {
         { group: 'Cognitive Accessibility', items: ['Simplified UI', 'Tutorial Tips'] }
     ];
 
-    // Stub reviews (replace later)
-    const reviews = [
-        { id: 1, user: 'User 1', rating: 5, ago: '1 week ago', text: 'Great accessibility and gameplay.' , up: 12, down: 1 },
-        { id: 2, user: 'User 2', rating: 4, ago: '2 days ago', text: 'Fun but could use more levels.' , up: 5, down: 0 },
-        { id: 3, user: 'User 3', rating: 3, ago: '2 months ago', text: 'Average experience.' , up: 2, down: 3 }
-    ];
-    const ratingDist = [500,250,100,80,70];
+    //Reviews
+    const reviews = game.reviews || [];
+
+    const ratingCounts = [0, 0, 0, 0, 0];
+    reviews.forEach(r => {
+        if (r.rating >= 1 && r.rating <= 5) {
+            ratingCounts[r.rating - 1]++;
+        }
+    });
+    const ratingDist = ratingCounts.reverse();
+
 
     return (
         <div style={{ background: '#d7edf9', minHeight: '100vh', padding: '1rem', fontFamily: 'Arial, sans-serif' }}>
@@ -108,7 +112,26 @@ export default function Game() {
                         <h1 style={{ margin: 0 }}>{game.name}</h1>
                         <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{game.developer || 'Developer'} • {game.category || 'Category'}</div>
                         <div style={{ marginTop: 8 }}>
-                            <RatingStars value={game.rating} /> <span style={{ fontSize: 12, color: '#555' }}>{(game.rating || 0).toFixed(1)} (1000)</span>
+                            {(() => {
+                                const reviews = game.reviews || [];
+                                const ratingCounts = [0, 0, 0, 0, 0];
+                                reviews.forEach(r => {
+                                    if (r.rating >= 1 && r.rating <= 5) {
+                                        ratingCounts[r.rating - 1]++;
+                                    }
+                                });
+                                const avgRating = reviews.length > 0
+                                    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+                                    : 0;
+                                return (
+                                    <>
+                                        <RatingStars value={avgRating} />
+                                        <span style={{ fontSize: 12, color: '#555' }}>
+                {avgRating.toFixed(1)} ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+            </span>
+                                    </>
+                                );
+                            })()}
                         </div>
                         <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {(game.tags || []).map(t => (
@@ -208,18 +231,16 @@ export default function Game() {
                     {reviews.map(r => (
                         <div key={r.id} style={{ background: '#fff', padding: '8px 10px', borderRadius: 4, marginBottom: 8, fontSize: 12, border: '1px solid #ddd' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <strong>{r.user}</strong>
-                                <span style={{ color: '#777' }}>{r.ago}</span>
+                                <strong>{r.user?.username || 'Anonymous'}</strong>
+                                <span style={{ color: '#777' }}>
+                                    {new Date(r.createdAt).toLocaleDateString()}
+                                </span>
                             </div>
                             <div><RatingStars value={r.rating} /></div>
-                            <p style={{ margin: '4px 0' }}>{r.text}</p>
-                            <div style={{ display: 'flex', gap: 12, fontSize: 11 }}>
-                                <span>👍 {r.up}</span>
-                                <span>👎 {r.down}</span>
-                                <button style={{ ...secBtn, padding: '2px 6px' }}>Report</button>
-                            </div>
+                            <p style={{ margin: '4px 0' }}>{r.comment || 'No comment provided.'}</p>
                         </div>
                     ))}
+
                 </section>
 
                 <div style={{ textAlign: 'center', marginTop: 24 }}>
