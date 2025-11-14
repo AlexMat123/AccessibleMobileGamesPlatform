@@ -18,6 +18,29 @@ export const loginUser = async (identifier, password) => {
     body: JSON.stringify({ identifier, password }),
   });
   if (!res.ok) throw new Error((await res.json()).message || 'Login failed');
+  return res.json();
+};
+
+export const fetchTagGroups = async () => {
+  const res = await fetch(`${API_URL}/tag-groups`);
+  if (!res.ok) throw new Error("Unable to load tag groups");
+  return res.json();
+};
+
+export const fetchGames = async () => {
+  const res = await fetch(`${API_URL}/games`);
+  if (!res.ok) throw new Error("Unable to load games");
+  return res.json();
+};
+
+export const searchGames = async ({ q = "", tags = [] } = {}) => {
+  const params = new URLSearchParams();
+  if (q && q.trim()) params.set("q", q.trim());
+  if (Array.isArray(tags) && tags.length > 0) params.set("tags", tags.join(","));
+  const url = `${API_URL}/games/search${params.toString() ? `?${params.toString()}` : ""}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Unable to search games");
+  return res.json();
 };
 
 export async function getGame(id) {
@@ -31,4 +54,3 @@ export async function getGames() {
     if (!res.ok) throw new Error(`Failed to fetch games: ${res.status} ${res.statusText}`);
     return res.json();
 }
-
