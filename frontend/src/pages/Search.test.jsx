@@ -27,6 +27,7 @@ vi.mock('../api', () => ({
 }));
 
 import Search from './Search.jsx';
+import * as api from '../api';
 
 function renderSearch(initialEntries = ['/search']) {
   return render(
@@ -74,5 +75,24 @@ describe('Search page (accessibility + basics)', () => {
     const tagBtn = within(panel).getByRole('button', { name: /one-handed/i });
     await userEvent.click(tagBtn);
     expect(tagBtn).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('debounces server search and calls with selected genre', async () => {
+    const spy = vi.spyOn(api, 'searchGames');
+
+    renderSearch();
+
+    const genreSelect = await screen.findByLabelText(/genre/i);
+    await userEvent.selectOptions(genreSelect, 'Puzzle');
+
+    // Wait slightly longer than debounce
+    await new Promise(r => setTimeout(r, 320));
+
+    expect(spy).toHaveBeenCalled();
+    const callArgs = spy.mock.calls.map(c => c[0]);
+    const puzzleCall = callArgs.find(args => Array.isArray(args?.tags) && args.tags.includes('Puzzle'));
+    expect(puzzleCall).toBeTruthy();
+    expect(Array.isArray(puzzleCall.tags)).toBe(true);
+    expect(puzzleCall.tags).toContain('Puzzle');
   });
 });
