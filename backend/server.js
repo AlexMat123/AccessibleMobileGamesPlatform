@@ -7,12 +7,14 @@ import app from './app.js';
 import express from 'express';
 import cors from 'cors';
 import sequelize from './config/db.js';
+import sequelize from './config/db.js';
 import './models/index.js';
 import { seedGames } from './config/seedGames.js';
 import gamesRouter from './routes/games.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
 import authRouter from './routes/auth.js';
 import gamesRouter from './routes/games.js';
+import { createDatabaseIfNotExists } from './config/createDatabase.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
