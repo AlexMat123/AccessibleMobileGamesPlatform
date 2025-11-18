@@ -3,7 +3,6 @@ import express from 'express';
 import { Game, Tag, Review, User } from '../models/index.js';
 import { Op, literal } from 'sequelize';
 import sequelize from '../config/db.js';
-import { Game, Tag } from '../models/index.js';
 
 const router = express.Router();
 

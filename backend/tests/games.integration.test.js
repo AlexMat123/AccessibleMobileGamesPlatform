@@ -1,17 +1,15 @@
 import request from 'supertest';
-import { jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
-// Force SQLite in-memory for this test run
-process.env.DB_DIALECT = 'sqlite';
-process.env.DB_STORAGE = ':memory:';
-
-// Import after env is set so Sequelize picks it up
 import app from '../app.js';
 import { sequelize } from '../config/db.js';
 import '../models/index.js';
 import { seedGames } from '../config/seedGames.js';
 
-describe('Integration: Games API with SQLite', () => {
+// Only run these when DB_DIALECT=sqlite is configured externally.
+const maybeDescribe = process.env.DB_DIALECT === 'sqlite' ? describe : describe.skip;
+
+maybeDescribe('Integration: Games API with SQLite', () => {
   beforeAll(async () => {
     await sequelize.sync({ force: true });
     await seedGames();

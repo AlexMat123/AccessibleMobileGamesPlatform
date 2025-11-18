@@ -9,7 +9,7 @@ const User = sequelize.define("User", {
   },
   email: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true, // temporarily nullable for migration
     unique: true,
     validate: { isEmail: true }
   },

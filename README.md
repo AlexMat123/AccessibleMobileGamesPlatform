@@ -104,7 +104,8 @@ The project includes an accessible Search page to filter games by genre and acce
 
 - Backend tests (Jest)
   - Run all: `npm run test:backend`
-  - What’s covered: tag-groups API, games API mapping, search query building (unit + SQLite integration). Integration tests use an in-memory SQLite DB via `DB_DIALECT=sqlite`.
+  - What’s covered: tag-groups API, games API mapping, search query building (unit + opt-in SQLite integration).
+  - Integration tests: use an in-memory SQLite DB via `DB_DIALECT=sqlite`. To run them locally, first install `sqlite3` in `backend` (`cd backend && npm install sqlite3 --save-dev`), then run `npm run test:backend:int` from the project root. MariaDB remains the main runtime database; SQLite is used only for fast, isolated tests.
 
 - Frontend tests (Vitest + React Testing Library)
   - Run all: `npm run test:frontend`
