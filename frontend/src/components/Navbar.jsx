@@ -2,6 +2,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuIt
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import profile from '../assets/profile.jpg';
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const navigation = [
   { name: 'Home', href: '/', current: true },
@@ -17,6 +18,7 @@ function classNames(...classes) {
 export default function Navbar() {
   // Track auth via presence of token in localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const navigate = useNavigate();
 
   // Search
   const [query, setQuery] = useState('');
@@ -80,6 +82,14 @@ export default function Navbar() {
     return () => document.removeEventListener('click', onDoc);
   }, []);
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setOpen(false);
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+  };
+
   return (
     <Disclosure as="nav" className="relative bg-gray-800">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -121,13 +131,16 @@ export default function Navbar() {
 
             {/* Center: Search */}
             <div ref={searchBoxRef} className="relative flex-1 px-4 max-w-2xl mx-6 hidden sm:block">
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => results.length && setOpen(true)}
-                placeholder="Search games..."
-                className="w-full rounded-md bg-white/95 text-gray-900 placeholder-gray-500 py-2 pl-3 pr-3 shadow focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
+              <form onSubmit={handleSearchSubmit} role="search">
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => results.length && setOpen(true)}
+                  placeholder="Search games..."
+                  aria-label="Search games"
+                  className="w-full rounded-md bg-white/95 text-gray-900 placeholder-gray-500 py-2 pl-3 pr-3 shadow focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              </form>
               {open && results.length > 0 && (
                 <div className="absolute z-30 mt-1 w-full max-h-72 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black/5">
                   <ul className="divide-y divide-gray-100">
