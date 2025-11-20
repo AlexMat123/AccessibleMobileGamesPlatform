@@ -105,8 +105,11 @@ describe('Search page (accessibility + basics)', () => {
     const genreSelect = await screen.findByLabelText(/genre/i);
     await userEvent.selectOptions(genreSelect, 'Puzzle');
 
-    // Toggle a quick Accessibility tag (use the first "High Contrast" button)
-    const hcBtn = (await screen.findAllByRole('button', { name: /high contrast/i }))[0];
+    // Expand Vision category and toggle "High Contrast" from its panel
+    const visionBtns = await screen.findAllByRole('button', { name: /^vision/i });
+    await userEvent.click(visionBtns[0]);
+    const visionPanel = (await screen.findAllByRole('region', { name: /^vision/i }))[0];
+    const hcBtn = within(visionPanel).getByRole('button', { name: /high contrast/i });
     await userEvent.click(hcBtn);
 
     // Give debounce a moment

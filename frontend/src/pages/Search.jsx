@@ -23,9 +23,6 @@ export default function Search() {
   const [serverLoading, setServerLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
-  // Curated checklists (clean ASCII only)
-  // Quick toggles: only actual tag names (no category labels here)
-  const curatedAccessibility = ['No Audio Needed','One-Handed','High Contrast','Simple Controls'];
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
 
@@ -238,29 +235,8 @@ export default function Search() {
                 </button>
               </div>
 
-              {/* Accessibility checklist */}
-              <section className="mt-4">
-                <h3 className="text-sm font-semibold text-slate-700">Accessibility</h3>
-                <div className="mt-2 grid grid-cols-1 gap-2">
-                  {curatedAccessibility.map(tag => {
-                    const active = selectedTags.has(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
-                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
-                        aria-pressed={active}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
               {/* Disability Categories (accordion to reveal specific tags) */}
-              <section className="mt-5">
+              <section className="mt-4">
                 <h3 className="text-sm font-semibold text-slate-700">Disability Categories</h3>
                 <div className="mt-2 grid grid-cols-1 gap-2">
                   {categories.map(cat => {
