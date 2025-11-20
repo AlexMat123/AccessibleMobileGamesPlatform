@@ -2,7 +2,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuIt
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import profile from '../assets/profile.jpg';
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const navigation = [
   { name: 'Home', href: '/', current: true },
@@ -19,6 +19,7 @@ export default function Navbar() {
   // Track auth via presence of token in localStorage
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Search
   const [query, setQuery] = useState('');
@@ -130,7 +131,11 @@ export default function Navbar() {
             </div>
 
             {/* Center: Search */}
-            <div ref={searchBoxRef} className="relative flex-1 px-4 max-w-2xl mx-6 hidden sm:block">
+            <div
+              ref={searchBoxRef}
+              className="relative flex-1 px-4 max-w-2xl mx-6 hidden sm:block"
+              style={{ display: location.pathname === '/search' ? 'none' : undefined }}
+            >
               <form onSubmit={handleSearchSubmit} role="search">
                 <input
                   value={query}
