@@ -23,9 +23,6 @@ export default function Search() {
   const [serverLoading, setServerLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
-  // Curated checklists (clean ASCII only)
-  // Quick toggles: only actual tag names (no category labels here)
-  const curatedAccessibility = ['No Audio Needed','One-Handed','High Contrast','Simple Controls'];
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
 
@@ -134,8 +131,26 @@ export default function Search() {
     ? filteredGames
     : (haveFilters ? serverResults : filteredGames);
 
+  // Ensure cards always show the full tag set from /api/games, even when
+  // server-side search returns only the matched tags for performance.
+  const fullTagsById = useMemo(() => {
+    const map = new Map();
+    games.forEach(g => {
+      map.set(g.id, g.tags || []);
+    });
+    return map;
+  }, [games]);
+
+  const hydratedResults = useMemo(
+    () => finalResults.map(r => ({
+      ...r,
+      tags: fullTagsById.get(r.id) || r.tags || []
+    })),
+    [finalResults, fullTagsById]
+  );
+
   const sortedResults = useMemo(() => {
-    const arr = [...finalResults];
+    const arr = [...hydratedResults];
     switch (sortBy) {
       case 'rating':
         return arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
@@ -146,7 +161,7 @@ export default function Search() {
       default:
         return arr;
     }
-  }, [finalResults, sortBy]);
+  }, [hydratedResults, sortBy]);
 
   const toggleTag = (tag) => {
     setSelectedTags(prev => {
@@ -238,29 +253,8 @@ export default function Search() {
                 </button>
               </div>
 
-              {/* Accessibility checklist */}
-              <section className="mt-4">
-                <h3 className="text-sm font-semibold text-slate-700">Accessibility</h3>
-                <div className="mt-2 grid grid-cols-1 gap-2">
-                  {curatedAccessibility.map(tag => {
-                    const active = selectedTags.has(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleTag(tag)}
-                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
-                        aria-pressed={active}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
               {/* Disability Categories (accordion to reveal specific tags) */}
-              <section className="mt-5">
+              <section className="mt-4">
                 <h3 className="text-sm font-semibold text-slate-700">Disability Categories</h3>
                 <div className="mt-2 grid grid-cols-1 gap-2">
                   {categories.map(cat => {
@@ -378,9 +372,20 @@ export default function Search() {
                         </header>
                         {Array.isArray(g.tags) && g.tags.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-2" aria-label="Accessibility tags">
-                            {g.tags.slice(0, 6).map(t => (
-                              <span key={`${g.id}-${t}`} className="rounded-full border border-lime-600/40 bg-lime-50 px-3 py-1 text-xs font-semibold text-lime-800">{t}</span>
-                            ))}
+                            {g.tags.map(t => {
+                              const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
+                              const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
+                              const activeClasses = 'border border-lime-600 bg-lime-50 text-lime-900';
+                              const inactiveClasses = 'border border-slate-300 bg-slate-50 text-slate-700';
+                              return (
+                                <span
+                                  key={`${g.id}-${t}`}
+                                  className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
+                                >
+                                  {t}
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
