@@ -6,6 +6,7 @@ export function createVoiceListener({ onTranscript, onStatus }) {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     onStatus?.('SpeechRecognition not supported');
+    console.warn('[voice] SpeechRecognition not supported');
     return {
       start: () => {},
       stop: () => {}
@@ -22,16 +23,19 @@ export function createVoiceListener({ onTranscript, onStatus }) {
   recognition.onstart = () => {
     running = true;
     onStatus?.('Listening… say “Hey Platform”');
+    console.info('[voice] mic started');
   };
 
   recognition.onend = () => {
     running = false;
     onStatus?.('Reconnecting mic…');
+    console.info('[voice] mic stopped, restarting');
     setTimeout(() => recognition.start(), 400);
   };
 
   recognition.onerror = (e) => {
     onStatus?.(`Mic error: ${e.error}`);
+    console.error('[voice] mic error', e);
   };
 
   recognition.onresult = (event) => {
@@ -39,7 +43,10 @@ export function createVoiceListener({ onTranscript, onStatus }) {
       .map((r) => r[0]?.transcript || '')
       .join(' ')
       .trim();
-    if (transcript) onTranscript?.(transcript);
+    if (transcript) {
+      console.info('[voice] transcript', transcript);
+      onTranscript?.(transcript);
+    }
   };
 
   return {

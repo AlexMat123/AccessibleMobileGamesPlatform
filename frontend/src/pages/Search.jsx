@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchGames, fetchTagGroups, searchGames } from '../api';
 
@@ -22,6 +22,11 @@ export default function Search() {
   const [serverResults, setServerResults] = useState([]);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+
+  // Refs for voice-driven focus/scroll
+  const searchInputRef = useRef(null);
+  const filtersRef = useRef(null);
+  const resultsRef = useRef(null);
 
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
@@ -197,6 +202,15 @@ export default function Search() {
     return map;
   }, [groups, categories]);
 
+  const allTags = useMemo(() => {
+    const names = [];
+    groups.forEach(g => {
+      const t = g?.tags || g?.items;
+      if (Array.isArray(t)) names.push(...t);
+    });
+    return names;
+  }, [groups]);
+
   const toggleCategoryOpen = (cat) => {
     setOpenCategories(prev => {
       const next = new Set(prev);
@@ -206,6 +220,65 @@ export default function Search() {
   };
 
   const slugify = (s = '') => String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  // Voice commands: search, filter, and open filters drawer.
+  useEffect(() => {
+    const normalize = (s = '') => s.toLowerCase().replace(/[.,!?]/g, '').trim();
+
+    const matchGenre = (name = '') => {
+      const needle = normalize(name);
+      return genreOptions.find((g) => {
+        const hay = g.toLowerCase();
+        return hay === needle || hay.includes(needle) || needle.includes(hay);
+      });
+    };
+
+    const matchTag = (name = '') => {
+      const needle = normalize(name);
+      return allTags.find((t) => {
+        const hay = t.toLowerCase();
+        return hay === needle || hay.includes(needle) || needle.includes(hay);
+      });
+    };
+
+    const onVoice = (e) => {
+      const detail = e.detail || {};
+      const type = detail.type;
+      if (!type) return;
+      console.info('[voice][search] command', detail);
+
+      if (type === 'search' && detail.query) {
+        e.preventDefault();
+        setQuery(detail.query);
+        searchInputRef.current?.focus({ preventScroll: true });
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (type === 'filter' && detail.tag) {
+        e.preventDefault();
+        const genre = matchGenre(detail.tag);
+        const tag = matchTag(detail.tag);
+        if (genre) {
+          setSelectedGenre(genre);
+        } else if (tag) {
+          setSelectedTags(prev => new Set([...prev, tag]));
+        } else {
+          toggleTag(detail.tag);
+          console.info('[voice][search] fallback toggle for tag text', detail.tag);
+        }
+        filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (type === 'ui' && detail.target === 'filters') {
+        e.preventDefault();
+        filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+    window.addEventListener('voiceCommand', onVoice);
+    return () => window.removeEventListener('voiceCommand', onVoice);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -222,6 +295,7 @@ export default function Search() {
           </svg>
           <input
             id="search-field"
+            ref={searchInputRef}
             type="search"
             placeholder="Search games, genres, or accessibility tags..."
             className="w-full bg-transparent px-2 py-2 text-base text-slate-900 placeholder-slate-500 focus:outline-none"
@@ -241,7 +315,7 @@ export default function Search() {
         <div className="mt-8 grid grid-cols-12 gap-6">
           {/* Sticky left drawer */}
           <aside className="col-span-12 self-start lg:col-span-4 lg:sticky lg:top-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
+            <div ref={filtersRef} className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Filters</h2>
                 <button
@@ -347,7 +421,7 @@ export default function Search() {
           </aside>
 
           {/* Results */}
-          <section className="col-span-12 space-y-4 lg:col-span-8">
+          <section ref={resultsRef} className="col-span-12 space-y-4 lg:col-span-8">
             <div className="flex items-center justify-between text-sm text-slate-600">
               <nav aria-label="Breadcrumbs">Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
               <span>Filters (open)</span>

@@ -21,7 +21,12 @@ const filters = [
   [/^filter by vision$/, () => ({ type: 'filter', tag: 'Vision' })],
   [/^filter by speech$/, () => ({ type: 'filter', tag: 'Speech' })],
   [/^filter by cognitive$/, () => ({ type: 'filter', tag: 'Cognitive' })],
-  [/^show only one[- ]handed games$/, () => ({ type: 'filter', tag: 'One-Handed' })]
+  [/^show only one[- ]handed games$/, () => ({ type: 'filter', tag: 'One-Handed' })],
+  // Generic filter capture: "apply filter puzzle", "filter by action", "apply filters hearing"
+  [/^(apply (the )?filters?|filter by|filter)\s+(.+)/, (tagText) => {
+    const cleaned = String(tagText || '').replace(/[.,!?]/g, '').trim();
+    return cleaned ? { type: 'filter', tag: cleaned } : null;
+  }]
 ];
 
 const gameActions = [
@@ -32,15 +37,21 @@ const gameActions = [
 ];
 
 function stripWakeWord(input = '') {
-  const lower = input.toLowerCase().trim();
-  if (!lower.startsWith(WAKE_WORD)) return null;
-  return lower.slice(WAKE_WORD.length).trim();
+  // Normalise punctuation so variants like "hey, platform. ..." are accepted.
+  const normalised = input.toLowerCase().replace(/[.,!?]/g, '').trim();
+  if (!normalised.startsWith(WAKE_WORD)) return null;
+  return normalised.slice(WAKE_WORD.length).trim();
 }
 
 function match(command, matchers) {
   for (const [regex, build] of matchers) {
     const m = command.match(regex);
-    if (m) return build(m[2] || m[1] || m[0]);
+    if (m) {
+      const captures = m.slice(1).filter(Boolean);
+      const primary = captures.length ? captures[captures.length - 1] : command;
+      const result = build(primary, m);
+      if (result) return result;
+    }
   }
   return null;
 }
