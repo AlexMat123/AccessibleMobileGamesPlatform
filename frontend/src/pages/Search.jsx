@@ -27,6 +27,7 @@ export default function Search() {
   const searchInputRef = useRef(null);
   const filtersRef = useRef(null);
   const resultsRef = useRef(null);
+  const genreSelectRef = useRef(null);
 
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
@@ -221,12 +222,91 @@ export default function Search() {
 
   const slugify = (s = '') => String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
+  // Light highlight to show what was toggled via voice
+  const flashClass = 'voice-flash';
+  const normalizeText = (s = '') => s.toLowerCase().replace(/[.,!?]/g, '').trim();
+  const tagSynonyms = {
+    'colorblind mode': 'Colourblind Mode',
+    'colourblind mode': 'Colourblind Mode',
+    'colour blind mode': 'Colourblind Mode',
+    'color blind mode': 'Colourblind Mode',
+    'colour blind': 'Colourblind Mode',
+    'color blind': 'Colourblind Mode',
+    'no audio needed': 'No Audio Needed',
+    'no audio': 'No Audio Needed',
+    'no audio required': 'No Audio Needed',
+    'no sound': 'No Audio Needed',
+    'no voice required': 'No Voice Required',
+    'no voice needed': 'No Voice Required',
+    'one handed': 'One-Handed',
+    'one hand': 'One-Handed',
+    'screenreader friendly': 'Screen Reader Friendly',
+    'screen reader friendly': 'Screen Reader Friendly'
+  };
+  const canonicalTagName = (name = '') => {
+    const norm = normalizeText(name);
+    return tagSynonyms[norm] || name;
+  };
+  useEffect(() => {
+    const styleId = 'voice-flash-style';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .${flashClass} {
+        outline: 3px solid #a5f3fc;
+        outline-offset: 3px;
+        transition: outline-color 0.4s ease;
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
+  const focusAndFlash = (el) => {
+    if (!el) return;
+    if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+    el.classList.add(flashClass);
+    setTimeout(() => el.classList.remove(flashClass), 1200);
+  };
+
+  const clickTagButton = (tag) => {
+    const canonical = canonicalTagName(tag);
+    const needle = normalizeText(canonical);
+    const btn = Array.from(document.querySelectorAll('button[data-voice-tag]')).find((b) => {
+      const attr = normalizeText(canonicalTagName(b.getAttribute('data-voice-tag')));
+      const txt = normalizeText(canonicalTagName(b.textContent));
+      return attr === needle || txt === needle || attr.includes(needle) || needle.includes(attr) || txt.includes(needle) || needle.includes(txt);
+    });
+    if (!btn) return false;
+
+    const isActive = btn.getAttribute('aria-pressed') === 'true';
+    // Only click if we need to toggle on
+    if (!isActive) btn.click();
+    focusAndFlash(btn);
+    return true;
+  };
+
+  const setGenreByVoice = (genre) => {
+    const select = genreSelectRef.current;
+    if (!select) return false;
+    const match = Array.from(select.options).find(
+      opt => normalizeText(opt.value) === normalizeText(genre) || normalizeText(opt.textContent) === normalizeText(genre)
+    );
+    if (match) {
+      select.value = match.value;
+      setSelectedGenre(match.value);
+      focusAndFlash(select);
+      // Fire a change event to keep parity with user interaction
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+    return false;
+  };
+
   // Voice commands: search, filter, and open filters drawer.
   useEffect(() => {
-    const normalize = (s = '') => s.toLowerCase().replace(/[.,!?]/g, '').trim();
-
     const matchGenre = (name = '') => {
-      const needle = normalize(name);
+      const needle = normalizeText(name);
       return genreOptions.find((g) => {
         const hay = g.toLowerCase();
         return hay === needle || hay.includes(needle) || needle.includes(hay);
@@ -234,9 +314,9 @@ export default function Search() {
     };
 
     const matchTag = (name = '') => {
-      const needle = normalize(name);
+      const needle = normalizeText(canonicalTagName(name));
       return allTags.find((t) => {
-        const hay = t.toLowerCase();
+        const hay = normalizeText(canonicalTagName(t));
         return hay === needle || hay.includes(needle) || needle.includes(hay);
       });
     };
@@ -257,15 +337,48 @@ export default function Search() {
 
       if (type === 'filter' && detail.tag) {
         e.preventDefault();
-        const genre = matchGenre(detail.tag);
-        const tag = matchTag(detail.tag);
+        const spokenTag = canonicalTagName(detail.tag);
+        const genre = matchGenre(spokenTag);
+        const tag = matchTag(spokenTag);
+        // Expand relevant category accordion if we know where this tag lives
+        const catEntry = Object.entries(tagsByCategory).find(
+          ([, tags]) => Array.isArray(tags) && tags.some(t => normalizeText(canonicalTagName(t)) === normalizeText(spokenTag))
+        );
+        if (catEntry) {
+          const [catName] = catEntry;
+          setOpenCategories(prev => new Set(prev).add(catName));
+        }
+
         if (genre) {
-          setSelectedGenre(genre);
+          setQuery('');
+          setTimeout(() => {
+            setGenreByVoice(genre);
+          }, 30);
         } else if (tag) {
-          setSelectedTags(prev => new Set([...prev, tag]));
+          setQuery('');
+          // Try clicking; if not found, fall back to state toggle after retries.
+          const attempt = () => clickTagButton(tag);
+          setTimeout(attempt, 50);
+          setTimeout(() => {
+            const clicked = attempt();
+            if (!clicked) setSelectedTags(prev => new Set([...prev, tag]));
+          }, 150);
         } else {
           toggleTag(detail.tag);
           console.info('[voice][search] fallback toggle for tag text', detail.tag);
+          setTimeout(() => {
+            const btns = Array.from(document.querySelectorAll('button[data-voice-tag]'));
+            const needle = normalizeText(spokenTag);
+            const btn = btns.find(b => {
+              const hay = normalizeText(canonicalTagName(b.getAttribute('data-voice-tag')));
+              const txt = normalizeText(canonicalTagName(b.textContent));
+              return hay === needle || txt === needle || hay.includes(needle) || needle.includes(hay) || txt.includes(needle) || needle.includes(txt);
+            });
+            if (btn) {
+              btn.click();
+              focusAndFlash(btn);
+            }
+          }, 50);
         }
         filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
@@ -278,7 +391,7 @@ export default function Search() {
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);
-  }, []);
+  }, [genreOptions, allTags, tagsByCategory]);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -357,6 +470,7 @@ export default function Search() {
                                 return (
                                   <button
                                     key={tag}
+                                    data-voice-tag={tag}
                                     type="button"
                                     onClick={() => toggleTag(tag)}
                                     className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
@@ -380,6 +494,7 @@ export default function Search() {
                 <label htmlFor="genre" className="block text-sm font-semibold text-slate-700">Genre</label>
                 <select
                   id="genre"
+                  ref={genreSelectRef}
                   className={`mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ${focusRing}`}
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
