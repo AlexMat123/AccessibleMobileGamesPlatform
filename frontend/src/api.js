@@ -49,6 +49,39 @@ export async function getGame(id) {
     return res.json();
 }
 
+export async function createReviewForGame(gameId, data) {
+  const res = await fetch(`${API_URL}/games/${gameId}/reviews`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+    },
+    body: JSON.stringify(data), // { rating, comment }
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to submit review");
+  }
+
+  return res.json();
+}
+
+
+export function authHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function getReviewsForGame(gameId) {
+  const res = await fetch(`${API_URL}/games/${gameId}/reviews`);
+  if (!res.ok) {
+    throw new Error("Failed to fetch reviews");
+  }
+  return res.json(); // array of reviews with .user field
+}
+
+
 export async function getGames() {
     const res = await fetch(`${API_URL}/games`);
     if (!res.ok) throw new Error(`Failed to fetch games: ${res.status} ${res.statusText}`);

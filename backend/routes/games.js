@@ -1,6 +1,7 @@
 // javascript
 import express from 'express';
 import { Game, Tag, Review, User } from '../models/index.js';
+import authenticateToken  from '../middleware/auth.js';
 import { Op, literal } from 'sequelize';
 import sequelize from '../config/db.js';
 
@@ -44,6 +45,35 @@ router.get('/:id', async (req, res) => {
         res.json(serializeGame(game));
     } catch (e) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+router.post("/:id/reviews", authenticateToken, async (req, res) => {
+    try {
+        const gameId = req.params.id;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const { rating, comment } = req.body;
+
+        if (rating == null) {
+            return res.status(400).json({ message: "rating is required" });
+        }
+
+        const review = await Review.create({
+            rating,
+            comment,
+            gameId,
+            userId,
+        });
+
+        res.status(201).json(review);
+    } catch (e) {
+        console.error("Error creating review:", e);
+        res.status(500).json({ message: "Failed to create review" });
     }
 });
 
@@ -152,6 +182,28 @@ router.get('/:id', async (req, res) => {
         res.json(serializeGame(game));
     } catch (e) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+router.get("/:id/reviews", async (req, res) => {
+    try {
+        const gameId = req.params.id;
+        const reviews = await Review.findAll({
+            where: { gameId },
+            include: [
+                {
+                    model: User,
+                    as: "user",
+                    attributes: ["id", "username", "email"],
+                },
+            ],
+            order: [["createdAt", "DESC"]],
+        });
+
+        res.json(reviews);
+    } catch (e) {
+        console.error("Error fetching reviews:", e);
+        res.status(500).json({ message: "Failed to fetch reviews" });
     }
 });
 

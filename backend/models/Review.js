@@ -13,6 +13,14 @@ const Review = sequelize.define(
         comment: {
             type: DataTypes.TEXT,
             allowNull: true
+        },
+        gameId: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        userId: {
+            type: DataTypes.INTEGER,
+            allowNull: false
         }
         // Foreign keys (gameId, userId) are added by associations in models/index.js
     },
