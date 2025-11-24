@@ -22,6 +22,7 @@ const filters = [
   [/^filter by speech$/, () => ({ type: 'filter', tag: 'Speech' })],
   [/^filter by cognitive$/, () => ({ type: 'filter', tag: 'Cognitive' })],
   [/^show only one[- ]handed games$/, () => ({ type: 'filter', tag: 'One-Handed' })],
+  [/^(reset|clear) (all )?(filters|filter)$/, () => ({ type: 'reset-filters' })],
   // Generic filter capture: "apply filter puzzle", "filter by action", "apply filters hearing"
   [/^(apply (the )?filters?|filter by|filter)\s+(.+)/, (tagText) => {
     const cleaned = String(tagText || '').replace(/[.,!?]/g, ' ').trim();

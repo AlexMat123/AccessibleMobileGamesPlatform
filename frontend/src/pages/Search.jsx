@@ -388,6 +388,17 @@ export default function Search() {
         return;
       }
 
+      if (type === 'reset-filters') {
+        e.preventDefault();
+        setQuery('');
+        setSelectedTags(new Set());
+        setSelectedGenre('');
+        setSortBy('relevance');
+        setOpenCategories(new Set());
+        filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
       if (type === 'ui' && detail.target === 'filters') {
         e.preventDefault();
         filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
