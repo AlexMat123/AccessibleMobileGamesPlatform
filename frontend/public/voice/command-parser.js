@@ -24,8 +24,15 @@ const filters = [
   [/^show only one[- ]handed games$/, () => ({ type: 'filter', tag: 'One-Handed' })],
   // Generic filter capture: "apply filter puzzle", "filter by action", "apply filters hearing"
   [/^(apply (the )?filters?|filter by|filter)\s+(.+)/, (tagText) => {
-    const cleaned = String(tagText || '').replace(/[.,!?]/g, '').trim();
-    return cleaned ? { type: 'filter', tag: cleaned } : null;
+    const cleaned = String(tagText || '').replace(/[.,!?]/g, ' ').trim();
+    if (!cleaned) return null;
+    // Support multiple tags: split on commas or " and "
+    const parts = cleaned
+      .split(/(?:\band\b|,)/i)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length > 1) return { type: 'filter', tags: parts };
+    return { type: 'filter', tag: parts[0] };
   }]
 ];
 
@@ -35,6 +42,41 @@ const gameActions = [
   [/^scroll down$/, () => ({ type: 'scroll', direction: 'down' })],
   [/^scroll up$/, () => ({ type: 'scroll', direction: 'up' })]
 ];
+
+// Forgiving keyword map to recover a filter intent from noisy phrases
+const KEYWORD_FILTERS = [
+  { keywords: ['hearing'], tag: 'Hearing' },
+  { keywords: ['motor'], tag: 'Motor' },
+  { keywords: ['vision', 'visual'], tag: 'Vision' },
+  { keywords: ['speech', 'voice'], tag: 'Speech' },
+  { keywords: ['cognitive', 'cognition'], tag: 'Cognitive' },
+  { keywords: ['colorblind', 'colourblind', 'color blind', 'colour blind'], tag: 'Colourblind Mode' },
+  { keywords: ['high contrast'], tag: 'High Contrast' },
+  { keywords: ['large text'], tag: 'Large Text' },
+  { keywords: ['screen reader'], tag: 'Screen Reader Friendly' },
+  { keywords: ['no audio', 'no sound'], tag: 'No Audio Needed' },
+  { keywords: ['no voice'], tag: 'No Voice Required' },
+  { keywords: ['one handed', 'one hand'], tag: 'One-Handed' },
+  // Genres
+  { keywords: ['puzzle'], tag: 'Puzzle' },
+  { keywords: ['action'], tag: 'Action' },
+  { keywords: ['rpg'], tag: 'RPG' },
+  { keywords: ['platformer'], tag: 'Platformer' },
+  { keywords: ['strategy'], tag: 'Strategy' },
+  { keywords: ['casual'], tag: 'Casual' },
+  { keywords: ['adventure'], tag: 'Adventure' }
+];
+
+function forgivingFilterMatch(command) {
+  const hasFilterWord = /\b(filter|filters|apply)\b/.test(command);
+  if (!hasFilterWord) return null;
+  for (const entry of KEYWORD_FILTERS) {
+    if (entry.keywords.some((k) => command.includes(k))) {
+      return { type: 'filter', tag: entry.tag };
+    }
+  }
+  return null;
+}
 
 function stripWakeWord(input = '') {
   // Normalise punctuation so variants like "hey, platform. ..." are accepted.
@@ -64,7 +106,8 @@ export function parseCommand(rawTranscript) {
     match(command, navigation) ||
     match(command, searches) ||
     match(command, filters) ||
-    match(command, gameActions);
+    match(command, gameActions) ||
+    forgivingFilterMatch(command);
 
   return result ? { ...result, utterance: command } : null;
 }

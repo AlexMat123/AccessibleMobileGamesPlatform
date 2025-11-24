@@ -335,51 +335,55 @@ export default function Search() {
         return;
       }
 
-      if (type === 'filter' && detail.tag) {
+      if (type === 'filter' && (detail.tag || Array.isArray(detail.tags))) {
         e.preventDefault();
-        const spokenTag = canonicalTagName(detail.tag);
-        const genre = matchGenre(spokenTag);
-        const tag = matchTag(spokenTag);
-        // Expand relevant category accordion if we know where this tag lives
-        const catEntry = Object.entries(tagsByCategory).find(
-          ([, tags]) => Array.isArray(tags) && tags.some(t => normalizeText(canonicalTagName(t)) === normalizeText(spokenTag))
-        );
-        if (catEntry) {
-          const [catName] = catEntry;
-          setOpenCategories(prev => new Set(prev).add(catName));
-        }
+        const spokenList = Array.isArray(detail.tags) ? detail.tags : [detail.tag];
+        spokenList.forEach((raw, idx) => {
+          const spokenTag = canonicalTagName(raw);
+          const genre = matchGenre(spokenTag);
+          const tag = matchTag(spokenTag);
+          const offset = 50 + idx * 120;
 
-        if (genre) {
-          setQuery('');
-          setTimeout(() => {
-            setGenreByVoice(genre);
-          }, 30);
-        } else if (tag) {
-          setQuery('');
-          // Try clicking; if not found, fall back to state toggle after retries.
-          const attempt = () => clickTagButton(tag);
-          setTimeout(attempt, 50);
-          setTimeout(() => {
-            const clicked = attempt();
-            if (!clicked) setSelectedTags(prev => new Set([...prev, tag]));
-          }, 150);
-        } else {
-          toggleTag(detail.tag);
-          console.info('[voice][search] fallback toggle for tag text', detail.tag);
-          setTimeout(() => {
-            const btns = Array.from(document.querySelectorAll('button[data-voice-tag]'));
-            const needle = normalizeText(spokenTag);
-            const btn = btns.find(b => {
-              const hay = normalizeText(canonicalTagName(b.getAttribute('data-voice-tag')));
-              const txt = normalizeText(canonicalTagName(b.textContent));
-              return hay === needle || txt === needle || hay.includes(needle) || needle.includes(hay) || txt.includes(needle) || needle.includes(txt);
-            });
-            if (btn) {
-              btn.click();
-              focusAndFlash(btn);
-            }
-          }, 50);
-        }
+          // Expand relevant category accordion if we know where this tag lives
+          const catEntry = Object.entries(tagsByCategory).find(
+            ([, tags]) => Array.isArray(tags) && tags.some(t => normalizeText(canonicalTagName(t)) === normalizeText(spokenTag))
+          );
+          if (catEntry) {
+            const [catName] = catEntry;
+            setOpenCategories(prev => new Set(prev).add(catName));
+          }
+
+          if (genre) {
+            setQuery('');
+            setTimeout(() => {
+              setGenreByVoice(genre);
+            }, offset);
+          } else if (tag) {
+            setQuery('');
+            const attempt = () => clickTagButton(tag);
+            setTimeout(attempt, offset);
+            setTimeout(() => {
+              const clicked = attempt();
+              if (!clicked) setSelectedTags(prev => new Set([...prev, tag]));
+            }, offset + 120);
+          } else {
+            toggleTag(spokenTag);
+            console.info('[voice][search] fallback toggle for tag text', spokenTag);
+            setTimeout(() => {
+              const btns = Array.from(document.querySelectorAll('button[data-voice-tag]'));
+              const needle = normalizeText(spokenTag);
+              const btn = btns.find(b => {
+                const hay = normalizeText(canonicalTagName(b.getAttribute('data-voice-tag')));
+                const txt = normalizeText(canonicalTagName(b.textContent));
+                return hay === needle || txt === needle || hay.includes(needle) || needle.includes(hay) || txt.includes(needle) || needle.includes(txt);
+              });
+              if (btn) {
+                btn.click();
+                focusAndFlash(btn);
+              }
+            }, offset);
+          }
+        });
         filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
