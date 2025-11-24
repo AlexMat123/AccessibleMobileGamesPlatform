@@ -4,6 +4,7 @@ const navigation = [
   [/^go( to)? home$/, () => ({ type: 'navigate', target: 'home' })],
   [/^(open )?(filters|filter panel)$/, () => ({ type: 'ui', target: 'filters', action: 'open' })],
   [/^(open )?favourites?$/, () => ({ type: 'navigate', target: 'favourites' })],
+  [/^(go to|open) search$/, () => ({ type: 'navigate', target: 'search' })],
   [/^next page$/, () => ({ type: 'navigate', target: 'next-page' })],
   [/^back$/, () => ({ type: 'navigate', target: 'back' })],
   [/^open settings$/, () => ({ type: 'navigate', target: 'settings' })]

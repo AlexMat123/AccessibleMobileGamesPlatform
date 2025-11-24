@@ -14,6 +14,7 @@ export function dispatchVoiceCommand(detail) {
   switch (detail.type) {
     case 'navigate':
       if (detail.target === 'home') window.location.assign('/');
+      if (detail.target === 'search') window.location.assign('/search');
       if (detail.target === 'back') window.history.back();
       if (detail.target === 'next-page') window.history.forward();
       break;
