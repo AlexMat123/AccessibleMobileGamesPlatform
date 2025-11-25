@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
+{/* Middleware to authenticate JWT token */}
 export default function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader) {
