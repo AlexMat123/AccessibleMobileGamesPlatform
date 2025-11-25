@@ -21,6 +21,16 @@ export const loginUser = async (identifier, password) => {
   return res.json();
 };
 
+export const fetchCurrentUser = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('Not authenticated');
+  const res = await fetch(`${API_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to load profile');
+  return res.json();
+};
+
 export const fetchTagGroups = async () => {
   const res = await fetch(`${API_URL}/tag-groups`);
   if (!res.ok) throw new Error("Unable to load tag groups");
