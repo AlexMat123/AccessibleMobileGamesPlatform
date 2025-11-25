@@ -97,3 +97,16 @@ export async function getGames() {
     if (!res.ok) throw new Error(`Failed to fetch games: ${res.status} ${res.statusText}`);
     return res.json();
 }
+
+export async function fetchUserReviews(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/reviews`, {
+    headers: {
+      ...authHeaders()
+    }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to load user reviews');
+  }
+  return res.json();
+}
