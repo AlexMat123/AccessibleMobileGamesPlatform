@@ -12,6 +12,7 @@ import { seedGames } from './config/seedGames.js';
 import gamesRouter from './routes/games.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
 import authRouter from './routes/auth.js';
+import voiceRouter from './routes/voice.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -22,6 +23,7 @@ app.use(express.json());
 // Mount API routes (correct signatures)
 app.use('/api/auth', authRouter);
 app.use('/api/games', gamesRouter);
+app.use('/api/voice', voiceRouter);
 // library routes already mounted inside app.js at /api
 
 // Error handler
