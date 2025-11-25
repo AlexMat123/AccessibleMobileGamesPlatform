@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGame } from '../api';
+import { getGame, createReviewForGame, getReviewsForGame } from '../api';
 
 function RatingStars({ value }) {
     const v = Math.round(value || 0);
@@ -21,13 +21,82 @@ export default function Game() {
     const [heroIndex, setHeroIndex] = useState(0);
     const [addIndex, setAddIndex] = useState(0); // additional images window start
 
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [submitError, setSubmitError] = useState(null);
+
     useEffect(() => {
-        setLoading(true);
-        getGame(id)
-            .then(g => setGame(g))
-            .catch(e => setError(e.message || String(e)))
-            .finally(() => setLoading(false));
+        let cancelled = false;
+        async function load() {
+            setLoading(true);
+            setError(null);
+            try {
+                const [gameData, reviews] = await Promise.all([
+                    getGame(id),
+                    getReviewsForGame(id),
+                ]);
+
+                if (cancelled) return;
+
+                // attach reviews to game so existing code using `game.reviews` still works
+                setGame({ ...gameData, reviews });
+            } catch (e) {
+                if (cancelled) return;
+                setError(e.message || String(e));
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        }
+        load();
+        return () => {
+            cancelled = true;
+        };
     }, [id]);
+
+    const openReviewModal = () => {
+        setReviewRating(5);
+        setReviewComment('');
+        setSubmitError(null);
+        setShowReviewModal(true);
+    }
+
+    const closeReviewModal = () => {
+        if (submittingReview) return; // prevent closing while submitting
+        setShowReviewModal(false);
+    }
+
+    const handleSubmitReview = async (e) => {
+        e.preventDefault();
+        if (!reviewComment.trim()) {
+            setSubmitError('Please provide a comment');
+            return;
+        }
+        try {
+            setSubmittingReview(true);
+            setSubmitError(null);
+
+            await createReviewForGame(id, {
+                rating: Number(reviewRating),
+                comment: reviewComment.trim(),
+            });
+
+            const [updatedGame, updatedReviews] = await Promise.all([
+                getGame(id),
+                getReviewsForGame(id),
+            ]);
+
+            setGame({ ...updatedGame, reviews: updatedReviews });
+            setShowReviewModal(false);
+
+        } catch (err) {
+            console.error(err);
+            setSubmitError("Failed to submit review");
+        } finally {
+            setSubmittingReview(false);
+        }
+    }
 
     if (loading) return <div style={{ padding: '1rem' }}>Loading...</div>;
     if (error) return <div style={{ padding: '1rem', color: 'red' }}>Error: {error}</div>;
@@ -49,14 +118,6 @@ export default function Game() {
     const nextHero = () => setHeroIndex((i) => (i + 1) % images.length);
     const prevAdditional = () => setAddIndex(i => (i - 1 + images.length) % images.length);
     const nextAdditional = () => setAddIndex(i => (i + 1) % images.length);
-
-    // Stub accessibility features (replace later)
-    const accessibility = [
-        { group: 'Visual Accessibility', items: ['High Contrast', 'Text Resize'] },
-        { group: 'Auditory Accessibility', items: ['Subtitles', 'Mono Audio'] },
-        { group: 'Motor Accessibility', items: ['Remappable Controls', 'Controller Support'] },
-        { group: 'Cognitive Accessibility', items: ['Simplified UI', 'Tutorial Tips'] }
-    ];
 
     //Reviews
     const reviews = game.reviews || [];
@@ -142,28 +203,10 @@ export default function Game() {
                             <button style={primaryBtn}>Download Game</button>
                             <button style={secBtn}>Follow Game</button>
                             <button style={secBtn}>Add to Wishlist</button>
-                            <button style={secBtn} aria-label="Favourite">❤</button>
-                        </div>
-                        <div style={{ fontSize: 10, marginTop: 12, color: '#555' }}>Release Date: {date}</div>
-
-                        {/* Report */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                            {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
                             <button style={dangerBtn}>Report Game</button>
                         </div>
-
-                    </div>
-
-                    {/* Accessibility card */}
-                    <div style={{ width: 200, background: '#e9e9e9', padding: '0.5rem', borderRadius: 6 }}>
-                        <h4 style={{ marginTop: 0, fontSize: 13 }}>Accessibility Features</h4>
-                        {accessibility.map(a => (
-                            <div key={a.group} style={{ marginBottom: 6 }}>
-                                <strong style={{ fontSize: 11 }}>{a.group}</strong>
-                                <ul style={{ paddingLeft: 14, margin: '2px 0', listStyle: 'disc' }}>
-                                    {a.items.map(i => <li key={i} style={{ fontSize: 10 }}>{i}</li>)}
-                                </ul>
-                            </div>
-                        ))}
+                        <div style={{ fontSize: 10, marginTop: 12, color: '#555' }}>Release Date: {date}</div>
                     </div>
                 </div>
 
@@ -205,8 +248,83 @@ export default function Game() {
                 <section style={sectionStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={sectionTitle}>User Reviews</h3>
-                        <button style={primaryBtn}>Write a Review</button>
+                        <button style={primaryBtn} onClick={openReviewModal}>Write a Review</button>
                     </div>
+
+                    {/* Review modal */}
+                    {showReviewModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                            <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+                                <div className="flex justify-between items-center border-b px-4 py-3">
+                                    <h3 className="text-lg font-semibold">Write a review</h3>
+                                    <button
+                                        onClick={closeReviewModal}
+                                        className="text-gray-500 hover:text-gray-700"
+                                        disabled={submittingReview}
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+
+                                <form
+                                    onSubmit={handleSubmitReview}
+                                    className="px-4 py-4 space-y-4"
+                                >
+                                    {submitError && (
+                                        <p className="text-red-600 text-sm">{submitError}</p>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">
+                                            Rating (1\-5)
+                                        </label>
+                                        <select
+                                            value={reviewRating}
+                                            onChange={(e) => setReviewRating(e.target.value)}
+                                            className="border rounded px-2 py-1 w-full"
+                                            required
+                                        >
+                                            {[1, 2, 3, 4, 5].map((n) => (
+                                                <option key={n} value={n}>
+                                                    {n}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">
+                                            Comment
+                                        </label>
+                                        <textarea
+                                            value={reviewComment}
+                                            onChange={(e) => setReviewComment(e.target.value)}
+                                            className="border rounded px-2 py-1 w-full min-h-[100px]"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="flex justify-end gap-2 pt-2">
+                                        <button
+                                            type="button"
+                                            className="px-3 py-1 rounded border"
+                                            onClick={closeReviewModal}
+                                            disabled={submittingReview}
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="px-4 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                                            disabled={submittingReview}
+                                        >
+                                            {submittingReview ? "Submitting..." : "Submit review"}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
 
                     <div style={{ fontSize: 11, marginBottom: 12 }}>
                         {ratingDist.map((count, idx) => {
