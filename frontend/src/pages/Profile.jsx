@@ -1,6 +1,6 @@
 import profile from '../assets/profile.jpg';
 import { useEffect, useState } from 'react';
-import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences } from '../api';
+import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 
 export default function Profile() {
@@ -14,6 +14,7 @@ export default function Profile() {
   const [prefsLoading, setPrefsLoading] = useState(false);
   const [prefsError, setPrefsError] = useState('');
   const [savingPrefs, setSavingPrefs] = useState(false);
+  const [followedGames, setFollowedGames] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -47,6 +48,11 @@ export default function Profile() {
         } finally {
           if (mounted) setRevLoading(false);
         }
+        // fetching followed games after user loads
+        try {
+          const games = await getFollowedGames(data.id);
+          if (mounted) setFollowedGames(games);
+        } catch { /* ignore */ }
       } catch (e) {
         if (!mounted) return;
         setError(e.message || 'Failed to load profile');
@@ -167,7 +173,23 @@ export default function Profile() {
             {/* Followed Games full width */}
             <div className="bg-white rounded-xl shadow p-4">
               <h3 className="text-sm font-semibold mb-2">Followed Games</h3>
-              <p className="text-xs text-gray-500">(Coming soon)</p>
+              {followedGames.length === 0 && (
+                <p className="text-xs text-gray-500">You are not following any games yet.</p>
+              )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                {followedGames.map(g => (
+                  <a key={g.id} href={`/games/${g.id}`} className="block group">
+                    <div className="aspect-video bg-gray-200 rounded overflow-hidden flex items-center justify-center">
+                      {g.images && g.images.length ? (
+                        <img src={g.images[0]} alt={g.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      ) : (
+                        <span className="text-[10px] text-gray-500">No image</span>
+                      )}
+                    </div>
+                    <div className="mt-1 text-[11px] font-medium truncate" title={g.title}>{g.title}</div>
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         )}

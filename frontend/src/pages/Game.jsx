@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGame, createReviewForGame, getReviewsForGame } from '../api';
+import { getGame, createReviewForGame, getReviewsForGame, followGame } from '../api';
+import { fetchCurrentUser } from '../api';
+import { pushToast } from '../components/ToastHost.jsx';
 
 function RatingStars({ value }) {
     const v = Math.round(value || 0);
@@ -26,6 +28,7 @@ export default function Game() {
     const [reviewComment, setReviewComment] = useState('');
     const [submittingReview, setSubmittingReview] = useState(false);
     const [submitError, setSubmitError] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -54,6 +57,8 @@ export default function Game() {
             cancelled = true;
         };
     }, [id]);
+
+    useEffect(() => { fetchCurrentUser().then(setCurrentUser).catch(() => {}); }, []);
 
     const openReviewModal = () => {
         setReviewRating(5);
@@ -201,7 +206,10 @@ export default function Game() {
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <button style={primaryBtn}>Download Game</button>
-                            <button style={secBtn}>Follow Game</button>
+                            <button style={secBtn} onClick={async () => {
+                                if (!currentUser) { pushToast('Please log in to follow'); return; }
+                                try { await followGame(currentUser.id, game.id); pushToast('Game followed'); } catch (e) { pushToast(e.message || 'Failed to follow'); }
+                            }}>Follow Game</button>
                             <button style={secBtn}>Add to Wishlist</button>
                             {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
                             <button style={dangerBtn}>Report Game</button>

@@ -128,3 +128,29 @@ export async function updateAccessibilityPreferences(userId, prefs) {
   if (!res.ok) throw new Error((await res.json()).message || 'Failed to update accessibility preferences');
   return res.json();
 }
+
+export async function followGame(userId, gameId) {
+  const res = await fetch(`${API_URL}/users/${userId}/follow/${gameId}`, {
+    method: 'POST',
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to follow');
+  return res.json();
+}
+
+export async function unfollowGame(userId, gameId) {
+  const res = await fetch(`${API_URL}/users/${userId}/follow/${gameId}`, {
+    method: 'DELETE',
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to unfollow');
+  return res.json();
+}
+
+export async function getFollowedGames(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/followed-games`, {
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to load followed games');
+  return res.json();
+}

@@ -73,4 +73,62 @@ router.patch('/:id/accessibility-preferences', authenticateToken, async (req, re
   }
 });
 
+// POST /api/users/:id/follow/:gameId
+router.post('/:id/follow/:gameId', authenticateToken, async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const gameId = Number(req.params.gameId);
+    if (Number.isNaN(userId) || Number.isNaN(gameId)) return res.status(400).json({ message: 'Invalid id(s)' });
+    if (req.user?.id !== userId) return res.status(403).json({ message: 'Forbidden' });
+    const user = await User.findByPk(userId);
+    const game = await Game.findByPk(gameId);
+    if (!user || !game) return res.status(404).json({ message: 'User or game not found' });
+    await user.addFollowedGame(game); // idempotent relationship add
+    res.status(201).json({ message: 'Followed', gameId });
+  } catch (e) {
+    console.error('Follow game error:', e);
+    res.status(500).json({ message: 'Failed to follow game' });
+  }
+});
+
+// DELETE /api/users/:id/follow/:gameId
+router.delete('/:id/follow/:gameId', authenticateToken, async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const gameId = Number(req.params.gameId);
+    if (Number.isNaN(userId) || Number.isNaN(gameId)) return res.status(400).json({ message: 'Invalid id(s)' });
+    if (req.user?.id !== userId) return res.status(403).json({ message: 'Forbidden' });
+    const user = await User.findByPk(userId);
+    const game = await Game.findByPk(gameId);
+    if (!user || !game) return res.status(404).json({ message: 'User or game not found' });
+    await user.removeFollowedGame(game);
+    res.json({ message: 'Unfollowed', gameId });
+  } catch (e) {
+    console.error('Unfollow game error:', e);
+    res.status(500).json({ message: 'Failed to unfollow game' });
+  }
+});
+
+// GET /api/users/:id/followed-games
+router.get('/:id/followed-games', authenticateToken, async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    if (Number.isNaN(userId)) return res.status(400).json({ message: 'Invalid user id' });
+    if (req.user?.id !== userId) return res.status(403).json({ message: 'Forbidden' });
+    const user = await User.findByPk(userId, {
+      include: [{ model: Game, as: 'followedGames', attributes: ['id', 'title', 'thumbImages'] }]
+    });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const games = (user.followedGames || []).map(g => ({
+      id: g.id,
+      title: g.title,
+      images: Array.isArray(g.thumbImages) ? g.thumbImages : []
+    }));
+    res.json(games);
+  } catch (e) {
+    console.error('Load followed games error:', e);
+    res.status(500).json({ message: 'Failed to load followed games' });
+  }
+});
+
 export default router;
