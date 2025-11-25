@@ -6,30 +6,33 @@ stages:
 
 cache:
   paths:
+    - node_modules/
     - backend/node_modules/
     - frontend/node_modules/
 
 before_script:
   # Install dependencies for root, backend, and frontend
-  - rm -rf backend/node_modules frontend/node_modules
+  - npm install
   - npm install --prefix backend
   - npm install --prefix frontend
 
-# test:
-#   stage: test
-#   tags:
-#     - comsc-ci
-#   script:
-#     # Run backend integration tests (SQLite) and frontend tests
-#     - npm test
+test:
+  stage: test
+  tags:
+    - comsc-ci
+  script:
+    # Run backend integration tests (SQLite) and frontend tests
+    - npm test
 
 build_frontend:
   stage: build
   tags:
     - comsc-ci
   script:
+    # Build the frontend app
     - npm --prefix frontend run build
   artifacts:
     paths:
       - frontend/dist
     expire_in: 1 week
+
