@@ -1,3 +1,5 @@
+import { navigationIntents } from './intent-registry.js';
+
 const WAKE_WORD = 'hey platform';
 
 const navigation = [
@@ -100,9 +102,24 @@ function match(command, matchers) {
   return null;
 }
 
+function matchRegisteredIntents(command, registry) {
+  const normalised = command.toLowerCase().trim();
+  for (const entry of registry) {
+    for (const utterance of entry.utterances) {
+      if (normalised === utterance.toLowerCase().trim()) {
+        return { ...entry.intent, utterance: command };
+      }
+    }
+  }
+  return null;
+}
+
 export function parseCommand(rawTranscript) {
   const command = stripWakeWord(rawTranscript);
   if (!command) return null;
+
+  const registryMatch = matchRegisteredIntents(command, navigationIntents);
+  if (registryMatch) return registryMatch;
 
   const result =
     match(command, navigation) ||
