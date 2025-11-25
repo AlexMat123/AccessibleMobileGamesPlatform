@@ -22,15 +22,23 @@ export function createVoiceListener({ onTranscript, onStatus }) {
 
   recognition.onstart = () => {
     running = true;
-    onStatus?.('Listening… say “Hey Platform”');
+    onStatus?.('Listening... say "Hey Platform"');
     console.info('[voice] mic started');
   };
 
   recognition.onend = () => {
     running = false;
-    onStatus?.('Reconnecting mic…');
+    onStatus?.('Reconnecting mic...');
     console.info('[voice] mic stopped, restarting');
-    setTimeout(() => recognition.start(), 400);
+    setTimeout(() => {
+      if (!running) {
+        try {
+          recognition.start();
+        } catch (e) {
+          console.warn('[voice] restart failed', e?.message || e);
+        }
+      }
+    }, 400);
   };
 
   recognition.onerror = (e) => {
@@ -54,7 +62,7 @@ export function createVoiceListener({ onTranscript, onStatus }) {
       if (running) return;
       try {
         recognition.start();
-        onStatus?.('Starting mic…');
+        onStatus?.('Starting mic...');
       } catch (e) {
         onStatus?.(`Unable to start mic: ${e.message}`);
       }

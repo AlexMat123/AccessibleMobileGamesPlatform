@@ -38,7 +38,7 @@ async function start() {
     try {
         await createDatabaseIfNotExists();
         await sequelize.authenticate();
-        await sequelize.sync({ alter: true });
+        await sequelize.sync(); // avoid alter to prevent index bloat on MariaDB
         await seedGames();
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
