@@ -12,7 +12,6 @@ cache:
 
 before_script:
   # Install dependencies for root, backend, and frontend
-  - npm install
   - npm install --prefix backend
   - npm install --prefix frontend
 
