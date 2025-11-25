@@ -12,6 +12,7 @@ import { seedGames } from './config/seedGames.js';
 import gamesRouter from './routes/games.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
 import authRouter from './routes/auth.js';
+import voiceRouter from './routes/voice.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -22,6 +23,7 @@ app.use(express.json());
 // Mount API routes (correct signatures)
 app.use('/api/auth', authRouter);
 app.use('/api/games', gamesRouter);
+app.use('/api/voice', voiceRouter);
 // library routes already mounted inside app.js at /api
 
 // Error handler
@@ -36,7 +38,7 @@ async function start() {
     try {
         await createDatabaseIfNotExists();
         await sequelize.authenticate();
-        await sequelize.sync({ alter: true });
+        await sequelize.sync(); // avoid alter to prevent index bloat on MariaDB
         await seedGames();
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
