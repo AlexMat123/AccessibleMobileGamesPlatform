@@ -110,3 +110,21 @@ export async function fetchUserReviews(userId) {
   }
   return res.json();
 }
+// Get accessibility preferences for a user
+export async function getAccessibilityPreferences(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/accessibility-preferences`, {
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to load accessibility preferences');
+  return res.json();
+}
+
+export async function updateAccessibilityPreferences(userId, prefs) {
+  const res = await fetch(`${API_URL}/users/${userId}/accessibility-preferences`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(prefs)
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to update accessibility preferences');
+  return res.json();
+}

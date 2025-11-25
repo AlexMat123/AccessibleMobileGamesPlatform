@@ -1,6 +1,6 @@
 import profile from '../assets/profile.jpg';
 import { useEffect, useState } from 'react';
-import { fetchCurrentUser, fetchUserReviews } from '../api';
+import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences } from '../api';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -9,6 +9,10 @@ export default function Profile() {
   const [reviews, setReviews] = useState([]);
   const [revError, setRevError] = useState('');
   const [revLoading, setRevLoading] = useState(false);
+  const [prefs, setPrefs] = useState({ visual: false, motor: false, cognitive: false, hearing: false });
+  const [prefsLoading, setPrefsLoading] = useState(false);
+  const [prefsError, setPrefsError] = useState('');
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -17,6 +21,21 @@ export default function Profile() {
         const data = await fetchCurrentUser();
         if (!mounted) return;
         setUser(data);
+        // load accessibility prefs
+        setPrefsLoading(true);
+        try {
+          const loaded = await getAccessibilityPreferences(data.id);
+          if (mounted) setPrefs({
+            visual: !!loaded.visual,
+            motor: !!loaded.motor,
+            cognitive: !!loaded.cognitive,
+            hearing: !!loaded.hearing
+          });
+        } catch (e) {
+          if (mounted) setPrefsError(e.message || 'Failed to load accessibility preferences');
+        } finally {
+          if (mounted) setPrefsLoading(false);
+        }
         // fetching recent reviews after user loads
         setRevLoading(true);
         try {
@@ -36,6 +55,16 @@ export default function Profile() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  function handleSavePrefs(e) {
+    e.preventDefault();
+    if (!user) return;
+    setSavingPrefs(true);
+    updateAccessibilityPreferences(user.id, prefs)
+      .then(saved => { setPrefs(saved); })
+      .catch(err => { setPrefsError(err.message || 'Failed to save preferences'); })
+      .finally(() => setSavingPrefs(false));
+  }
 
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleString('en-GB', { month: 'long', year: 'numeric' })
@@ -84,45 +113,60 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Below the top row: left side spans 2 columns, right column matches Basic Information width */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left side content under the avatar/main info (spans 2 columns) */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Stats row: four equal boxes */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" aria-label="User statistics">
+            {/* Main lower grid: left (stats + accessibility), right (reviews), then followed games full width */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Left side (stats + accessibility) */}
+              <div className="lg:col-span-2 flex flex-col">
+                {/* Stats row */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6" aria-label="User statistics">
                   <StatBox label="Favourites" value={0} />
                   <StatBox label="Watchlist" value={0} />
                   <StatBox label="Reviews" value={reviews.length} />
                   <StatBox label="Helpful Votes" value={0} />
                 </div>
-
-                {/* Accessibility needs */}
-                <div className="bg-white rounded-xl shadow p-4">
-                  <h3 className="text-sm font-semibold mb-2">My Accessibility Needs</h3>
-                </div>
-
-                {/* Followed Games */}
-                <div className="bg-white rounded-xl shadow p-4">
-                  <h3 className="text-sm font-semibold mb-2">Followed Games</h3>
+                {/* Accessibility needs (fixed height, button bottom-right) */}
+                <div className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-[206px]">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3">My Accessibility Needs</h3>
+                    {prefsLoading && <p className="text-xs text-gray-500">Loading preferences…</p>}
+                    {prefsError && <p className="text-xs text-red-600 mb-2">{prefsError}</p>}
+                    <form onSubmit={handleSavePrefs} className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <Checkbox id="pref-visual" label="Visual Impairments" desc="Recommend games with visual accessibility" checked={prefs.visual} onChange={(v) => setPrefs(p => ({ ...p, visual: v }))} />
+                        <Checkbox id="pref-cognitive" label="Cognitive Support" desc="Recommend games with cognitive support" checked={prefs.cognitive} onChange={(v) => setPrefs(p => ({ ...p, cognitive: v }))} />
+                        <Checkbox id="pref-motor" label="Motor Impairments" desc="Recommend games with motor accessibility" checked={prefs.motor} onChange={(v) => setPrefs(p => ({ ...p, motor: v }))} />
+                        <Checkbox id="pref-hearing" label="Hearing Impairments" desc="Recommend games with hearing accessibility" checked={prefs.hearing} onChange={(v) => setPrefs(p => ({ ...p, hearing: v }))} />
+                      </div>
+                      <div className="flex justify-end">
+                        <button type="submit" disabled={savingPrefs} className="px-3 py-1 rounded-md text-xs font-medium bg-sky-600 text-white disabled:opacity-50">
+                          {savingPrefs ? 'Saving…' : 'Confirm Preferences'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
 
-              {/* Recent Reviews column on the right (same width as Basic Information) */}
-              <div className="bg-white rounded-xl shadow p-4 lg:col-span-1 flex flex-col">
+              {/* Recent Reviews (match accessibility height) */}
+              <div className="bg-white rounded-xl shadow p-4 lg:col-span-1 flex flex-col h-[306px]">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-semibold">Recent Reviews</h3>
                   {revLoading && <span className="text-xs text-gray-500">Loading…</span>}
                 </div>
                 {revError && <p className="text-xs text-red-600 mb-2">{revError}</p>}
-                <div className="space-y-2 overflow-y-auto max-h-64 pr-1" aria-label="User reviews list">
+                <div className="space-y-2 overflow-y-auto pr-1 flex-1" aria-label="User reviews list">
                   {reviews.length === 0 && !revLoading && !revError && (
                     <p className="text-xs text-gray-500">You have not posted any reviews yet.</p>
                   )}
-                  {reviews.map(r => (
-                    <ReviewCard key={r.id} review={r} />
-                  ))}
+                  {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
                 </div>
               </div>
+            </div>
+
+            {/* Followed Games full width */}
+            <div className="bg-white rounded-xl shadow p-4">
+              <h3 className="text-sm font-semibold mb-2">Followed Games</h3>
+              <p className="text-xs text-gray-500">(Coming soon)</p>
             </div>
           </div>
         )}
@@ -178,4 +222,22 @@ function formatTimeAgo(dateStr) {
   if (mo < 12) return `${mo} month${mo === 1 ? '' : 's'} ago`;
   const yr = Math.floor(day / 365);
   return `${yr} year${yr === 1 ? '' : 's'} ago`;
+}
+
+function Checkbox({ id, label, desc, checked, onChange }) {
+  return (
+    <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-md p-2">
+      <input
+        id={id}
+        type="checkbox"
+        className="mt-1 accent-sky-600"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <label htmlFor={id} className="text-xs leading-snug cursor-pointer select-none">
+        <span className="font-medium">{label}</span><br />
+        <span className="text-gray-600">{desc}</span>
+      </label>
+    </div>
+  );
 }

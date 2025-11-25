@@ -39,6 +39,13 @@ async function start() {
         await createDatabaseIfNotExists();
         await sequelize.authenticate();
         await sequelize.sync({ alter: true });
+        // set default accessibilityPreferences where null or empty
+        try {
+            await sequelize.query("UPDATE Users SET accessibilityPreferences='{\"visual\":false,\"motor\":false,\"cognitive\":false,\"hearing\":false}' WHERE accessibilityPreferences IS NULL OR accessibilityPreferences='' ");
+            console.log('Accessibility preferences sanitized');
+        } catch (sanErr) {
+            console.warn('Sanitize accessibilityPreferences failed:', sanErr.message);
+        }
         await seedGames();
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
