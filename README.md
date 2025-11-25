@@ -87,6 +87,26 @@ The project includes an accessible Search page to filter games by genre and acce
 - Backend endpoints
   - `GET /api/tag-groups` – canonical groups and tag names from `backend/models/tags.js`
   - `GET /api/games` – games with associated tag names
+- Voice Control (Heuristic, No AI Required)
+  - Wake word: “Hey Platform” opens a brief listening window.
+  - Supported intents: navigate (`go to search`), search (`search for puzzle games` / `show puzzle games`), filters (`filter by motor` / `apply filters colourblind mode and high contrast`), reset filters (`reset filters` / `clear filters`), scroll (`scroll up/down`).
+  - Genre mentions alone trigger filters (e.g., “show puzzle games” → Puzzle filter).
+  - Visual feedback: status banner; `voiceCommand` events dispatch to pages (Search page updates filters/tags/genre).
+  - Frontend voice modules live in `frontend/public/voice/*`; `voiceCommand` handlers in `Search.jsx`.
+  - Backend heuristic intent API: `POST /api/voice/interpret` → `{ intent|null }` (no model needed).
+  - Run:
+    - Backend: `npm --prefix backend run dev` (API on http://localhost:5000)
+    - Frontend: `npm --prefix frontend run dev` (Vite on http://localhost:5173)
+    - Frontend calls backend at `http://localhost:5000/api/voice/interpret` by default; override with `window.VOICE_API_BASE='http://localhost:5000/api'` if needed.
+  - Manual checks:
+    - API: `curl -X POST http://localhost:5000/api/voice/interpret -H "Content-Type: application/json" -d '{"transcript":"hey platform maybe show puzzle games"}'`
+    - Console: `interpretTranscriptRemote('hey platform filter by motor').then(console.log);`
+    - Dispatch event: `window.dispatchEvent(new CustomEvent('voiceCommand', { detail: { type:'filter', tag:'Puzzle' } }));`
+    - Voice: say “Hey Platform, filter by colourblind mode” and watch filters update.
+  - Tests:
+    - Backend: `npm --prefix backend test` (includes `/api/voice/interpret`)
+    - Frontend: `npm --prefix frontend test` (parser, event dispatch, Search page voice handler integration, plus page tests)
+  - Optional AI/LLM: disabled by default; heuristic only. Ollama env placeholders exist in `backend/.env` (commented). Leave them commented to stay heuristic-only.
 - Frontend route
   - `/search` – keyboard-only friendly page with labelled inputs, visible focus, and polite live status updates
 - Keyboard usage
@@ -99,6 +119,28 @@ The project includes an accessible Search page to filter games by genre and acce
   - Frontend: `npm run dev` in `frontend/`, then open `/search`
 - Seeding
   - Seeds are idempotent and cover all tags for realistic testing (`backend/config/seedGames.js`).
+
+## Voice Control (no AI required)
+
+- Wake word & intents
+  - Wake word: “Hey Platform” opens a brief listening window.
+  - Intents: navigate (`go to search`), search (`search/show puzzle games`), filters (`filter by motor`, `apply filters colourblind mode and high contrast`), reset filters, scroll up/down. Genre mentions alone trigger filters (e.g., “show puzzle games” → Puzzle).
+- Architecture
+  - Frontend voice modules: `frontend/public/voice/*` (parser, dispatcher, feedback). Pages listen for `voiceCommand` (e.g., `Search.jsx` applies filters/genre).
+  - Backend heuristic intent API: `POST /api/voice/interpret` → `{ intent|null }` (no model needed).
+- Run
+  - Backend: `npm --prefix backend run dev` (API on http://localhost:5000)
+  - Frontend: `npm --prefix frontend run dev` (http://localhost:5173). Frontend calls `http://localhost:5000/api/voice/interpret` by default; override with `window.VOICE_API_BASE='http://localhost:5000/api'` if needed.
+- Manual checks
+  - API: `curl -X POST http://localhost:5000/api/voice/interpret -H "Content-Type: application/json" -d '{"transcript":"hey platform maybe show puzzle games"}'`
+  - Console: `interpretTranscriptRemote('hey platform filter by motor').then(console.log);`
+  - Dispatch event: `window.dispatchEvent(new CustomEvent('voiceCommand', { detail: { type:'filter', tag:'Puzzle' } }));`
+  - Voice: say “Hey Platform, filter by colourblind mode” and watch filters update.
+- Tests
+  - Backend: `npm --prefix backend test` (includes `/api/voice/interpret`)
+  - Frontend: `npm --prefix frontend test` (parser, `voiceCommand` dispatch, Search page voice handler integration, plus page tests)
+ - Optional AI/LLM
+   - Disabled by default; heuristic only. Ollama env placeholders exist in `backend/.env` (commented). Leave them commented to stay heuristic-only.
 
 ## Testing
 
