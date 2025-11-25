@@ -346,7 +346,7 @@ export default function Search() {
             </div>
           </aside>
 
-          {/* Results */}
+          {/* Results change pipeline test*/}
           <section className="col-span-12 space-y-4 lg:col-span-8">
             <div className="flex items-center justify-between text-sm text-slate-600">
               <nav aria-label="Breadcrumbs">Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
