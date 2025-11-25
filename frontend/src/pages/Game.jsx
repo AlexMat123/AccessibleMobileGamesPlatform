@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGame, createReviewForGame, getReviewsForGame, followGame } from '../api';
+import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames } from '../api';
 import { fetchCurrentUser } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 
@@ -29,6 +29,8 @@ export default function Game() {
     const [submittingReview, setSubmittingReview] = useState(false);
     const [submitError, setSubmitError] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    const [isFollowed, setIsFollowed] = useState(false);
+    const [followBusy, setFollowBusy] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -59,6 +61,20 @@ export default function Game() {
     }, [id]);
 
     useEffect(() => { fetchCurrentUser().then(setCurrentUser).catch(() => {}); }, []);
+
+    // checking follow state once it has user and game
+    useEffect(() => {
+        let cancelled = false;
+        async function checkFollow() {
+            if (!currentUser || !game) return;
+            try {
+                const list = await getFollowedGames(currentUser.id);
+                if (!cancelled) setIsFollowed(list.some(g => g.id === game.id));
+            } catch { /* ignore */ }
+        }
+        checkFollow();
+        return () => { cancelled = true; };
+    }, [currentUser, game]);
 
     const openReviewModal = () => {
         setReviewRating(5);
@@ -206,10 +222,25 @@ export default function Game() {
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <button style={primaryBtn}>Download Game</button>
-                            <button style={secBtn} onClick={async () => {
+                            <button style={secBtn} disabled={followBusy} onClick={async () => {
                                 if (!currentUser) { pushToast('Please log in to follow'); return; }
-                                try { await followGame(currentUser.id, game.id); pushToast('Game followed'); } catch (e) { pushToast(e.message || 'Failed to follow'); }
-                            }}>Follow Game</button>
+                                setFollowBusy(true);
+                                try {
+                                    if (isFollowed) {
+                                        await unfollowGame(currentUser.id, game.id);
+                                        setIsFollowed(false);
+                                        pushToast('Game unfollowed');
+                                    } else {
+                                        await followGame(currentUser.id, game.id);
+                                        setIsFollowed(true);
+                                        pushToast('Game followed');
+                                    }
+                                } catch (e) {
+                                    pushToast(e.message || 'Follow action failed');
+                                } finally {
+                                    setFollowBusy(false);
+                                }
+                            }}>{followBusy ? (isFollowed ? 'Unfollowing…' : 'Following…') : (isFollowed ? 'Unfollow Game' : 'Follow Game')}</button>
                             <button style={secBtn}>Add to Wishlist</button>
                             {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
                             <button style={dangerBtn}>Report Game</button>
