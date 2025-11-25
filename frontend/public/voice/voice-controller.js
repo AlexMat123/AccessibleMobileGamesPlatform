@@ -2,6 +2,7 @@ import { createVoiceListener } from './voice-listener.js';
 import { parseCommand, WAKE_WORD } from './command-parser.js';
 import { dispatchVoiceCommand } from './command-actions.js';
 import { mountFeedback, updateStatus, announceCommand } from './voice-feedback.js';
+import { interpretTranscriptRemote } from './voice-remote.js';
 
 (() => {
   mountFeedback();
@@ -34,7 +35,7 @@ import { mountFeedback, updateStatus, announceCommand } from './voice-feedback.j
   window.addEventListener('keydown', startOnInteraction, { once: true });
   setStatus('Click or say “Hey Platform” to start listening');
 
-  function handleTranscript(raw) {
+  async function handleTranscript(raw) {
     const lower = raw.toLowerCase();
 
     // Refresh wake window when wake word is spoken
@@ -58,6 +59,11 @@ import { mountFeedback, updateStatus, announceCommand } from './voice-feedback.j
     if (!cmd && isAwake) {
       cmd = parseCommand(`${WAKE_WORD} ${raw}`);
     }
+    let usedRemote = false;
+    if (!cmd && isAwake) {
+      cmd = await interpretTranscriptRemote(raw);
+      usedRemote = Boolean(cmd);
+    }
     if (!cmd) {
       if (Date.now() > awakeUntil) {
         setStatus(`Heard: "${raw}". Wake window expired. Say “${WAKE_WORD} …”`, 2500);
@@ -70,7 +76,7 @@ import { mountFeedback, updateStatus, announceCommand } from './voice-feedback.j
     // Extend wake window on each recognised command
     awakeUntil = 0; // close window after handling a command
     console.info('[voice] parsed command', cmd);
-    setStatus(`Command: ${cmd.type}${cmd.query ? ` "${cmd.query}"` : ''}${cmd.tag ? ` "${cmd.tag}"` : ''}`, 2500);
+    setStatus(`Command: ${cmd.type}${cmd.query ? ` "${cmd.query}"` : ''}${cmd.tag ? ` "${cmd.tag}"` : ''}${Array.isArray(cmd.tags) ? ` [${cmd.tags.join(', ')}]` : ''}${usedRemote ? ' (remote)' : ''}`, 2500);
     announceCommand(cmd);
     dispatchVoiceCommand(cmd);
     // Reset the recognizer to avoid concatenating subsequent sentences.
