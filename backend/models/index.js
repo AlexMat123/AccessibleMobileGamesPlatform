@@ -25,7 +25,8 @@ Game.hasMany(Review, {
     foreignKey: 'gameId'
 });
 Review.belongsTo(Game, {
-    foreignKey: 'gameId'
+    foreignKey: 'gameId',
+    as: 'game'
 });
 
 
