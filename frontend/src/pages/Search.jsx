@@ -384,7 +384,7 @@ export default function Search() {
             }, offset);
           }
         });
-        filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        filtersRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         return;
       }
 
@@ -395,7 +395,7 @@ export default function Search() {
         setSelectedGenre('');
         setSortBy('relevance');
         setOpenCategories(new Set());
-        filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        filtersRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
         return;
       }
 
