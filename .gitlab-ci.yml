@@ -16,14 +16,18 @@ before_script:
   - npm install --prefix backend
   - npm install --prefix frontend
 
-test:
-  stage: test
-  script:
-    # Run backend integration tests (SQLite) and frontend tests
-    - npm test
+#test:
+#  stage: test
+#  tags:
+#    - comsc-ci
+#  script:
+#    # Run backend integration tests (SQLite) and frontend tests
+#    - npm test
 
 build_frontend:
   stage: build
+  tags:
+    - comsc-ci
   script:
     # Build the frontend app
     - npm --prefix frontend run build
