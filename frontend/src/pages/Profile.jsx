@@ -88,13 +88,12 @@ export default function Profile() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left side content under the avatar/main info (spans 2 columns) */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Placeholder stats */}
-                <div className="bg-white rounded-xl shadow p-4 flex items-center justify-around text-center">
-                  <div>
-                    <div className="text-sky-600 text-xl font-semibold">{reviews.length}</div>
-                    <div className="text-xs text-gray-600">Reviews</div>
-                  </div>
-                  {/* other stats placeholders */}
+                {/* Stats row: four equal boxes */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" aria-label="User statistics">
+                  <StatBox label="Favourites" value={0} />
+                  <StatBox label="Watchlist" value={0} />
+                  <StatBox label="Reviews" value={reviews.length} />
+                  <StatBox label="Helpful Votes" value={0} />
                 </div>
 
                 {/* Accessibility needs */}
@@ -148,6 +147,16 @@ function ReviewCard({ review }) {
       </div>
       <div className="mb-1" aria-label={`Rating ${stars} of 5`}>{starEls}</div>
       <p className="leading-snug">{comment || 'No comment provided.'}</p>
+    </div>
+  );
+}
+
+// Component to display a single stat box
+function StatBox({ label, value }) {
+  return (
+    <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center justify-center text-center">
+      <div className="text-sky-600 text-xl font-semibold" aria-label={`${label} count`}>{value}</div>
+      <div className="text-xs text-gray-600">{label}</div>
     </div>
   );
 }
