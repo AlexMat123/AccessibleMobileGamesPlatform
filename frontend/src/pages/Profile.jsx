@@ -1,6 +1,7 @@
 import profile from '../assets/profile.jpg';
 import { useEffect, useState } from 'react';
 import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences } from '../api';
+import { pushToast } from '../components/ToastHost.jsx';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -61,7 +62,7 @@ export default function Profile() {
     if (!user) return;
     setSavingPrefs(true);
     updateAccessibilityPreferences(user.id, prefs)
-      .then(saved => { setPrefs(saved); })
+      .then(saved => { setPrefs(saved); pushToast('Accessibility preferences updated'); })
       .catch(err => { setPrefsError(err.message || 'Failed to save preferences'); })
       .finally(() => setSavingPrefs(false));
   }
