@@ -6,7 +6,6 @@
   "scripts": {
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:int": "cross-env NODE_OPTIONS=--experimental-vm-modules DB_DIALECT=sqlite DB_STORAGE=:memory: jest tests/games.integration.test.js",
-    "test:int:ci": "jest tests/games.integration.test.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed:games": "node backend/config/seedGames.js"
