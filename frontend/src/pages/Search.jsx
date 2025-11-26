@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchGames, fetchTagGroups, searchGames } from '../api';
 
@@ -22,6 +22,12 @@ export default function Search() {
   const [serverResults, setServerResults] = useState([]);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+
+  // Refs for voice-driven focus/scroll
+  const searchInputRef = useRef(null);
+  const filtersRef = useRef(null);
+  const resultsRef = useRef(null);
+  const genreSelectRef = useRef(null);
 
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
@@ -197,6 +203,15 @@ export default function Search() {
     return map;
   }, [groups, categories]);
 
+  const allTags = useMemo(() => {
+    const names = [];
+    groups.forEach(g => {
+      const t = g?.tags || g?.items;
+      if (Array.isArray(t)) names.push(...t);
+    });
+    return names;
+  }, [groups]);
+
   const toggleCategoryOpen = (cat) => {
     setOpenCategories(prev => {
       const next = new Set(prev);
@@ -206,6 +221,192 @@ export default function Search() {
   };
 
   const slugify = (s = '') => String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  // Light highlight to show what was toggled via voice
+  const flashClass = 'voice-flash';
+  const normalizeText = (s = '') => s.toLowerCase().replace(/[.,!?]/g, '').trim();
+  const tagSynonyms = {
+    'colorblind mode': 'Colourblind Mode',
+    'colourblind mode': 'Colourblind Mode',
+    'colour blind mode': 'Colourblind Mode',
+    'color blind mode': 'Colourblind Mode',
+    'colour blind': 'Colourblind Mode',
+    'color blind': 'Colourblind Mode',
+    'no audio needed': 'No Audio Needed',
+    'no audio': 'No Audio Needed',
+    'no audio required': 'No Audio Needed',
+    'no sound': 'No Audio Needed',
+    'no voice required': 'No Voice Required',
+    'no voice needed': 'No Voice Required',
+    'one handed': 'One-Handed',
+    'one hand': 'One-Handed',
+    'screenreader friendly': 'Screen Reader Friendly',
+    'screen reader friendly': 'Screen Reader Friendly'
+  };
+  const canonicalTagName = (name = '') => {
+    const norm = normalizeText(name);
+    return tagSynonyms[norm] || name;
+  };
+  useEffect(() => {
+    const styleId = 'voice-flash-style';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .${flashClass} {
+        outline: 3px solid #a5f3fc;
+        outline-offset: 3px;
+        transition: outline-color 0.4s ease;
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
+  const focusAndFlash = (el) => {
+    if (!el) return;
+    if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+    el.classList.add(flashClass);
+    setTimeout(() => el.classList.remove(flashClass), 1200);
+  };
+
+  const clickTagButton = (tag) => {
+    const canonical = canonicalTagName(tag);
+    const needle = normalizeText(canonical);
+    const btn = Array.from(document.querySelectorAll('button[data-voice-tag]')).find((b) => {
+      const attr = normalizeText(canonicalTagName(b.getAttribute('data-voice-tag')));
+      const txt = normalizeText(canonicalTagName(b.textContent));
+      return attr === needle || txt === needle || attr.includes(needle) || needle.includes(attr) || txt.includes(needle) || needle.includes(txt);
+    });
+    if (!btn) return false;
+
+    const isActive = btn.getAttribute('aria-pressed') === 'true';
+    // Only click if we need to toggle on
+    if (!isActive) btn.click();
+    focusAndFlash(btn);
+    return true;
+  };
+
+  const setGenreByVoice = (genre) => {
+    const select = genreSelectRef.current;
+    if (!select) return false;
+    const match = Array.from(select.options).find(
+      opt => normalizeText(opt.value) === normalizeText(genre) || normalizeText(opt.textContent) === normalizeText(genre)
+    );
+    if (match) {
+      select.value = match.value;
+      setSelectedGenre(match.value);
+      focusAndFlash(select);
+      // Fire a change event to keep parity with user interaction
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+    return false;
+  };
+
+  // Voice commands: search, filter, and open filters drawer.
+  useEffect(() => {
+    const matchGenre = (name = '') => {
+      const needle = normalizeText(name);
+      return genreOptions.find((g) => {
+        const hay = g.toLowerCase();
+        return hay === needle || hay.includes(needle) || needle.includes(hay);
+      });
+    };
+
+    const matchTag = (name = '') => {
+      const needle = normalizeText(canonicalTagName(name));
+      return allTags.find((t) => {
+        const hay = normalizeText(canonicalTagName(t));
+        return hay === needle || hay.includes(needle) || needle.includes(hay);
+      });
+    };
+
+    const onVoice = (e) => {
+      const detail = e.detail || {};
+      const type = detail.type;
+      if (!type) return;
+      console.info('[voice][search] command', detail);
+
+      if (type === 'search' && detail.query) {
+        e.preventDefault();
+        setQuery(detail.query);
+        searchInputRef.current?.focus({ preventScroll: true });
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (type === 'filter' && (detail.tag || Array.isArray(detail.tags))) {
+        e.preventDefault();
+        const spokenList = Array.isArray(detail.tags) ? detail.tags : [detail.tag];
+        spokenList.forEach((raw, idx) => {
+          const spokenTag = canonicalTagName(raw);
+          const genre = matchGenre(spokenTag);
+          const tag = matchTag(spokenTag);
+          const offset = 50 + idx * 120;
+
+          // Expand relevant category accordion if we know where this tag lives
+          const catEntry = Object.entries(tagsByCategory).find(
+            ([, tags]) => Array.isArray(tags) && tags.some(t => normalizeText(canonicalTagName(t)) === normalizeText(spokenTag))
+          );
+          if (catEntry) {
+            const [catName] = catEntry;
+            setOpenCategories(prev => new Set(prev).add(catName));
+          }
+
+          if (genre) {
+            setQuery('');
+            setTimeout(() => {
+              setGenreByVoice(genre);
+            }, offset);
+          } else if (tag) {
+            setQuery('');
+            const attempt = () => clickTagButton(tag);
+            setTimeout(attempt, offset);
+            setTimeout(() => {
+              const clicked = attempt();
+              if (!clicked) setSelectedTags(prev => new Set([...prev, tag]));
+            }, offset + 120);
+          } else {
+            toggleTag(spokenTag);
+            console.info('[voice][search] fallback toggle for tag text', spokenTag);
+            setTimeout(() => {
+              const btns = Array.from(document.querySelectorAll('button[data-voice-tag]'));
+              const needle = normalizeText(spokenTag);
+              const btn = btns.find(b => {
+                const hay = normalizeText(canonicalTagName(b.getAttribute('data-voice-tag')));
+                const txt = normalizeText(canonicalTagName(b.textContent));
+                return hay === needle || txt === needle || hay.includes(needle) || needle.includes(hay) || txt.includes(needle) || needle.includes(txt);
+              });
+              if (btn) {
+                btn.click();
+                focusAndFlash(btn);
+              }
+            }, offset);
+          }
+        });
+        filtersRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (type === 'reset-filters') {
+        e.preventDefault();
+        setQuery('');
+        setSelectedTags(new Set());
+        setSelectedGenre('');
+        setSortBy('relevance');
+        setOpenCategories(new Set());
+        filtersRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (type === 'ui' && detail.target === 'filters') {
+        e.preventDefault();
+        filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+    window.addEventListener('voiceCommand', onVoice);
+    return () => window.removeEventListener('voiceCommand', onVoice);
+  }, [genreOptions, allTags, tagsByCategory]);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -222,6 +423,7 @@ export default function Search() {
           </svg>
           <input
             id="search-field"
+            ref={searchInputRef}
             type="search"
             placeholder="Search games, genres, or accessibility tags..."
             className="w-full bg-transparent px-2 py-2 text-base text-slate-900 placeholder-slate-500 focus:outline-none"
@@ -241,7 +443,7 @@ export default function Search() {
         <div className="mt-8 grid grid-cols-12 gap-6">
           {/* Sticky left drawer */}
           <aside className="col-span-12 self-start lg:col-span-4 lg:sticky lg:top-6">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
+            <div ref={filtersRef} className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">Filters</h2>
                 <button
@@ -283,6 +485,7 @@ export default function Search() {
                                 return (
                                   <button
                                     key={tag}
+                                    data-voice-tag={tag}
                                     type="button"
                                     onClick={() => toggleTag(tag)}
                                     className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
@@ -306,6 +509,7 @@ export default function Search() {
                 <label htmlFor="genre" className="block text-sm font-semibold text-slate-700">Genre</label>
                 <select
                   id="genre"
+                  ref={genreSelectRef}
                   className={`mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ${focusRing}`}
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
@@ -346,8 +550,8 @@ export default function Search() {
             </div>
           </aside>
 
-          {/* Results change pipeline test*/}
-          <section className="col-span-12 space-y-4 lg:col-span-8">
+          {/* Results */}
+          <section ref={resultsRef} className="col-span-12 space-y-4 lg:col-span-8">
             <div className="flex items-center justify-between text-sm text-slate-600">
               <nav aria-label="Breadcrumbs">Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
               <span>Filters (open)</span>

@@ -13,6 +13,7 @@ import gamesRouter from './routes/games.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
+import voiceRouter from './routes/voice.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/games', gamesRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/voice', voiceRouter);
 // library routes already mounted inside app.js at /api
 
 // Error handler
