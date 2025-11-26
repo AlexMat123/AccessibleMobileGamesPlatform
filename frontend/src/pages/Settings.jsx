@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { loadSettings, saveSettings } from '../settings';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
 
@@ -20,21 +21,21 @@ const spacingGaps = {
   airy: 'gap-6'
 };
 
-const ToggleRow = ({ label, description, active, onToggle }) => (
+const ToggleRow = ({ label, description, active, onToggle, styles }) => (
   <button
     type="button"
     role="switch"
     aria-checked={active}
     onClick={onToggle}
-    className={`flex w-full items-start justify-between rounded-xl border px-4 py-3 text-left transition ${active ? 'border-lime-500 bg-lime-50 text-slate-900' : 'border-slate-300 bg-white text-slate-900'} ${focusRing}`}
+    className={`flex w-full items-start justify-between rounded-xl border px-4 py-3 text-left transition ${active ? styles.active : styles.inactive} ${focusRing}`}
   >
     <div>
       <p className="text-sm font-semibold">{label}</p>
-      {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
+      {description && <p className={`mt-1 text-sm ${styles.subdued}`}>{description}</p>}
     </div>
     <span
       aria-hidden
-      className={`ml-4 inline-flex h-6 w-10 items-center rounded-full transition ${active ? 'bg-lime-500' : 'bg-slate-300'}`}
+      className={`ml-4 inline-flex h-6 w-10 items-center rounded-full transition ${active ? styles.trackActive : styles.trackInactive}`}
     >
       <span
         className={`block h-5 w-5 rounded-full bg-white shadow transition ${active ? 'translate-x-4' : 'translate-x-0'}`}
@@ -43,72 +44,194 @@ const ToggleRow = ({ label, description, active, onToggle }) => (
   </button>
 );
 
-const PillOption = ({ label, active, onClick, ariaLabel }) => (
+const PillOption = ({ label, active, onClick, ariaLabel, styles }) => (
   <button
     type="button"
     aria-label={ariaLabel || label}
     aria-pressed={active}
     onClick={onClick}
-    className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${active ? 'border-lime-500 bg-lime-50 text-lime-900' : 'border-slate-300 bg-white text-slate-800'} ${focusRing}`}
+    className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${active ? styles.active : styles.inactive} ${focusRing}`}
   >
     {label}
   </button>
 );
 
 export default function Settings() {
-  const [textSize, setTextSize] = useState('medium');
-  const [highContrastText, setHighContrastText] = useState(false);
-  const [captionsAlways, setCaptionsAlways] = useState(true);
-  const [visualAlerts, setVisualAlerts] = useState(true);
-  const [keyboardNav, setKeyboardNav] = useState(true);
-  const [focusIndicator, setFocusIndicator] = useState(true);
-  const [buttonSize, setButtonSize] = useState('large');
-  const [spacing, setSpacing] = useState('roomy');
-  const [reducePrecision, setReducePrecision] = useState(true);
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(true);
-  const [wakeWord, setWakeWord] = useState('Astra');
+  const defaults = useMemo(() => loadSettings(), []);
+  const [textSize, setTextSize] = useState(defaults.textSize);
+  const [highContrastText, setHighContrastText] = useState(defaults.highContrastText);
+  const [captionsAlways, setCaptionsAlways] = useState(defaults.captionsAlways);
+  const [visualAlerts, setVisualAlerts] = useState(defaults.visualAlerts);
+  const [keyboardNav, setKeyboardNav] = useState(defaults.keyboardNav);
+  const [focusIndicator, setFocusIndicator] = useState(defaults.focusIndicator);
+  const [buttonSize, setButtonSize] = useState(defaults.buttonSize);
+  const [spacing, setSpacing] = useState(defaults.spacing);
+  const [reducePrecision, setReducePrecision] = useState(defaults.reducePrecision);
+  const [wakeWordEnabled, setWakeWordEnabled] = useState(defaults.wakeWordEnabled);
+  const [wakeWord, setWakeWord] = useState(defaults.wakeWord);
+  const [theme, setTheme] = useState(defaults.theme);
+  const [highContrastMode, setHighContrastMode] = useState(defaults.highContrastMode);
+  const [reduceMotion, setReduceMotion] = useState(defaults.reduceMotion);
+
+  useEffect(() => {
+    saveSettings({
+      textSize,
+      highContrastText,
+      captionsAlways,
+      visualAlerts,
+      keyboardNav,
+      focusIndicator,
+      buttonSize,
+      spacing,
+      reducePrecision,
+      wakeWordEnabled,
+      wakeWord,
+      theme,
+      highContrastMode,
+      reduceMotion
+    });
+  }, [
+    textSize,
+    highContrastText,
+    captionsAlways,
+    visualAlerts,
+    keyboardNav,
+    focusIndicator,
+    buttonSize,
+    spacing,
+    reducePrecision,
+    wakeWordEnabled,
+    wakeWord,
+    theme,
+    highContrastMode,
+    reduceMotion
+  ]);
 
   const sampleTextClasses = useMemo(() => {
     const sizeClass = textSizePreview[textSize] || textSizePreview.medium;
-    const contrast = highContrastText ? 'bg-slate-900 text-lime-100' : 'bg-slate-50 text-slate-900';
-    return `${sizeClass} ${contrast}`;
-  }, [textSize, highContrastText]);
+    if (highContrastText) return `${sizeClass} bg-slate-900 text-lime-100`;
+    if (theme === 'dark') return `${sizeClass} bg-slate-800 text-slate-100`;
+    return `${sizeClass} bg-slate-50 text-slate-900`;
+  }, [textSize, highContrastText, theme]);
 
   const spacingClass = spacingGaps[spacing] || spacingGaps.roomy;
   const sampleButtonClass = buttonSizes[buttonSize] || buttonSizes.normal;
+  const pageTone = useMemo(() => {
+    if (highContrastMode) return 'bg-slate-900 text-lime-50';
+    if (theme === 'dark') return 'bg-slate-900 text-slate-100';
+    return 'bg-white text-slate-900';
+  }, [highContrastMode, theme]);
+
+  const cardTone = useMemo(() => {
+    if (highContrastMode) return 'border border-lime-300 bg-slate-950 text-lime-50 shadow-[0_0_0_1px_rgba(190,242,100,0.25)]';
+    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-100 shadow-sm shadow-black/20';
+    return 'border border-slate-200 bg-white text-slate-900 shadow-sm';
+  }, [highContrastMode, theme]);
+
+  const softCardTone = useMemo(() => {
+    if (highContrastMode) return 'border border-lime-300/70 bg-slate-900 text-lime-50';
+    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-100';
+    return 'border border-slate-200 bg-white text-slate-900';
+  }, [highContrastMode, theme]);
+
+  const sampleSurfaceTone = useMemo(() => {
+    if (highContrastMode) return 'border border-lime-300/70 bg-slate-900 text-lime-50';
+    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-100';
+    return 'border border-slate-300 bg-slate-50 text-slate-900';
+  }, [highContrastMode, theme]);
+
+  const dashedTone = useMemo(() => {
+    if (highContrastMode) return 'border-dashed border-lime-300/70 bg-slate-800 text-lime-50';
+    if (theme === 'dark') return 'border-dashed border-slate-600 bg-slate-800 text-slate-100';
+    return 'border-dashed border-slate-300 bg-slate-50 text-slate-900';
+  }, [highContrastMode, theme]);
+
+  const pillStyles = useMemo(() => {
+    if (highContrastMode) return {
+      active: 'border-lime-500 bg-lime-900 text-lime-100',
+      inactive: 'border-lime-300 bg-slate-900 text-lime-50'
+    };
+    if (theme === 'dark') return {
+      active: 'border-lime-500 bg-slate-800 text-lime-100',
+      inactive: 'border-slate-600 bg-slate-800 text-slate-100'
+    };
+    return {
+      active: 'border-lime-500 bg-lime-50 text-lime-900',
+      inactive: 'border-slate-300 bg-white text-slate-800'
+    };
+  }, [highContrastMode, theme]);
+
+  const toggleStyles = useMemo(() => {
+    if (highContrastMode) return {
+      active: 'border-lime-500 bg-lime-900 text-lime-100',
+      inactive: 'border-lime-300 bg-slate-900 text-lime-50',
+      trackActive: 'bg-lime-500',
+      trackInactive: 'bg-lime-300/80',
+      subdued: 'text-lime-200'
+    };
+    if (theme === 'dark') return {
+      active: 'border-lime-500 bg-slate-800 text-lime-100',
+      inactive: 'border-slate-600 bg-slate-800 text-slate-100',
+      trackActive: 'bg-lime-500',
+      trackInactive: 'bg-slate-500',
+      subdued: 'text-slate-300'
+    };
+    return {
+      active: 'border-lime-500 bg-lime-50 text-slate-900',
+      inactive: 'border-slate-300 bg-white text-slate-900',
+      trackActive: 'bg-lime-500',
+      trackInactive: 'bg-slate-300',
+      subdued: 'text-slate-600'
+    };
+  }, [highContrastMode, theme]);
+
+  const headingTone = highContrastMode ? 'text-lime-50' : (theme === 'dark' ? 'text-slate-100' : 'text-slate-800');
+  const subTone = highContrastMode ? 'text-lime-200' : (theme === 'dark' ? 'text-slate-300' : 'text-slate-600');
+  const bodyTone = highContrastMode ? 'text-lime-100' : (theme === 'dark' ? 'text-slate-200' : 'text-slate-700');
+  const inputToneEnabled = useMemo(() => {
+    if (highContrastMode) return 'border-lime-300 bg-slate-900 text-lime-100 placeholder-lime-200';
+    if (theme === 'dark') return 'border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-400';
+    return 'border-slate-300 bg-white text-slate-900 placeholder-slate-500';
+  }, [highContrastMode, theme]);
+  const inputToneDisabled = useMemo(() => {
+    if (highContrastMode) return 'border-lime-400/60 bg-slate-800 text-lime-200';
+    if (theme === 'dark') return 'border-slate-700 bg-slate-800 text-slate-500';
+    return 'border-slate-200 bg-slate-100 text-slate-500';
+  }, [highContrastMode, theme]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className={`min-h-screen ${pageTone}`}>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
         <header className="space-y-3">
           <p className="text-sm font-semibold uppercase tracking-wide text-lime-700">Settings</p>
-          <h1 className="text-3xl font-bold sm:text-4xl">Accessibility first</h1>
-          <p className="max-w-3xl text-lg text-slate-700">
+          <h1 className={`text-3xl font-bold sm:text-4xl ${headingTone}`}>Accessibility first</h1>
+          <p className={`max-w-3xl text-lg ${bodyTone}`}>
             Minimal, chunked controls for hearing-impaired and motor-impaired players. Mirrors the Search page tone with clear
             focus states and roomy hit targets.
           </p>
         </header>
 
         <div className="mt-10">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className={`rounded-2xl ${cardTone} p-5`}>
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold">Accessibility</h2>
-                <p className="mt-1 text-sm text-slate-600">Text, captions, keyboard, and motor controls grouped for quick scanning.</p>
+                <h2 className={`text-xl font-semibold ${headingTone}`}>Accessibility</h2>
+                <p className={`mt-1 text-sm ${subTone}`}>Text, captions, keyboard, and motor controls grouped for quick scanning.</p>
               </div>
               <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-lime-800">Priority</span>
             </div>
 
             <div className="mt-4 space-y-4">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className={`rounded-xl ${sampleSurfaceTone} p-4`}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-800">Text size</span>
+                  <span className={`text-sm font-semibold ${headingTone}`}>Text size</span>
                   {['small', 'medium', 'large'].map(size => (
                     <PillOption
                       key={size}
                       label={size === 'small' ? 'Small' : size === 'medium' ? 'Medium' : 'Large'}
                       active={textSize === size}
                       onClick={() => setTextSize(size)}
+                      styles={pillStyles}
                     />
                   ))}
                   <PillOption
@@ -116,54 +239,59 @@ export default function Settings() {
                     active={highContrastText}
                     onClick={() => setHighContrastText(v => !v)}
                     ariaLabel="Toggle high contrast text"
+                    styles={pillStyles}
                   />
                 </div>
-                <div className={`mt-3 rounded-xl border border-dashed border-slate-300 px-4 py-3 ${sampleTextClasses}`}>
+                <div className={`mt-3 rounded-xl border px-4 py-3 ${dashedTone} ${sampleTextClasses}`}>
                   “Sample text stays readable. Adjust size and contrast to taste.”
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-800">Captions & visual feedback</h3>
+              <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
+                <h3 className={`text-sm font-semibold ${headingTone}`}>Captions & visual feedback</h3>
                 <div className="mt-3 space-y-3">
                   <ToggleRow
                     label="Always show captions for videos"
                     description="Hearing-impaired safe default."
                     active={captionsAlways}
                     onToggle={() => setCaptionsAlways(v => !v)}
+                    styles={toggleStyles}
                   />
                   <ToggleRow
                     label="Replace audio alerts with visual indicators"
                     description="Flash banners or subtle pulses instead of sounds."
                     active={visualAlerts}
                     onToggle={() => setVisualAlerts(v => !v)}
+                    styles={toggleStyles}
                   />
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-800">Keyboard navigation</h3>
+              <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
+                <h3 className={`text-sm font-semibold ${headingTone}`}>Keyboard navigation</h3>
                 <div className="mt-3 space-y-3">
                   <ToggleRow
                     label="Enable keyboard navigation"
                     description="Tab, arrow keys, and shortcuts as a first-class path."
                     active={keyboardNav}
                     onToggle={() => setKeyboardNav(v => !v)}
+                    styles={toggleStyles}
                   />
                   <ToggleRow
                     label="Show focus indicator (always visible)"
                     description="Bright focus ring mirrors the search page."
                     active={focusIndicator}
                     onToggle={() => setFocusIndicator(v => !v)}
+                    styles={toggleStyles}
                   />
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-slate-800">Motor accessibility</h3>
+              <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
+                <h3 className={`text-sm font-semibold ${headingTone}`}>Motor accessibility</h3>
                 <div className="mt-3 space-y-3">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Button size</p>
+                    <p className={`text-sm font-semibold ${headingTone}`}>Button size</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {[
                         { id: 'normal', label: 'Normal' },
@@ -175,13 +303,14 @@ export default function Settings() {
                           label={opt.label}
                           active={buttonSize === opt.id}
                           onClick={() => setButtonSize(opt.id)}
+                          styles={pillStyles}
                         />
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Spacing between elements</p>
+                    <p className={`text-sm font-semibold ${headingTone}`}>Spacing between elements</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {[
                         { id: 'snug', label: 'Tight' },
@@ -193,12 +322,13 @@ export default function Settings() {
                           label={opt.label}
                           active={spacing === opt.id}
                           onClick={() => setSpacing(opt.id)}
+                          styles={pillStyles}
                         />
                       ))}
                     </div>
                   </div>
 
-                  <div className={`rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 ${spacingClass}`}>
+                  <div className={`rounded-xl border ${dashedTone} p-4 ${spacingClass}`}>
                     <button type="button" className={`rounded-lg bg-lime-600 font-semibold text-white shadow-sm transition hover:bg-lime-700 ${sampleButtonClass}`}>Tap</button>
                     <button type="button" className={`rounded-lg bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 ${sampleButtonClass}`}>Confirm</button>
                     <button type="button" className={`rounded-lg bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 ${sampleButtonClass}`}>Cancel</button>
@@ -209,17 +339,18 @@ export default function Settings() {
                     description="Swap drag/press gestures for tap/step-by-step controls."
                     active={reducePrecision}
                     onToggle={() => setReducePrecision(v => !v)}
+                    styles={toggleStyles}
                   />
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <section className={`mt-6 rounded-2xl ${cardTone} p-5`}>
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold">Voice control</h2>
-                <p className="mt-1 text-sm text-slate-600">“Always listening” with an editable wake word to match client requirements.</p>
+                <h2 className={`text-xl font-semibold ${headingTone}`}>Voice control</h2>
+                <p className={`mt-1 text-sm ${subTone}`} >“Always listening” with an editable wake word to match client requirements.</p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">Voice</span>
             </div>
@@ -230,8 +361,9 @@ export default function Settings() {
                 description="Keeps the mic primed for hands-free navigation."
                 active={wakeWordEnabled}
                 onToggle={() => setWakeWordEnabled(v => !v)}
+                styles={toggleStyles}
               />
-              <label className="block text-sm font-semibold text-slate-800">
+              <label className={`block text-sm font-semibold ${headingTone}`}>
                 Change wake word (optional)
                 <input
                   type="text"
@@ -239,10 +371,85 @@ export default function Settings() {
                   onChange={(e) => setWakeWord(e.target.value)}
                   disabled={!wakeWordEnabled}
                   placeholder="e.g., Voyager"
-                  className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm text-slate-900 ${focusRing} ${wakeWordEnabled ? 'border-slate-300 bg-white' : 'border-slate-200 bg-slate-100 text-slate-500'}`}
+                  className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm ${focusRing} ${wakeWordEnabled ? inputToneEnabled : inputToneDisabled}`}
                 />
-                <p className="mt-1 text-sm text-slate-600">Default: “Astra”. Pick a word with softer consonants to reduce false triggers.</p>
+                <p className={`mt-1 text-sm ${subTone}`}>Default: "Astra". Pick a word with softer consonants to reduce false triggers.</p>
               </label>
+            </div>
+          </section>
+
+          <section className={`mt-6 rounded-2xl ${cardTone} p-5`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className={`text-xl font-semibold ${headingTone}`}>UI personalisation</h2>
+                <p className={`mt-1 text-sm ${subTone}`}>Keep it minimal but flexible for cognitive comfort.</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">Visual</span>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <p className={`text-sm font-semibold ${headingTone}`}>Mode</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {[
+                    { id: 'light', label: 'Light' },
+                    { id: 'dark', label: 'Dark' }
+                  ].map(opt => (
+                    <PillOption
+                      key={opt.id}
+                      label={opt.label}
+                      active={theme === opt.id}
+                      onClick={() => setTheme(opt.id)}
+                      styles={pillStyles}
+                    />
+                  ))}
+                  <PillOption
+                    label="High contrast mode"
+                    active={highContrastMode}
+                    onClick={() => setHighContrastMode(v => !v)}
+                    styles={pillStyles}
+                  />
+                </div>
+              </div>
+
+              <ToggleRow
+                label="Reduce animation"
+                description="Minimise motion for attention and cognitive needs."
+                active={reduceMotion}
+                onToggle={() => setReduceMotion(v => !v)}
+                styles={toggleStyles}
+              />
+
+              <div className="rounded-xl border border-dashed border-slate-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-4 text-white">
+                <p className="text-sm font-semibold uppercase tracking-wide text-lime-100">Preview</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span className="rounded-full bg-lime-400/20 px-3 py-1 text-xs font-semibold text-lime-100">High contrast</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">Dark mode</span>
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">Low motion</span>
+                </div>
+                <p className="mt-3 text-sm text-slate-100">Theme choices mirror the search page language so nothing feels bolted on.</p>
+              </div>
+            </div>
+          </section>
+
+          <section className={`mt-6 rounded-2xl ${cardTone} p-5`}>
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className={`text-xl font-semibold ${headingTone}`}>About & accessibility statement</h2>
+                <p className={`mt-1 text-sm ${subTone}`}>Short, scannable, and ready for WCAG callouts.</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">Info</span>
+            </div>
+
+            <div className="mt-4 space-y-3 text-sm">
+              <p className={`font-semibold ${headingTone}`}>About</p>
+              <p className={bodyTone}>Accessible Games Hub focuses on discoverability for players with hearing, vision, and motor needs. No tutorial required—this page and the search page keep onboarding light.</p>
+              <p className={`font-semibold ${headingTone}`}>Accessibility Statement</p>
+              <ul className={`list-disc space-y-1 pl-5 ${bodyTone}`}>
+                <li>WCAG 2.1 AA intent; captions and visual alerts default on.</li>
+                <li>Supports screen readers, keyboard-only navigation, and voice with wake word.</li>
+                <li>Contact: <a href="mailto:accessibility@team13.games" className="text-lime-700 underline">accessibility@team13.games</a> for issues.</li>
+              </ul>
             </div>
           </section>
         </div>
