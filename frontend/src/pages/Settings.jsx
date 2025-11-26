@@ -65,6 +65,8 @@ export default function Settings() {
   const [buttonSize, setButtonSize] = useState('large');
   const [spacing, setSpacing] = useState('roomy');
   const [reducePrecision, setReducePrecision] = useState(true);
+  const [wakeWordEnabled, setWakeWordEnabled] = useState(true);
+  const [wakeWord, setWakeWord] = useState('Astra');
 
   const sampleTextClasses = useMemo(() => {
     const sizeClass = textSizePreview[textSize] || textSizePreview.medium;
@@ -210,6 +212,37 @@ export default function Settings() {
                   />
                 </div>
               </div>
+            </div>
+          </section>
+
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Voice control</h2>
+                <p className="mt-1 text-sm text-slate-600">“Always listening” with an editable wake word to match client requirements.</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">Voice</span>
+            </div>
+
+            <div className="mt-4 space-y-4">
+              <ToggleRow
+                label="Wake word enabled"
+                description="Keeps the mic primed for hands-free navigation."
+                active={wakeWordEnabled}
+                onToggle={() => setWakeWordEnabled(v => !v)}
+              />
+              <label className="block text-sm font-semibold text-slate-800">
+                Change wake word (optional)
+                <input
+                  type="text"
+                  value={wakeWord}
+                  onChange={(e) => setWakeWord(e.target.value)}
+                  disabled={!wakeWordEnabled}
+                  placeholder="e.g., Voyager"
+                  className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm text-slate-900 ${focusRing} ${wakeWordEnabled ? 'border-slate-300 bg-white' : 'border-slate-200 bg-slate-100 text-slate-500'}`}
+                />
+                <p className="mt-1 text-sm text-slate-600">Default: “Astra”. Pick a word with softer consonants to reduce false triggers.</p>
+              </label>
             </div>
           </section>
         </div>
