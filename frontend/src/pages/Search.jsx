@@ -442,6 +442,8 @@ export default function Search() {
 
   const focusVisible = settings.focusIndicator ? focusRing : '';
   const reduceMotion = settings.reduceMotion ? 'motion-reduce:transition-none motion-reduce:animate-none' : '';
+  const headingTone = settings.highContrastMode ? 'text-lime-50' : settings.theme === 'dark' ? 'text-slate-100' : 'text-slate-900';
+  const subTone = settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-300' : 'text-slate-700';
 
   return (
     <div className={`min-h-screen ${pageTone} ${textSizeClass}`}>
@@ -480,7 +482,7 @@ export default function Search() {
           <aside className="col-span-12 self-start lg:col-span-4 lg:sticky lg:top-6">
             <div ref={filtersRef} className={`rounded-2xl p-4 shadow-sm ${panelTone}`}>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Filters</h2>
+                <h2 className={`text-xl font-semibold ${headingTone}`}>Filters</h2>
                 <button
                   type="button"
                   className={`rounded-md border px-3 py-1 text-sm font-semibold hover:bg-slate-50 ${focusVisible} ${settings.highContrastMode ? 'border-lime-400 bg-slate-900 text-lime-100 hover:bg-slate-800' : settings.theme === 'dark' ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700' : 'border-slate-300 bg-white text-slate-800'}`}
@@ -492,7 +494,7 @@ export default function Search() {
 
               {/* Disability Categories (accordion to reveal specific tags) */}
               <section className="mt-4">
-                <h3 className="text-sm font-semibold text-slate-700">Disability Categories</h3>
+                <h3 className={`text-sm font-semibold ${subTone}`}>Disability Categories</h3>
                 <div className="mt-2 grid grid-cols-1 gap-2">
                   {categories.map(cat => {
                     const isOpen = openCategories.has(cat);
@@ -500,20 +502,26 @@ export default function Search() {
                     const btnId = `cat-btn-${slug}`;
                     const panelId = `cat-panel-${slug}`;
                     return (
-                      <div key={cat} className="rounded-lg border border-slate-300 bg-white">
+                      <div key={cat} className="rounded-lg">
                         <button
                           id={btnId}
                           type="button"
-                          className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold ${focusVisible} ${settings.highContrastMode ? 'text-lime-100' : settings.theme === 'dark' ? 'text-slate-100' : 'text-slate-800'}`}
+                          className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm font-semibold ${focusVisible} ${
+                            settings.highContrastMode
+                              ? 'border-lime-400 bg-slate-900 text-lime-100'
+                              : settings.theme === 'dark'
+                                ? 'border-slate-700 bg-slate-800 text-slate-100'
+                                : 'border-slate-300 bg-white text-slate-800'
+                          }`}
                           aria-expanded={isOpen}
                           aria-controls={panelId}
                           onClick={() => toggleCategoryOpen(cat)}
                         >
                           <span>{cat}</span>
-                          <span aria-hidden className="ml-2 text-slate-500">{isOpen ? '▾' : '▸'}</span>
+                          <span aria-hidden className={`ml-2 ${settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-200' : 'text-slate-500'}`}>{isOpen ? '▾' : '▸'}</span>
                         </button>
                         {isOpen && (
-                          <div id={panelId} role="region" aria-labelledby={btnId} className="border-t border-slate-200 p-2">
+                          <div id={panelId} role="region" aria-labelledby={btnId} className={`border-t p-2 ${settings.highContrastMode ? 'border-lime-300/60 bg-slate-900' : settings.theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
                             <div className="grid grid-cols-1 gap-2">
                               {(tagsByCategory[cat] || []).map(tag => {
                                 const active = selectedTags.has(tag);
@@ -523,7 +531,19 @@ export default function Search() {
                                     data-voice-tag={tag}
                                     type="button"
                                     onClick={() => toggleTag(tag)}
-                                    className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
+                                    className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${focusVisible} ${
+                                      active
+                                        ? settings.highContrastMode
+                                          ? 'border border-lime-500 bg-lime-900 text-lime-100'
+                                          : settings.theme === 'dark'
+                                            ? 'border border-lime-500 bg-slate-800 text-lime-100'
+                                            : 'border border-lime-500 bg-lime-50 text-lime-800'
+                                        : settings.highContrastMode
+                                          ? 'border border-lime-300 bg-slate-900 text-lime-50'
+                                          : settings.theme === 'dark'
+                                            ? 'border border-slate-700 bg-slate-800 text-slate-100'
+                                            : 'border border-slate-300 bg-white text-slate-800'
+                                    }`}
                                     aria-pressed={active}
                                   >
                                     {tag}
@@ -588,7 +608,7 @@ export default function Search() {
           {/* Results */}
           <section ref={resultsRef} className="col-span-12 space-y-4 lg:col-span-8">
             <div className="flex items-center justify-between text-sm text-slate-600">
-              <nav aria-label="Breadcrumbs">Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
+              <nav aria-label="Breadcrumbs" className={subTone}>Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
               <span>Filters (open)</span>
             </div>
 
