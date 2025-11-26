@@ -180,8 +180,8 @@ export default function Profile() {
                   <StatBox label="Watchlist" value={0} />
                   <StatBox label="Reviews" value={reviews.length} />
                   <StatBox label="Helpful Votes" value={0} />
-                </div>                {/* Accessibility needs (fixed height, button bottom-right) */}
-                <div className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-[206px]">
+                </div>                {/* Accessibility needs (auto height) */}
+                <div className="bg-white rounded-xl shadow p-4 flex flex-col">
                   <div>
                     <h3 className="text-sm font-semibold mb-3">My Accessibility Needs</h3>
                     {prefsLoading && <p className="text-xs text-gray-500">Loading preferences…</p>}
@@ -203,8 +203,8 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Recent Reviews (match accessibility height) */}
-              <div className="bg-white rounded-xl shadow p-4 lg:col-span-1 flex flex-col h-[306px]">
+              {/* Recent Reviews (fixed height) */}
+              <div className="bg-white rounded-xl shadow p-4 lg:col-span-1 flex flex-col h-[308px]">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-semibold">Recent Reviews</h3>
                   {revLoading && <span className="text-xs text-gray-500">Loading…</span>}
