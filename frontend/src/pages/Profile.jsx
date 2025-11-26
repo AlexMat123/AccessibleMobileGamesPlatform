@@ -1,6 +1,6 @@
 import profile from '../assets/profile.jpg';
 import { useEffect, useState } from 'react';
-import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames } from '../api';
+import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 
 export default function Profile() {
@@ -17,6 +17,16 @@ export default function Profile() {
   const [followedGames, setFollowedGames] = useState([]);
   const [fgIndex, setFgIndex] = useState(0); // carousel index
 
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({ username: '', email: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  const [showPwd, setShowPwd] = useState(false);
+  const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '' });
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+
   // for carousel display
   const VISIBLE = 5;
   const getWindow = (arr, start, size) => Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
@@ -28,6 +38,7 @@ export default function Profile() {
         const data = await fetchCurrentUser();
         if (!mounted) return;
         setUser(data);
+        setEditForm({ username: data.username || '', email: data.email || '' });
         // load accessibility prefs
         setPrefsLoading(true);
         try {
@@ -81,6 +92,37 @@ export default function Profile() {
       .finally(() => setSavingPrefs(false));
   }
 
+  function onOpenEdit() { setEditError(''); setShowEdit(true); }
+  function onOpenPwd() { setPwdError(''); setShowPwd(true); }
+
+  async function handleSaveEdit(e) {
+    e.preventDefault();
+    if (!user) return;
+    setSavingEdit(true);
+    try {
+      const updated = await updateUserProfile(user.id, { username: editForm.username, email: editForm.email });
+      setUser(u => ({ ...u, username: updated.username, email: updated.email }));
+      pushToast('Profile updated');
+      setShowEdit(false);
+    } catch (err) {
+      setEditError(err.message || 'Failed to update profile');
+    } finally { setSavingEdit(false); }
+  }
+
+  async function handleSavePwd(e) {
+    e.preventDefault();
+    if (!user) return;
+    setSavingPwd(true);
+    try {
+      await changeUserPassword(user.id, pwdForm.currentPassword, pwdForm.newPassword);
+      pushToast('Password updated');
+      setShowPwd(false);
+      setPwdForm({ currentPassword: '', newPassword: '' });
+    } catch (err) {
+      setPwdError(err.message || 'Failed to change password');
+    } finally { setSavingPwd(false); }
+  }
+
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleString('en-GB', { month: 'long', year: 'numeric' })
     : '';
@@ -118,10 +160,10 @@ export default function Profile() {
                   </div>
                 </div>
                 <div className="mt-4 flex gap-3">
-                  <button className="flex-1 bg-sky-600 text-white text-sm font-medium py-2 rounded-md opacity-60 cursor-not-allowed" disabled>
+                  <button className="flex-1 bg-sky-600 text-white text-sm font-medium py-2 rounded-md" onClick={onOpenEdit}>
                     Edit Profile
                   </button>
-                  <button className="flex-1 bg-sky-500 text-white text-sm font-medium py-2 rounded-md opacity-60 cursor-not-allowed" disabled>
+                  <button className="flex-1 bg-sky-500 text-white text-sm font-medium py-2 rounded-md" onClick={onOpenPwd}>
                     Change Password
                   </button>
                 </div>
@@ -236,6 +278,54 @@ export default function Profile() {
                 </div>
               )}
             </div>
+
+            {/* Edit Profile modal */}
+            {showEdit && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                <div className="bg-white rounded-xl shadow p-6 w-full max-w-md">
+                  <h3 className="text-base font-semibold mb-3">Edit Profile</h3>
+                  {editError && <p className="text-xs text-red-600 mb-2">{editError}</p>}
+                  <form onSubmit={handleSaveEdit} className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Username</label>
+                      <input type="text" value={editForm.username} onChange={(e) => setEditForm(f => ({ ...f, username: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                      <input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button type="button" onClick={() => setShowEdit(false)} className="px-3 py-1 rounded-md text-xs font-medium bg-gray-200">Cancel</button>
+                      <button type="submit" disabled={savingEdit} className="px-3 py-1 rounded-md text-xs font-medium bg-sky-600 text-white">{savingEdit ? 'Updating…' : 'Update Profile'}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Change Password modal */}
+            {showPwd && (
+              <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                <div className="bg-white rounded-xl shadow p-6 w-full max-w-md">
+                  <h3 className="text-base font-semibold mb-3">Change Password</h3>
+                  {pwdError && <p className="text-xs text-red-600 mb-2">{pwdError}</p>}
+                  <form onSubmit={handleSavePwd} className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Current Password</label>
+                      <input type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm(f => ({ ...f, currentPassword: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">New Password</label>
+                      <input type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm(f => ({ ...f, newPassword: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button type="button" onClick={() => setShowPwd(false)} className="px-3 py-1 rounded-md text-xs font-medium bg-gray-200">Cancel</button>
+                      <button type="submit" disabled={savingPwd} className="px-3 py-1 rounded-md text-xs font-medium bg-sky-600 text-white">{savingPwd ? 'Updating…' : 'Update Password'}</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

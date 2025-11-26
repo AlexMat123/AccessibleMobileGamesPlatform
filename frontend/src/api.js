@@ -154,3 +154,23 @@ export async function getFollowedGames(userId) {
   if (!res.ok) throw new Error((await res.json()).message || 'Failed to load followed games');
   return res.json();
 }
+
+export async function updateUserProfile(userId, data) {
+  const res = await fetch(`${API_URL}/users/${userId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error((await res.json()).error || 'Failed to update profile');
+  return res.json();
+}
+
+export async function changeUserPassword(userId, currentPassword, newPassword) {
+  const res = await fetch(`${API_URL}/users/${userId}/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+  if (!res.ok) throw new Error((await res.json()).error || 'Failed to change password');
+  return res.json();
+}

@@ -38,7 +38,8 @@ async function start() {
     try {
         await createDatabaseIfNotExists();
         await sequelize.authenticate();
-        await sequelize.sync({ alter: true });
+        // this avoids alter:true to prevent repeated index changes causing MariaDB ER_TOO_MANY_KEYS
+        await sequelize.sync();
         // set default accessibilityPreferences where null or empty
         try {
             await sequelize.query("UPDATE Users SET accessibilityPreferences='{\"visual\":false,\"motor\":false,\"cognitive\":false,\"hearing\":false}' WHERE accessibilityPreferences IS NULL OR accessibilityPreferences='' ");

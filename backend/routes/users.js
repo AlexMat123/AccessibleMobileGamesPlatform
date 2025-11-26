@@ -1,6 +1,7 @@
 import express from 'express';
 import { Review, Game, User } from '../models/index.js';
 import authenticateToken from '../middleware/auth.js';
+import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
@@ -128,6 +129,47 @@ router.get('/:id/followed-games', authenticateToken, async (req, res) => {
   } catch (e) {
     console.error('Load followed games error:', e);
     res.status(500).json({ message: 'Failed to load followed games' });
+  }
+});
+
+// Update profile (username/email)
+router.patch('/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    if (!req.user || req.user.id !== userId) return res.status(403).json({ error: 'Forbidden' });
+    const { username, email } = req.body || {};
+    if (!username && !email) return res.status(400).json({ error: 'No fields to update' });
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (username) user.username = String(username).trim();
+    if (email) user.email = String(email).trim();
+    await user.save();
+    return res.json({ id: user.id, username: user.username, email: user.email, createdAt: user.createdAt });
+  } catch (e) {
+    console.error('Update profile error', e);
+    return res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Change password
+router.patch('/:id/password', authenticateToken, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id, 10);
+    if (!req.user || req.user.id !== userId) return res.status(403).json({ error: 'Forbidden' });
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Current and new password required' });
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const ok = await bcrypt.compare(String(currentPassword), user.password);
+    if (!ok) return res.status(400).json({ error: 'Current password incorrect' });
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(String(newPassword), salt);
+    user.password = hash;
+    await user.save();
+    return res.json({ success: true });
+  } catch (e) {
+    console.error('Change password error', e);
+    return res.status(500).json({ error: 'Failed to change password' });
   }
 });
 
