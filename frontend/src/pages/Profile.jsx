@@ -203,16 +203,16 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Recent Reviews (fixed height) */}
-              <div className="bg-white rounded-xl shadow p-4 lg:col-span-1 flex flex-col h-[308px]">
+              {/* Recent Reviews (fixed laptop height, scaled up on larger screens) */}
+              <div className="bg-white rounded-xl shadow p-4 lg:col-span-1 flex flex-col h-[307px] lg:h-[360px] xl:h-[307px] 2xl:h-[387px]">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-semibold">Recent Reviews</h3>
                   {revLoading && <span className="text-xs text-gray-500">Loading…</span>}
                 </div>
                 {revError && <p className="text-xs text-red-600 mb-2">{revError}</p>}
-                <div className="space-y-2 overflow-y-auto pr-1 flex-1" aria-label="User reviews list">
+                <div className="space-y-2 md:space-y-3 overflow-y-auto pr-1 flex-1" aria-label="User reviews list">
                   {reviews.length === 0 && !revLoading && !revError && (
-                    <p className="text-xs text-gray-500">You have not posted any reviews yet.</p>
+                    <p className="text-xs md:text-sm text-gray-500">You have not posted any reviews yet.</p>
                   )}
                   {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
                 </div>
@@ -342,13 +342,13 @@ function ReviewCard({ review }) {
   ));
   const timeAgo = formatTimeAgo(createdAt);
   return (
-    <div className="border rounded-md p-3 bg-gray-50 text-xs text-gray-800">
-      <div className="flex justify-between mb-1">
-        <span className="font-semibold">{game?.title || 'Game'}</span>
-        <span className="text-gray-500">{timeAgo}</span>
+    <div className="border rounded-md p-3 md:p-4 bg-gray-50 text-[11px] md:text-xs lg:text-sm text-gray-800">
+      <div className="flex justify-between mb-1 md:mb-2">
+        <span className="font-semibold truncate" title={game?.title || 'Game'}>{game?.title || 'Game'}</span>
+        <span className="text-gray-500 whitespace-nowrap">{timeAgo}</span>
       </div>
       <div className="mb-1" aria-label={`Rating ${stars} of 5`}>{starEls}</div>
-      <p className="leading-snug">{comment || 'No comment provided.'}</p>
+      <p className="leading-snug md:leading-normal">{comment || 'No comment provided.'}</p>
     </div>
   );
 }
