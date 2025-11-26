@@ -21,6 +21,16 @@ export const loginUser = async (identifier, password) => {
   return res.json();
 };
 
+export const fetchCurrentUser = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('Not authenticated');
+  const res = await fetch(`${API_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to load profile');
+  return res.json();
+};
+
 export const fetchTagGroups = async () => {
   const res = await fetch(`${API_URL}/tag-groups`);
   if (!res.ok) throw new Error("Unable to load tag groups");
@@ -86,4 +96,81 @@ export async function getGames() {
     const res = await fetch(`${API_URL}/games`);
     if (!res.ok) throw new Error(`Failed to fetch games: ${res.status} ${res.statusText}`);
     return res.json();
+}
+
+export async function fetchUserReviews(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/reviews`, {
+    headers: {
+      ...authHeaders()
+    }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to load user reviews');
+  }
+  return res.json();
+}
+// Get accessibility preferences for a user
+export async function getAccessibilityPreferences(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/accessibility-preferences`, {
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to load accessibility preferences');
+  return res.json();
+}
+
+export async function updateAccessibilityPreferences(userId, prefs) {
+  const res = await fetch(`${API_URL}/users/${userId}/accessibility-preferences`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(prefs)
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to update accessibility preferences');
+  return res.json();
+}
+
+export async function followGame(userId, gameId) {
+  const res = await fetch(`${API_URL}/users/${userId}/follow/${gameId}`, {
+    method: 'POST',
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to follow');
+  return res.json();
+}
+
+export async function unfollowGame(userId, gameId) {
+  const res = await fetch(`${API_URL}/users/${userId}/follow/${gameId}`, {
+    method: 'DELETE',
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to unfollow');
+  return res.json();
+}
+
+export async function getFollowedGames(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/followed-games`, {
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) throw new Error((await res.json()).message || 'Failed to load followed games');
+  return res.json();
+}
+
+export async function updateUserProfile(userId, data) {
+  const res = await fetch(`${API_URL}/users/${userId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error((await res.json()).error || 'Failed to update profile');
+  return res.json();
+}
+
+export async function changeUserPassword(userId, currentPassword, newPassword) {
+  const res = await fetch(`${API_URL}/users/${userId}/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+  if (!res.ok) throw new Error((await res.json()).error || 'Failed to change password');
+  return res.json();
 }

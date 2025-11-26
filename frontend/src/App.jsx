@@ -7,6 +7,7 @@ import Navbar from './components/Navbar.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import ToastHost from './components/ToastHost.jsx';
+import Profile from './pages/Profile.jsx';
 
 
 
@@ -20,8 +21,7 @@ function App() {
         <Route path="/games/:id" element={<Game/>} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/games/:id" element={<Game/>} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
       <ToastHost />
     </Router>

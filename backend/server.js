@@ -12,6 +12,7 @@ import { seedGames } from './config/seedGames.js';
 import gamesRouter from './routes/games.js';
 import { createDatabaseIfNotExists } from './config/createDatabase.js';
 import authRouter from './routes/auth.js';
+import usersRouter from './routes/users.js';
 import voiceRouter from './routes/voice.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -23,6 +24,7 @@ app.use(express.json());
 // Mount API routes (correct signatures)
 app.use('/api/auth', authRouter);
 app.use('/api/games', gamesRouter);
+app.use('/api/users', usersRouter);
 app.use('/api/voice', voiceRouter);
 // library routes already mounted inside app.js at /api
 
@@ -38,7 +40,15 @@ async function start() {
     try {
         await createDatabaseIfNotExists();
         await sequelize.authenticate();
-        await sequelize.sync(); // avoid alter to prevent index bloat on MariaDB
+        // this avoids alter:true to prevent repeated index changes causing MariaDB ER_TOO_MANY_KEYS
+        await sequelize.sync();
+        // set default accessibilityPreferences where null or empty
+        try {
+            await sequelize.query("UPDATE Users SET accessibilityPreferences='{\"visual\":false,\"motor\":false,\"cognitive\":false,\"hearing\":false}' WHERE accessibilityPreferences IS NULL OR accessibilityPreferences='' ");
+            console.log('Accessibility preferences sanitized');
+        } catch (sanErr) {
+            console.warn('Sanitize accessibilityPreferences failed:', sanErr.message);
+        }
         await seedGames();
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);

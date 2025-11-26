@@ -17,6 +17,24 @@ const User = sequelize.define("User", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  accessibilityPreferences: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    get() {
+      const raw = this.getDataValue('accessibilityPreferences');
+      if (!raw) return { visual: false, motor: false, cognitive: false, hearing: false };
+      try { return JSON.parse(raw); } catch { return { visual: false, motor: false, cognitive: false, hearing: false }; }
+    },
+    set(val) {
+      const safe = {
+        visual: !!val?.visual,
+        motor: !!val?.motor,
+        cognitive: !!val?.cognitive,
+        hearing: !!val?.hearing
+      };
+      this.setDataValue('accessibilityPreferences', JSON.stringify(safe));
+    }
+  }
 });
 
 export default User;
