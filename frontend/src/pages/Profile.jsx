@@ -15,6 +15,11 @@ export default function Profile() {
   const [prefsError, setPrefsError] = useState('');
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [followedGames, setFollowedGames] = useState([]);
+  const [fgIndex, setFgIndex] = useState(0); // carousel index
+
+  // for carousel display
+  const VISIBLE = 5;
+  const getWindow = (arr, start, size) => Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
 
   useEffect(() => {
     let mounted = true;
@@ -62,6 +67,9 @@ export default function Profile() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // resetting carousel index when list changes
+  useEffect(() => { setFgIndex(0); }, [followedGames]);
 
   function handleSavePrefs(e) {
     e.preventDefault();
@@ -130,8 +138,7 @@ export default function Profile() {
                   <StatBox label="Watchlist" value={0} />
                   <StatBox label="Reviews" value={reviews.length} />
                   <StatBox label="Helpful Votes" value={0} />
-                </div>
-                {/* Accessibility needs (fixed height, button bottom-right) */}
+                </div>                {/* Accessibility needs (fixed height, button bottom-right) */}
                 <div className="bg-white rounded-xl shadow p-4 flex flex-col justify-between h-[206px]">
                   <div>
                     <h3 className="text-sm font-semibold mb-3">My Accessibility Needs</h3>
@@ -176,20 +183,58 @@ export default function Profile() {
               {followedGames.length === 0 && (
                 <p className="text-xs text-gray-500">You are not following any games yet.</p>
               )}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                {followedGames.map(g => (
-                  <a key={g.id} href={`/games/${g.id}`} className="block group">
-                    <div className="aspect-video bg-gray-200 rounded overflow-hidden flex items-center justify-center">
-                      {g.images && g.images.length ? (
-                        <img src={g.images[0]} alt={g.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                      ) : (
-                        <span className="text-[10px] text-gray-500">No image</span>
-                      )}
+              {followedGames.length > 0 && followedGames.length <= VISIBLE && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                  {followedGames.map(g => (
+                    <a key={g.id} href={`/games/${g.id}`} className="block group">
+                      <div className="aspect-video bg-gray-200 rounded overflow-hidden flex items-center justify-center">
+                        {g.images && g.images.length ? (
+                          <img src={g.images[0]} alt={g.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        ) : (
+                          <span className="text-[10px] text-gray-500">No image</span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-[11px] font-medium truncate" title={g.title}>{g.title}</div>
+                    </a>
+                  ))}
+                </div>
+              )}
+              {followedGames.length > VISIBLE && (
+                <div className="relative">
+                  {/* Left arrow */}
+                  <button
+                    aria-label="Previous followed games"
+                    onClick={() => setFgIndex(i => (i - 1 + followedGames.length) % followedGames.length)}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                  >
+                    <span className="text-sm">&lt;</span>
+                  </button>
+                  {/* Right arrow */}
+                  <button
+                    aria-label="Next followed games"
+                    onClick={() => setFgIndex(i => (i + 1) % followedGames.length)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                  >
+                    <span className="text-sm">&gt;</span>
+                  </button>
+                  <div className="mx-10">
+                    <div className="grid grid-cols-5 gap-4">
+                      {getWindow(followedGames, fgIndex, VISIBLE).map(g => (
+                        <a key={`${g.id}-${fgIndex}`} href={`/games/${g.id}`} className="block group">
+                          <div className="aspect-video bg-gray-200 rounded overflow-hidden flex items-center justify-center">
+                            {g.images && g.images.length ? (
+                              <img src={g.images[0]} alt={g.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                            ) : (
+                              <span className="text-[10px] text-gray-500">No image</span>
+                            )}
+                          </div>
+                          <div className="mt-1 text-[11px] font-medium truncate" title={g.title}>{g.title}</div>
+                        </a>
+                      ))}
                     </div>
-                    <div className="mt-1 text-[11px] font-medium truncate" title={g.title}>{g.title}</div>
-                  </a>
-                ))}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
