@@ -439,6 +439,11 @@ export default function Search() {
     if (settings.textSize === 'large') return 'text-lg';
     return 'text-base';
   })();
+  const spacingGap = (() => {
+    if (settings.spacing === 'snug') return 'gap-2';
+    if (settings.spacing === 'airy') return 'gap-6';
+    return 'gap-4';
+  })();
 
   const focusVisible = settings.focusIndicator ? focusRing : '';
   const reduceMotion = settings.reduceMotion ? 'motion-reduce:transition-none motion-reduce:animate-none' : '';
@@ -496,7 +501,7 @@ export default function Search() {
               {/* Disability Categories (accordion to reveal specific tags) */}
               <section className="mt-4">
                 <h3 className={`text-sm font-semibold ${subTone}`}>Disability Categories</h3>
-                <div className="mt-2 grid grid-cols-1 gap-2">
+                <div className={`mt-2 grid grid-cols-1 ${spacingGap}`}>
                   {categories.map(cat => {
                     const isOpen = openCategories.has(cat);
                     const slug = slugify(cat);
@@ -523,7 +528,7 @@ export default function Search() {
                         </button>
                         {isOpen && (
                           <div id={panelId} role="region" aria-labelledby={btnId} className={`border-t p-2 ${settings.highContrastMode ? 'border-lime-300/60 bg-slate-900' : settings.theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
-                            <div className="grid grid-cols-1 gap-2">
+                            <div className={`grid grid-cols-1 ${spacingGap}`}>
                               {(tagsByCategory[cat] || []).map(tag => {
                                 const active = selectedTags.has(tag);
                                 return (
@@ -603,7 +608,7 @@ export default function Search() {
                   Reset
                 </button>
               </div>
-            </div>
+            </fieldset>
           </aside>
 
           {/* Results */}
@@ -640,7 +645,7 @@ export default function Search() {
                           <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
                         </header>
                         {Array.isArray(g.tags) && g.tags.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2" aria-label="Accessibility tags">
+                          <div className={`mt-3 flex flex-wrap ${spacingGap}`} aria-label="Accessibility tags">
                             {g.tags.map(t => {
                               const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
                               const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
