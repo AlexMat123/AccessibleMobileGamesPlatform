@@ -59,4 +59,27 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.get('/me', async (req, res) => {
+  try {
+    const auth = req.headers.authorization || '';
+    const [, token] = auth.split(' ');
+    if (!token) return res.status(401).json({ message: 'Missing token' });
+
+    let payload;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const user = await User.findByPk(payload.id, { attributes: ['id', 'username', 'email', 'createdAt'] });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json(user);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: 'Failed to load profile' });
+  }
+});
+
 export default router;
