@@ -443,7 +443,7 @@ export default function Search() {
   const focusVisible = settings.focusIndicator ? focusRing : '';
   const reduceMotion = settings.reduceMotion ? 'motion-reduce:transition-none motion-reduce:animate-none' : '';
   const headingTone = settings.highContrastMode ? 'text-lime-50' : settings.theme === 'dark' ? 'text-slate-100' : 'text-slate-900';
-  const subTone = settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-300' : 'text-slate-700';
+  const subTone = settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-200' : 'text-slate-700';
 
   return (
     <div className={`min-h-screen ${pageTone} ${textSizeClass}`}>
@@ -480,7 +480,8 @@ export default function Search() {
         <div className="mt-8 grid grid-cols-12 gap-6">
           {/* Sticky left drawer */}
           <aside className="col-span-12 self-start lg:col-span-4 lg:sticky lg:top-6">
-            <div ref={filtersRef} className={`rounded-2xl p-4 shadow-sm ${panelTone}`}>
+            <fieldset ref={filtersRef} className={`rounded-2xl p-4 shadow-sm ${panelTone}`}>
+              <legend className="sr-only">Filters</legend>
               <div className="flex items-center justify-between">
                 <h2 className={`text-xl font-semibold ${headingTone}`}>Filters</h2>
                 <button
@@ -608,14 +609,23 @@ export default function Search() {
           {/* Results */}
           <section ref={resultsRef} className="col-span-12 space-y-4 lg:col-span-8">
             <div className="flex items-center justify-between text-sm text-slate-600">
-              <nav aria-label="Breadcrumbs" className={subTone}>Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
-              <span>Filters (open)</span>
+              <nav aria-label="Breadcrumbs" className={`${subTone} font-medium`}>Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
+              <span className={subTone}>Filters (open)</span>
             </div>
 
             {gamesLoading || serverLoading ? (
               <p className="text-slate-700" role="status" aria-live="polite">Loading games...</p>
             ) : gamesError ? (
-              <p role="alert" className="text-rose-700">{gamesError}</p>
+              <div role="alert" className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
+                settings.highContrastMode
+                  ? 'border-rose-300 bg-rose-950 text-rose-100'
+                  : settings.theme === 'dark'
+                    ? 'border-rose-300/70 bg-rose-900 text-rose-100'
+                    : 'border-rose-200 bg-rose-50 text-rose-800'
+              }`}>
+                <span aria-hidden className="mt-0.5 text-lg">⚠️</span>
+                <p className="font-semibold">Search error: <span className="font-normal">{gamesError}</span></p>
+              </div>
             ) : sortedResults.length === 0 ? (
               <p className="text-slate-700">No games found.</p>
             ) : (
