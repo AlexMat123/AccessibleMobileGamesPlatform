@@ -86,11 +86,8 @@ export default function Settings() {
   const [highContrastText, setHighContrastText] = useState(defaults.highContrastText);
   const [captionsAlways, setCaptionsAlways] = useState(defaults.captionsAlways);
   const [visualAlerts, setVisualAlerts] = useState(defaults.visualAlerts);
-  const [keyboardNav, setKeyboardNav] = useState(defaults.keyboardNav);
-  const [focusIndicator, setFocusIndicator] = useState(defaults.focusIndicator);
   const [buttonSize, setButtonSize] = useState(defaults.buttonSize);
   const [spacing, setSpacing] = useState(defaults.spacing);
-  const [reducePrecision, setReducePrecision] = useState(defaults.reducePrecision);
   const [wakeWordEnabled, setWakeWordEnabled] = useState(defaults.wakeWordEnabled);
   const [wakeWord, setWakeWord] = useState(defaults.wakeWord);
   const [theme, setTheme] = useState(defaults.theme);
@@ -132,11 +129,8 @@ export default function Settings() {
       highContrastText,
       captionsAlways,
       visualAlerts,
-      keyboardNav,
-      focusIndicator,
       buttonSize,
       spacing,
-      reducePrecision,
       wakeWordEnabled,
       wakeWord,
       theme,
@@ -148,11 +142,8 @@ export default function Settings() {
     highContrastText,
     captionsAlways,
     visualAlerts,
-    keyboardNav,
-    focusIndicator,
     buttonSize,
     spacing,
-    reducePrecision,
     wakeWordEnabled,
     wakeWord,
     theme,
@@ -328,26 +319,6 @@ export default function Settings() {
               </div>
 
               <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
-                <h3 className={`text-sm font-semibold ${headingTone}`}>Keyboard navigation</h3>
-                <div className="mt-3 space-y-3">
-                  <ToggleRow
-                    label="Enable keyboard navigation"
-                    description="Tab, arrow keys, and shortcuts as a first-class path."
-                    active={keyboardNav}
-                    onToggle={() => setKeyboardNav(v => !v)}
-                    styles={toggleStyles}
-                  />
-                  <ToggleRow
-                    label="Show focus indicator (always visible)"
-                    description="Bright focus ring mirrors the search page."
-                    active={focusIndicator}
-                    onToggle={() => setFocusIndicator(v => !v)}
-                    styles={toggleStyles}
-                  />
-                </div>
-              </div>
-
-              <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
                 <h3 className={`text-sm font-semibold ${headingTone}`}>Motor accessibility</h3>
                 <div className="mt-3 space-y-3">
                   <div>
@@ -393,14 +364,6 @@ export default function Settings() {
                     <button type="button" className={`rounded-lg bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 ${sampleButtonClass}`}>Confirm</button>
                     <button type="button" className={`rounded-lg bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 ${sampleButtonClass}`}>Cancel</button>
                   </div>
-
-                  <ToggleRow
-                    label="Reduce precision requirements"
-                    description="Swap drag/press gestures for tap/step-by-step controls."
-                    active={reducePrecision}
-                    onToggle={() => setReducePrecision(v => !v)}
-                    styles={toggleStyles}
-                  />
                 </div>
               </div>
             </div>

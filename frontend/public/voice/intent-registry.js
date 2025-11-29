@@ -36,10 +36,10 @@ export const settingsIntents = [
   { utterances: ['set text size to small'], intent: { type: 'settings', action: 'set-text-size', value: 'small' } },
   { utterances: ['enable reduce animation', 'reduce animation', 'turn on reduce motion'], intent: { type: 'settings', action: 'set-reduce-motion', value: true } },
   { utterances: ['disable reduce animation', 'turn off reduce motion'], intent: { type: 'settings', action: 'set-reduce-motion', value: false } },
-  { utterances: ['enable captions'], intent: { type: 'settings', action: 'set-captions', value: true } },
-  { utterances: ['disable captions'], intent: { type: 'settings', action: 'set-captions', value: false } },
-  { utterances: ['enable visual alerts'], intent: { type: 'settings', action: 'set-visual-alerts', value: true } },
-  { utterances: ['disable visual alerts'], intent: { type: 'settings', action: 'set-visual-alerts', value: false } }
+  { utterances: ['enable captions', 'turn on captions', 'show captions', 'turn on subtitles'], intent: { type: 'settings', action: 'set-captions', value: true } },
+  { utterances: ['disable captions', 'turn off captions', 'hide captions', 'turn off subtitles'], intent: { type: 'settings', action: 'set-captions', value: false } },
+  { utterances: ['enable visual alerts', 'turn on visual alerts', 'turn on visual indicators', 'use visual alerts'], intent: { type: 'settings', action: 'set-visual-alerts', value: true } },
+  { utterances: ['disable visual alerts', 'turn off visual alerts', 'turn off visual indicators', 'stop visual alerts'], intent: { type: 'settings', action: 'set-visual-alerts', value: false } }
 ];
 
 export default {
