@@ -1,4 +1,4 @@
-import { navigationIntents } from './intent-registry.js';
+import { navigationIntents, settingsIntents } from './intent-registry.js';
 
 const WAKE_WORD = 'hey platform';
 
@@ -114,11 +114,20 @@ function matchRegisteredIntents(command, registry) {
   return null;
 }
 
+function textSizeFallback(command) {
+  // Catch noisy phrases like "can you set text size maybe medium"
+  const sizeHit = command.match(/\b(text size|font size).*\b(small|medium|large)\b/);
+  if (sizeHit) {
+    return { type: 'settings', action: 'set-text-size', value: sizeHit[2] };
+  }
+  return null;
+}
+
 export function parseCommand(rawTranscript) {
   const command = stripWakeWord(rawTranscript);
   if (!command) return null;
 
-  const registryMatch = matchRegisteredIntents(command, navigationIntents);
+  const registryMatch = matchRegisteredIntents(command, [...navigationIntents, ...settingsIntents]);
   if (registryMatch) return registryMatch;
 
   const result =
@@ -126,6 +135,7 @@ export function parseCommand(rawTranscript) {
     match(command, searches) ||
     match(command, filters) ||
     match(command, gameActions) ||
+    textSizeFallback(command) ||
     forgivingFilterMatch(command);
 
   return result ? { ...result, utterance: command } : null;

@@ -15,6 +15,30 @@ const buttonSizes = {
   xlarge: 'px-6 py-3.5 text-lg'
 };
 
+const flashClass = 'voice-flash';
+
+function ensureFlashStyle() {
+  if (document.getElementById('voice-flash-style')) return;
+  const style = document.createElement('style');
+  style.id = 'voice-flash-style';
+  style.textContent = `
+    .${flashClass} {
+      outline: 3px solid #a5f3fc;
+      outline-offset: 3px;
+      transition: outline-color 0.4s ease;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function flashInteraction(el) {
+  if (!el) return;
+  ensureFlashStyle();
+  if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+  el.classList.add(flashClass);
+  setTimeout(() => el.classList.remove(flashClass), 800);
+}
+
 const spacingGaps = {
   snug: 'gap-2',
   roomy: 'gap-4',
@@ -73,6 +97,35 @@ export default function Settings() {
   const [highContrastMode, setHighContrastMode] = useState(defaults.highContrastMode);
   const [reduceMotion, setReduceMotion] = useState(defaults.reduceMotion);
 
+  const applyVoiceSettings = (detail) => {
+    switch (detail.action) {
+      case 'set-high-contrast-mode':
+        setHighContrastMode(Boolean(detail.value));
+        break;
+      case 'set-wake-word-enabled':
+        setWakeWordEnabled(Boolean(detail.value));
+        break;
+      case 'set-wake-word':
+        setWakeWordEnabled(true);
+        if (detail.value) setWakeWord(detail.value);
+        break;
+      case 'set-text-size':
+        if (['small','medium','large'].includes(detail.value)) setTextSize(detail.value);
+        break;
+      case 'set-reduce-motion':
+        setReduceMotion(Boolean(detail.value));
+        break;
+      case 'set-captions':
+        setCaptionsAlways(Boolean(detail.value));
+        break;
+      case 'set-visual-alerts':
+        setVisualAlerts(Boolean(detail.value));
+        break;
+      default:
+        break;
+    }
+  };
+
   useEffect(() => {
     saveSettings({
       textSize,
@@ -106,6 +159,18 @@ export default function Settings() {
     highContrastMode,
     reduceMotion
   ]);
+
+  useEffect(() => {
+    const onVoice = (e) => {
+      const detail = e.detail || {};
+      if (detail.type !== 'settings') return;
+      e.preventDefault();
+      applyVoiceSettings(detail);
+      flashInteraction(document.querySelector('main'));
+    };
+    window.addEventListener('voiceCommand', onVoice);
+    return () => window.removeEventListener('voiceCommand', onVoice);
+  }, []);
 
   const sampleTextClasses = useMemo(() => {
     const sizeClass = textSizePreview[textSize] || textSizePreview.medium;
@@ -205,10 +270,6 @@ export default function Settings() {
         <header className="space-y-3">
           <p className="text-sm font-semibold uppercase tracking-wide text-lime-700">Settings</p>
           <h1 className={`text-3xl font-bold sm:text-4xl ${headingTone}`}>Accessibility first</h1>
-          <p className={`max-w-3xl text-lg ${bodyTone}`}>
-            Minimal, chunked controls for hearing-impaired and motor-impaired players. Mirrors the Search page tone with clear
-            focus states and roomy hit targets.
-          </p>
         </header>
 
         <div className="mt-10">
@@ -216,7 +277,6 @@ export default function Settings() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className={`text-xl font-semibold ${headingTone}`}>Accessibility</h2>
-                <p className={`mt-1 text-sm ${subTone}`}>Text, captions, keyboard, and motor controls grouped for quick scanning.</p>
               </div>
               <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-lime-800">Priority</span>
             </div>
@@ -350,7 +410,6 @@ export default function Settings() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className={`text-xl font-semibold ${headingTone}`}>Voice control</h2>
-                <p className={`mt-1 text-sm ${subTone}`} >“Always listening” with an editable wake word to match client requirements.</p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">Voice</span>
             </div>
@@ -382,7 +441,6 @@ export default function Settings() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className={`text-xl font-semibold ${headingTone}`}>UI personalisation</h2>
-                <p className={`mt-1 text-sm ${subTone}`}>Keep it minimal but flexible for cognitive comfort.</p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">Visual</span>
             </div>
@@ -419,16 +477,6 @@ export default function Settings() {
                 onToggle={() => setReduceMotion(v => !v)}
                 styles={toggleStyles}
               />
-
-              <div className="rounded-xl border border-dashed border-slate-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-4 text-white">
-                <p className="text-sm font-semibold uppercase tracking-wide text-lime-100">Preview</p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <span className="rounded-full bg-lime-400/20 px-3 py-1 text-xs font-semibold text-lime-100">High contrast</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">Dark mode</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">Low motion</span>
-                </div>
-                <p className="mt-3 text-sm text-slate-100">Theme choices mirror the search page language so nothing feels bolted on.</p>
-              </div>
             </div>
           </section>
 
@@ -436,14 +484,13 @@ export default function Settings() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className={`text-xl font-semibold ${headingTone}`}>About & accessibility statement</h2>
-                <p className={`mt-1 text-sm ${subTone}`}>Short, scannable, and ready for WCAG callouts.</p>
               </div>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">Info</span>
             </div>
 
             <div className="mt-4 space-y-3 text-sm">
               <p className={`font-semibold ${headingTone}`}>About</p>
-              <p className={bodyTone}>Accessible Games Hub focuses on discoverability for players with hearing, vision, and motor needs. No tutorial required—this page and the search page keep onboarding light.</p>
+              <p className={bodyTone}>Accessible Games Hub focuses on discoverability for players with hearing, vision, and motor needs.</p>
               <p className={`font-semibold ${headingTone}`}>Accessibility Statement</p>
               <ul className={`list-disc space-y-1 pl-5 ${bodyTone}`}>
                 <li>WCAG 2.1 AA intent; captions and visual alerts default on.</li>
