@@ -125,10 +125,14 @@ function textSizeFallback(command) {
 
 function buttonSizeFallback(command) {
   // e.g., "make the buttons extra large", "set button size normal"
-  const hit = command.match(/\b(buttons?|button size).*\b(normal|large|extra[- ]?large|xlarge)\b/);
+  const lower = command.toLowerCase();
+  if (lower.includes('extra large') || lower.includes('extra-large') || lower.includes('xlarge')) {
+    return { type: 'settings', action: 'set-button-size', value: 'xlarge' };
+  }
+  const hit = command.match(/\b(buttons?|button size)\b.*\b(normal|large)\b/);
   if (!hit) return null;
   const raw = hit[2];
-  const value = raw.includes('extra') || raw === 'xlarge' ? 'xlarge' : raw;
+  const value = raw === 'normal' ? 'normal' : 'large';
   return { type: 'settings', action: 'set-button-size', value };
 }
 
