@@ -39,7 +39,13 @@ export const settingsIntents = [
   { utterances: ['enable captions', 'turn on captions', 'show captions', 'turn on subtitles'], intent: { type: 'settings', action: 'set-captions', value: true } },
   { utterances: ['disable captions', 'turn off captions', 'hide captions', 'turn off subtitles'], intent: { type: 'settings', action: 'set-captions', value: false } },
   { utterances: ['enable visual alerts', 'turn on visual alerts', 'turn on visual indicators', 'use visual alerts'], intent: { type: 'settings', action: 'set-visual-alerts', value: true } },
-  { utterances: ['disable visual alerts', 'turn off visual alerts', 'turn off visual indicators', 'stop visual alerts'], intent: { type: 'settings', action: 'set-visual-alerts', value: false } }
+  { utterances: ['disable visual alerts', 'turn off visual alerts', 'turn off visual indicators', 'stop visual alerts'], intent: { type: 'settings', action: 'set-visual-alerts', value: false } },
+  { utterances: ['set button size normal', 'set buttons to normal'], intent: { type: 'settings', action: 'set-button-size', value: 'normal' } },
+  { utterances: ['set button size large', 'make buttons larger', 'make buttons big'], intent: { type: 'settings', action: 'set-button-size', value: 'large' } },
+  { utterances: ['set button size extra large', 'make buttons extra large'], intent: { type: 'settings', action: 'set-button-size', value: 'xlarge' } },
+  { utterances: ['set spacing tight', 'tighten spacing'], intent: { type: 'settings', action: 'set-spacing', value: 'snug' } },
+  { utterances: ['set spacing roomy', 'normal spacing'], intent: { type: 'settings', action: 'set-spacing', value: 'roomy' } },
+  { utterances: ['set spacing extra room', 'wider spacing', 'more spacing'], intent: { type: 'settings', action: 'set-spacing', value: 'airy' } }
 ];
 
 export default {

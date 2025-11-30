@@ -118,6 +118,12 @@ export default function Settings() {
       case 'set-visual-alerts':
         setVisualAlerts(Boolean(detail.value));
         break;
+      case 'set-button-size':
+        if (['normal','large','xlarge'].includes(detail.value)) setButtonSize(detail.value);
+        break;
+      case 'set-spacing':
+        if (['snug','roomy','airy'].includes(detail.value)) setSpacing(detail.value);
+        break;
       default:
         break;
     }

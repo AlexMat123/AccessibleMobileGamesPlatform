@@ -123,6 +123,25 @@ function textSizeFallback(command) {
   return null;
 }
 
+function buttonSizeFallback(command) {
+  // e.g., "make the buttons extra large", "set button size normal"
+  const hit = command.match(/\b(buttons?|button size).*\b(normal|large|extra[- ]?large|xlarge)\b/);
+  if (!hit) return null;
+  const raw = hit[2];
+  const value = raw.includes('extra') || raw === 'xlarge' ? 'xlarge' : raw;
+  return { type: 'settings', action: 'set-button-size', value };
+}
+
+function spacingFallback(command) {
+  // e.g., "set spacing to extra room", "make spacing tighter"
+  const hit = command.match(/\bspacing\b.*\b(tight|snug|roomy|normal|extra[ -]?room|wide|wider)\b/);
+  if (!hit) return null;
+  const raw = hit[1];
+  if (raw === 'tight' || raw === 'snug' || raw === 'wider') return { type: 'settings', action: 'set-spacing', value: 'snug' };
+  if (raw === 'roomy' || raw === 'normal') return { type: 'settings', action: 'set-spacing', value: 'roomy' };
+  return { type: 'settings', action: 'set-spacing', value: 'airy' };
+}
+
 export function parseCommand(rawTranscript) {
   const command = stripWakeWord(rawTranscript);
   if (!command) return null;
@@ -136,6 +155,8 @@ export function parseCommand(rawTranscript) {
     match(command, filters) ||
     match(command, gameActions) ||
     textSizeFallback(command) ||
+    buttonSizeFallback(command) ||
+    spacingFallback(command) ||
     forgivingFilterMatch(command);
 
   return result ? { ...result, utterance: command } : null;
