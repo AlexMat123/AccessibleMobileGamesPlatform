@@ -1,0 +1,44 @@
+const SETTINGS_KEY = 'appSettings';
+
+const defaultSettings = {
+  textSize: 'medium',
+  highContrastText: false,
+  captionsAlways: true,
+  visualAlerts: true,
+  keyboardNav: true,
+  focusIndicator: true,
+  buttonSize: 'large',
+  spacing: 'roomy',
+  reducePrecision: true,
+  wakeWordEnabled: true,
+  wakeWord: 'Astra',
+  theme: 'light',
+  highContrastMode: false,
+  reduceMotion: false
+};
+
+export function loadSettings() {
+  if (typeof window === 'undefined') return { ...defaultSettings };
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return { ...defaultSettings };
+    const parsed = JSON.parse(raw);
+    return { ...defaultSettings, ...(parsed || {}) };
+  } catch (e) {
+    console.warn('[settings] failed to parse, using defaults', e);
+    return { ...defaultSettings };
+  }
+}
+
+export function saveSettings(next = {}) {
+  if (typeof window === 'undefined') return;
+  try {
+    const merged = { ...loadSettings(), ...next };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+    return merged;
+  } catch (e) {
+    console.warn('[settings] failed to save', e);
+  }
+}
+
+export { defaultSettings, SETTINGS_KEY };

@@ -54,7 +54,7 @@ export default function Game() {
           }
         `;
         document.head.appendChild(style);
-    }, []);
+    }, [showReviewModal, reviewComment, submittingReview]);
 
     const focusAndFlash = (el) => {
         if (!el) return;
@@ -126,6 +126,11 @@ export default function Game() {
                         focusAndFlash(document.querySelector('textarea'));
                     }, 50);
                     break;
+                case 'open-reviews':
+                    e.preventDefault();
+                    openReviewModal();
+                    setTimeout(() => focusAndFlash(reviewRatingRef.current), 50);
+                    break;
                 case 'download':
                     pushToast('Download action not implemented yet');
                     break;
@@ -150,13 +155,25 @@ export default function Game() {
                     setTimeout(() => focusAndFlash(reviewCommentRef.current), 30);
                     break;
                 case 'submit-review':
-                    if (!showReviewModal) openReviewModal();
-                    setTimeout(() => {
-                        if (reviewSubmitRef.current && !submittingReview) {
-                            reviewSubmitRef.current.click();
-                            focusAndFlash(reviewSubmitRef.current);
+                    if (!showReviewModal) openReviewModal({ preserve: true });
+                    // Wait for modal to mount and refs to attach before clicking submit
+                    const clickSubmit = () => {
+                        const btn = reviewSubmitRef.current || document.querySelector('[data-voice-review-submit]');
+                        if (btn && !submittingReview) {
+                            btn.click();
+                            focusAndFlash(btn);
+                            return true;
                         }
-                    }, 80);
+                        return false;
+                    };
+                    // Retry briefly in case render is delayed
+                    setTimeout(() => {
+                        if (clickSubmit()) return;
+                        setTimeout(() => {
+                            if (clickSubmit()) return;
+                            setTimeout(clickSubmit, 120);
+                        }, 80);
+                    }, 120);
                     break;
                 case 'cancel-review':
                     if (showReviewModal) closeReviewModal();
@@ -185,12 +202,15 @@ export default function Game() {
         return () => window.removeEventListener('voiceCommand', onVoice);
     }, []);
 
-    const openReviewModal = () => {
-        setReviewRating(5);
-        setReviewComment('');
-        setSubmitError(null);
+    const openReviewModal = (opts = {}) => {
+        const preserve = opts.preserve === true;
+        if (!preserve) {
+            setReviewRating(5);
+            setReviewComment('');
+            setSubmitError(null);
+        }
         setShowReviewModal(true);
-    }
+    };
 
     const closeReviewModal = () => {
         if (submittingReview) return; // prevent closing while submitting
@@ -467,6 +487,7 @@ export default function Game() {
                                         <button
                                             type="submit"
                                             ref={reviewSubmitRef}
+                                            data-voice-review-submit
                                             className="px-4 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
                                             disabled={submittingReview}
                                         >

@@ -1,3 +1,5 @@
+import { getWakeWord } from './command-parser.js';
+
 /**
  * Lightweight wrapper for the Web Speech API to keep the mic alive
  * and stream transcripts to callbacks.
@@ -22,7 +24,8 @@ export function createVoiceListener({ onTranscript, onStatus }) {
 
   recognition.onstart = () => {
     running = true;
-    onStatus?.('Listening... say "Hey Platform"');
+    const wakeWord = getWakeWord();
+    onStatus?.(`Listening... say "${wakeWord}"`);
     console.info('[voice] mic started');
   };
 
@@ -47,8 +50,10 @@ export function createVoiceListener({ onTranscript, onStatus }) {
   };
 
   recognition.onresult = (event) => {
-    const transcript = Array.from(event.results)
-      .map((r) => r[0]?.transcript || '')
+    // Only take the most recent phrase, not the entire session backlog.
+    const last = event.results[event.results.length - 1];
+    const transcript = Array.from(last || [])
+      .map((r) => r?.transcript || '')
       .join(' ')
       .trim();
     if (transcript) {
