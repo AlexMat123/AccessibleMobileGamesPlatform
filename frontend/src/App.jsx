@@ -1,4 +1,4 @@
-import './App.css'
+import './App.css';
 import Home from "./pages/Home";
 import Search from "./pages/Search";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
@@ -8,8 +8,7 @@ import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import ToastHost from './components/ToastHost.jsx';
 import Settings from './pages/Settings.jsx';
-
-
+import Profile from './pages/Profile.jsx';
 
 function App() {
   return (
@@ -18,10 +17,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />
-        <Route path="/games/:id" element={<Game/>} />
+        <Route path="/games/:id" element={<Game />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
       <ToastHost />
     </Router>

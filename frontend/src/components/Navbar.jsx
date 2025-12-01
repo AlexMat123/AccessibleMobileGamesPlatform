@@ -43,6 +43,7 @@ export default function Navbar() {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
     window.dispatchEvent(new Event('auth-changed'));
+    window.location.href = '/';
   };
 
   // Fetch search with debounce

@@ -19,6 +19,19 @@ Tag.belongsToMany(Game, {
     otherKey: 'gameId'
 });
 
+User.belongsToMany(Game, {
+    through: 'UserFollows',
+    as: 'followedGames',
+    foreignKey: 'userId',
+    otherKey: 'gameId'
+});
+
+Game.belongsToMany(User, {
+    through: 'UserFollows',
+    as: 'followers',
+    foreignKey: 'gameId',
+    otherKey: 'userId'
+});
 
 Game.hasMany(Review, {
     as: 'reviews',
