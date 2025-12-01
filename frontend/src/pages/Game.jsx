@@ -127,18 +127,21 @@ export default function Game() {
     const images = Array.isArray(game.images) && game.images.length
         ? game.images
         : ['/placeholder1.png', '/placeholder2.png', '/placeholder3.png'];
-    const currentHero = images[heroIndex];
+    // Trailer being displayed
+    const trailerUrl = (game.name === 'Aurora Quest') ? '/AuroraQuestTrailer.mp4' : null;
+    const media = trailerUrl ? [trailerUrl, ...images] : images;
+    const currentHero = media[heroIndex];
 
-    // Additional images carousel logic (show 3)
+    // Additional images carousel logic
     const ADD_VISIBLE = 3;
-    const addWindow = images.slice(addIndex, addIndex + ADD_VISIBLE).length === ADD_VISIBLE
-        ? images.slice(addIndex, addIndex + ADD_VISIBLE)
-        : [...images.slice(addIndex), ...images.slice(0, (addIndex + ADD_VISIBLE) % images.length)];
+    const addWindow = media.slice(addIndex, addIndex + ADD_VISIBLE).length === ADD_VISIBLE
+        ? media.slice(addIndex, addIndex + ADD_VISIBLE)
+        : [...media.slice(addIndex), ...media.slice(0, (addIndex + ADD_VISIBLE) % media.length)];
 
-    const prevHero = () => setHeroIndex((i) => (i - 1 + images.length) % images.length);
-    const nextHero = () => setHeroIndex((i) => (i + 1) % images.length);
-    const prevAdditional = () => setAddIndex(i => (i - 1 + images.length) % images.length);
-    const nextAdditional = () => setAddIndex(i => (i + 1) % images.length);
+    const prevHero = () => setHeroIndex((i) => (i - 1 + media.length) % media.length);
+    const nextHero = () => setHeroIndex((i) => (i + 1) % media.length);
+    const prevAdditional = () => setAddIndex(i => (i - 1 + media.length) % media.length);
+    const nextAdditional = () => setAddIndex(i => (i + 1) % media.length);
 
     //Reviews
     const reviews = game.reviews || [];
@@ -161,16 +164,27 @@ export default function Game() {
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <button onClick={prevHero} style={sideBtn} aria-label="Previous image">‹</button>
-                            <img
-                                src={currentHero}
-                                alt={`${game.name} screenshot`}
-                                style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block' }}
-                            />
+                            {String(currentHero).toLowerCase().endsWith('.mp4') ? (
+                                <video
+                                    src={currentHero}
+                                    controls
+                                    autoPlay
+                                    muted
+                                    loop
+                                    style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block', background: '#000' }}
+                                />
+                            ) : (
+                                <img
+                                    src={currentHero}
+                                    alt={`${game.name} media`}
+                                    style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                                />
+                            )}
                             <button onClick={nextHero} style={sideBtn} aria-label="Next image">›</button>
                         </div>
 
                         <div style={{ textAlign: 'center', marginTop: 4 }}>
-                            {images.map((_, i) => (
+                            {media.map((_, i) => (
                                 <span
                                     key={i}
                                     onClick={() => setHeroIndex(i)}
@@ -262,15 +276,22 @@ export default function Game() {
                     <h3 style={sectionTitle}>Additional Images</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <button onClick={prevAdditional} style={secBtn} aria-label="Previous additional images">‹</button>
-                        {addWindow.map((url, i) => (
-                            <div key={i} style={{ width: 140, height: 90, background: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
-                                <img src={url} alt={`Additional ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
-                            </div>
-                        ))}
+                        {addWindow.map((url, i) => {
+                            const isVideo = String(url).toLowerCase().endsWith('.mp4');
+                            return (
+                                <div key={i} style={{ width: 140, height: 90, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
+                                    {isVideo ? (
+                                        <video src={url} muted loop style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
+                                    ) : (
+                                        <img src={url} alt={`Additional ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
+                                    )}
+                                </div>
+                            );
+                        })}
                         <button onClick={nextAdditional} style={secBtn} aria-label="Next additional images">›</button>
                     </div>
                     <div style={{ textAlign: 'center', marginTop: 6 }}>
-                        {images.map((_, i) => (
+                        {media.map((_, i) => (
                             <span key={i} style={{
                                 display: 'inline-block',
                                 width: 6,
