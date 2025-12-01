@@ -568,12 +568,27 @@ export default function Search() {
                 {sortedResults.map(g => (
                   <li key={g.id}>
                     <article className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                      <div className="h-32 w-full bg-slate-200" aria-hidden></div>
+                      {g.imageUrl ? (
+                        <img
+                          src={g.imageUrl}
+                          alt={`${g.title} cover`}
+                          className="h-32 w-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-32 w-full bg-slate-200" aria-hidden></div>
+                      )}
                       <div className="p-4">
                         <header className="flex items-baseline justify-between gap-3">
                           <h3 className="text-lg font-bold text-slate-900">{g.title}</h3>
                           <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
                         </header>
+                        {g.rating != null && (
+                          <div className="mt-1 flex items-center gap-2 text-sm text-slate-700">
+                            <span aria-hidden className="text-amber-500">★</span>
+                            <span className="font-semibold">{Number(g.rating).toFixed(1)}</span>
+                            <span className="text-xs text-slate-500">(rating)</span>
+                          </div>
+                        )}
                         {Array.isArray(g.tags) && g.tags.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-2" aria-label="Accessibility tags">
                             {g.tags.map(t => {
