@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames } from '../api';
 import { fetchCurrentUser } from '../api';
@@ -31,6 +31,37 @@ export default function Game() {
     const [currentUser, setCurrentUser] = useState(null);
     const [isFollowed, setIsFollowed] = useState(false);
     const [followBusy, setFollowBusy] = useState(false);
+    const followBtnRef = useRef(null);
+    const reviewBtnRef = useRef(null);
+    const reviewRatingRef = useRef(null);
+    const reviewCommentRef = useRef(null);
+    const reviewSubmitRef = useRef(null);
+    const heroRef = useRef(null);
+    const addCarouselRef = useRef(null);
+
+    // Light flash style for voice feedback
+    const flashClass = 'voice-flash';
+    useEffect(() => {
+        const styleId = 'voice-flash-style';
+        if (document.getElementById(styleId)) return;
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+          .${flashClass} {
+            outline: 3px solid #a5f3fc;
+            outline-offset: 3px;
+            transition: outline-color 0.4s ease;
+          }
+        `;
+        document.head.appendChild(style);
+    }, []);
+
+    const focusAndFlash = (el) => {
+        if (!el) return;
+        if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+        el.classList.add(flashClass);
+        setTimeout(() => el.classList.remove(flashClass), 1000);
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -76,6 +107,84 @@ export default function Game() {
         return () => { cancelled = true; };
     }, [currentUser, game]);
 
+    useEffect(() => {
+        const onVoice = (e) => {
+            const detail = e.detail || {};
+            if (detail.type !== 'game') return;
+            switch (detail.action) {
+                case 'follow':
+                case 'unfollow':
+                    if (followBtnRef.current) {
+                        followBtnRef.current.click();
+                        focusAndFlash(followBtnRef.current);
+                    }
+                    break;
+                case 'write-review':
+                    e.preventDefault();
+                    openReviewModal();
+                    setTimeout(() => {
+                        focusAndFlash(document.querySelector('textarea'));
+                    }, 50);
+                    break;
+                case 'download':
+                    pushToast('Download action not implemented yet');
+                    break;
+                case 'wishlist':
+                    pushToast('Wishlist action not implemented yet');
+                    break;
+                case 'report':
+                    pushToast('Report action not implemented yet');
+                    break;
+                case 'set-review-rating':
+                    if (!showReviewModal) openReviewModal();
+                    setReviewRating(detail.value || 5);
+                    focusAndFlash(reviewRatingRef.current);
+                    break;
+                case 'focus-review-comment':
+                    if (!showReviewModal) openReviewModal();
+                    setTimeout(() => focusAndFlash(reviewCommentRef.current), 30);
+                    break;
+                case 'set-review-comment':
+                    if (!showReviewModal) openReviewModal();
+                    setReviewComment(detail.value || '');
+                    setTimeout(() => focusAndFlash(reviewCommentRef.current), 30);
+                    break;
+                case 'submit-review':
+                    if (!showReviewModal) openReviewModal();
+                    setTimeout(() => {
+                        if (reviewSubmitRef.current && !submittingReview) {
+                            reviewSubmitRef.current.click();
+                            focusAndFlash(reviewSubmitRef.current);
+                        }
+                    }, 80);
+                    break;
+                case 'cancel-review':
+                    if (showReviewModal) closeReviewModal();
+                    break;
+                case 'next-image':
+                    nextHero();
+                    focusAndFlash(heroRef.current);
+                    break;
+                case 'prev-image':
+                    prevHero();
+                    focusAndFlash(heroRef.current);
+                    break;
+                case 'next-additional':
+                    nextAdditional();
+                    focusAndFlash(addCarouselRef.current);
+                    break;
+                case 'prev-additional':
+                    prevAdditional();
+                    focusAndFlash(addCarouselRef.current);
+                    break;
+                default:
+                    break;
+            }
+        };
+        window.addEventListener('voiceCommand', onVoice);
+        return () => window.removeEventListener('voiceCommand', onVoice);
+    }, []);
+
     const openReviewModal = () => {
         setReviewRating(5);
         setReviewComment('');
@@ -119,6 +228,17 @@ export default function Game() {
         }
     }
 
+    //Reviews
+    const reviews = game?.reviews || [];
+
+    const ratingCounts = [0, 0, 0, 0, 0];
+    reviews.forEach(r => {
+        if (r.rating >= 1 && r.rating <= 5) {
+            ratingCounts[r.rating - 1]++;
+        }
+    });
+    const ratingDist = ratingCounts.reverse();
+
     if (loading) return <div style={{ padding: '1rem' }}>Loading...</div>;
     if (error) return <div style={{ padding: '1rem', color: 'red' }}>Error: {error}</div>;
     if (!game) return <div style={{ padding: '1rem' }}>Not found</div>;
@@ -140,33 +260,23 @@ export default function Game() {
     const prevAdditional = () => setAddIndex(i => (i - 1 + images.length) % images.length);
     const nextAdditional = () => setAddIndex(i => (i + 1) % images.length);
 
-    //Reviews
-    const reviews = game.reviews || [];
-
-    const ratingCounts = [0, 0, 0, 0, 0];
-    reviews.forEach(r => {
-        if (r.rating >= 1 && r.rating <= 5) {
-            ratingCounts[r.rating - 1]++;
-        }
-    });
-    const ratingDist = ratingCounts.reverse();
-
 
     return (
         <div style={{ background: '#d7edf9', minHeight: '100vh', padding: '1rem', fontFamily: 'Arial, sans-serif' }}>
             <div style={{ maxWidth: 1000, margin: '0 auto' }}>
                 {/* Top section */}
-                <div style={{ display: 'flex', gap: '1rem', background: '#f2f2f2', padding: '1rem', borderRadius: 6 }}>
+                <div style={{ display: 'flex', gap: '1rem', background: '#f2f2f2', padding: '1rem', borderRadius: 6 }} ref={heroRef}>
                     {/* Hero image */}
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <button onClick={prevHero} style={sideBtn} aria-label="Previous image">‹</button>
+                            <button onClick={prevHero} style={sideBtn} aria-label="Previous image">&lt;</button>
                             <img
                                 src={currentHero}
                                 alt={`${game.name} screenshot`}
                                 style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                                
                             />
-                            <button onClick={nextHero} style={sideBtn} aria-label="Next image">›</button>
+                            <button onClick={nextHero} style={sideBtn} aria-label="Next image">&gt;</button>
                         </div>
 
                         <div style={{ textAlign: 'center', marginTop: 4 }}>
@@ -222,7 +332,7 @@ export default function Game() {
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <button style={primaryBtn}>Download Game</button>
-                            <button style={secBtn} disabled={followBusy} onClick={async () => {
+                            <button style={secBtn} ref={followBtnRef} disabled={followBusy} onClick={async () => {
                                 if (!currentUser) { pushToast('Please log in to follow'); return; }
                                 setFollowBusy(true);
                                 try {
@@ -260,7 +370,7 @@ export default function Game() {
                 {/* Additional Images */}
                 <section style={sectionStyle}>
                     <h3 style={sectionTitle}>Additional Images</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} ref={addCarouselRef}>
                         <button onClick={prevAdditional} style={secBtn} aria-label="Previous additional images">‹</button>
                         {addWindow.map((url, i) => (
                             <div key={i} style={{ width: 140, height: 90, background: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
@@ -287,7 +397,7 @@ export default function Game() {
                 <section style={sectionStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={sectionTitle}>User Reviews</h3>
-                        <button style={primaryBtn} onClick={openReviewModal}>Write a Review</button>
+                        <button style={primaryBtn} ref={reviewBtnRef} onClick={openReviewModal}>Write a Review</button>
                     </div>
 
                     {/* Review modal */}
@@ -315,10 +425,11 @@ export default function Game() {
 
                                     <div>
                                         <label className="block text-sm font-medium mb-1">
-                                            Rating (1\-5)
+                                            Rating (1-5)
                                         </label>
                                         <select
                                             value={reviewRating}
+                                            ref={reviewRatingRef}
                                             onChange={(e) => setReviewRating(e.target.value)}
                                             className="border rounded px-2 py-1 w-full"
                                             required
@@ -337,6 +448,7 @@ export default function Game() {
                                         </label>
                                         <textarea
                                             value={reviewComment}
+                                            ref={reviewCommentRef}
                                             onChange={(e) => setReviewComment(e.target.value)}
                                             className="border rounded px-2 py-1 w-full min-h-[100px]"
                                             required
@@ -354,6 +466,7 @@ export default function Game() {
                                         </button>
                                         <button
                                             type="submit"
+                                            ref={reviewSubmitRef}
                                             className="px-4 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
                                             disabled={submittingReview}
                                         >
@@ -453,3 +566,7 @@ const sectionTitle = {
     margin: '0 0 6px',
     fontSize: 14
 };
+
+
+
+
