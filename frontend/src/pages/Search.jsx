@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchGames, fetchTagGroups, searchGames } from '../api';
+import { loadSettings } from '../settings';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
 
 export default function Search() {
+  const settings = useMemo(() => loadSettings(), []);
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [groups, setGroups] = useState([]);
@@ -28,6 +30,7 @@ export default function Search() {
   const filtersRef = useRef(null);
   const resultsRef = useRef(null);
   const genreSelectRef = useRef(null);
+  const sortSelectRef = useRef(null);
 
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
@@ -303,6 +306,25 @@ export default function Search() {
     return false;
   };
 
+  const setSortByVoice = (value) => {
+    const select = sortSelectRef.current;
+    if (!select) return false;
+    const target = normalizeText(value);
+    const match = Array.from(select.options).find(opt => {
+      const v = normalizeText(opt.value);
+      const t = normalizeText(opt.textContent);
+      return v === target || t === target || v.includes(target) || target.includes(v) || t.includes(target) || target.includes(t);
+    });
+    if (match) {
+      select.value = match.value;
+      setSortBy(match.value);
+      focusAndFlash(select);
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+    return false;
+  };
+
   // Voice commands: search, filter, and open filters drawer.
   useEffect(() => {
     const matchGenre = (name = '') => {
@@ -403,20 +425,66 @@ export default function Search() {
         e.preventDefault();
         filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+
+      if (type === 'sort' && detail.value) {
+        e.preventDefault();
+        setSortByVoice(detail.value);
+        return;
+      }
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);
   }, [genreOptions, allTags, tagsByCategory]);
 
+  const pageTone = settings.highContrastMode
+    ? 'bg-slate-900 text-lime-50'
+    : settings.theme === 'dark'
+      ? 'bg-slate-900 text-slate-100'
+      : 'bg-white text-slate-900';
+
+  const panelTone = settings.highContrastMode
+    ? 'border border-lime-300 bg-slate-950 text-lime-50 shadow-[0_0_0_1px_rgba(190,242,100,0.25)]'
+    : settings.theme === 'dark'
+      ? 'border border-slate-700 bg-slate-800 text-slate-100 shadow-sm shadow-black/20'
+      : 'border border-slate-200 bg-white text-slate-900 shadow-sm';
+
+  const sectionTone = settings.highContrastMode
+    ? 'border border-lime-300/70 bg-slate-900 text-lime-50'
+    : settings.theme === 'dark'
+      ? 'border border-slate-700 bg-slate-800 text-slate-100'
+      : 'border border-slate-200 bg-white text-slate-900';
+
+  const inputTone = settings.highContrastMode
+    ? 'border-lime-300 bg-slate-900 text-lime-50 placeholder-lime-200'
+    : settings.theme === 'dark'
+      ? 'border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-400'
+      : 'border-slate-300 bg-white text-slate-900 placeholder-slate-500';
+
+  const textSizeClass = (() => {
+    if (settings.textSize === 'small') return 'text-sm';
+    if (settings.textSize === 'large') return 'text-lg';
+    return 'text-base';
+  })();
+  const spacingGap = (() => {
+    if (settings.spacing === 'snug') return 'gap-2';
+    if (settings.spacing === 'airy') return 'gap-6';
+    return 'gap-4';
+  })();
+
+  const focusVisible = settings.focusIndicator ? focusRing : '';
+  const reduceMotion = settings.reduceMotion ? 'motion-reduce:transition-none motion-reduce:animate-none' : '';
+  const headingTone = settings.highContrastMode ? 'text-lime-50' : settings.theme === 'dark' ? 'text-slate-100' : 'text-slate-900';
+  const subTone = settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-200' : 'text-slate-700';
+
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className={`min-h-screen ${pageTone} ${textSizeClass}`}>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
         <header className="space-y-4">
           <h1 className="text-3xl font-bold sm:text-4xl">Search</h1>
         </header>
 
         {/* Search bar */}
-        <div className={`mt-6 flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-3 py-2 focus-within:outline focus-within:outline-4 focus-within:outline-lime-400 focus-within:outline-offset-2`}>
+        <div className={`mt-6 flex items-center gap-2 rounded-2xl border px-3 py-2 ${inputTone} ${focusVisible}`}>
           <svg aria-hidden width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-slate-500">
             <circle cx="11" cy="11" r="7"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -426,12 +494,12 @@ export default function Search() {
             ref={searchInputRef}
             type="search"
             placeholder="Search games, genres, or accessibility tags..."
-            className="w-full bg-transparent px-2 py-2 text-base text-slate-900 placeholder-slate-500 focus:outline-none"
+            className={`w-full bg-transparent px-2 py-2 ${textSizeClass} ${pageTone.includes('text-lime') ? 'text-lime-50 placeholder-lime-200' : 'text-slate-900 placeholder-slate-500'} focus:outline-none`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search games"
           />
-          <button type="button" aria-label="Voice search" className="rounded-md p-2 text-slate-500 hover:text-slate-700">
+          <button type="button" aria-label="Voice search" className={`rounded-md p-2 text-slate-500 hover:text-slate-700 ${reduceMotion}`}>
             <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"></path>
               <path d="M19 11a7 7 0 0 1-14 0"></path>
@@ -443,12 +511,13 @@ export default function Search() {
         <div className="mt-8 grid grid-cols-12 gap-6">
           {/* Sticky left drawer */}
           <aside className="col-span-12 self-start lg:col-span-4 lg:sticky lg:top-6">
-            <div ref={filtersRef} className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
+            <fieldset ref={filtersRef} className={`rounded-2xl p-4 shadow-sm ${panelTone}`}>
+              <legend className="sr-only">Filters</legend>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Filters</h2>
+                <h2 className={`text-xl font-semibold ${headingTone}`}>Filters</h2>
                 <button
                   type="button"
-                  className={`rounded-md border border-slate-300 bg-white px-3 py-1 text-sm font-semibold text-slate-800 hover:bg-slate-50 ${focusRing}`}
+                  className={`rounded-md border px-3 py-1 text-sm font-semibold hover:bg-slate-50 ${focusVisible} ${settings.highContrastMode ? 'border-lime-400 bg-slate-900 text-lime-100 hover:bg-slate-800' : settings.theme === 'dark' ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700' : 'border-slate-300 bg-white text-slate-800'}`}
                   onClick={() => { setQuery(''); setSelectedTags(new Set()); setSelectedGenre(''); setSortBy('relevance'); }}
                 >
                   Reset
@@ -457,29 +526,35 @@ export default function Search() {
 
               {/* Disability Categories (accordion to reveal specific tags) */}
               <section className="mt-4">
-                <h3 className="text-sm font-semibold text-slate-700">Disability Categories</h3>
-                <div className="mt-2 grid grid-cols-1 gap-2">
+                <h3 className={`text-sm font-semibold ${subTone}`}>Disability Categories</h3>
+                <div className={`mt-2 grid grid-cols-1 ${spacingGap}`}>
                   {categories.map(cat => {
                     const isOpen = openCategories.has(cat);
                     const slug = slugify(cat);
                     const btnId = `cat-btn-${slug}`;
                     const panelId = `cat-panel-${slug}`;
                     return (
-                      <div key={cat} className="rounded-lg border border-slate-300 bg-white">
+                      <div key={cat} className="rounded-lg">
                         <button
                           id={btnId}
                           type="button"
-                          className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-slate-800 ${focusRing}`}
+                          className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm font-semibold ${focusVisible} ${
+                            settings.highContrastMode
+                              ? 'border-lime-400 bg-slate-900 text-lime-100'
+                              : settings.theme === 'dark'
+                                ? 'border-slate-700 bg-slate-800 text-slate-100'
+                                : 'border-slate-300 bg-white text-slate-800'
+                          }`}
                           aria-expanded={isOpen}
                           aria-controls={panelId}
                           onClick={() => toggleCategoryOpen(cat)}
                         >
                           <span>{cat}</span>
-                          <span aria-hidden className="ml-2 text-slate-500">{isOpen ? '▾' : '▸'}</span>
+                          <span aria-hidden className={`ml-2 ${settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-200' : 'text-slate-500'}`}>{isOpen ? '▾' : '▸'}</span>
                         </button>
                         {isOpen && (
-                          <div id={panelId} role="region" aria-labelledby={btnId} className="border-t border-slate-200 p-2">
-                            <div className="grid grid-cols-1 gap-2">
+                          <div id={panelId} role="region" aria-labelledby={btnId} className={`border-t p-2 ${settings.highContrastMode ? 'border-lime-300/60 bg-slate-900' : settings.theme === 'dark' ? 'border-slate-700 bg-slate-800' : 'border-slate-200 bg-white'}`}>
+                            <div className={`grid grid-cols-1 ${spacingGap}`}>
                               {(tagsByCategory[cat] || []).map(tag => {
                                 const active = selectedTags.has(tag);
                                 return (
@@ -488,7 +563,19 @@ export default function Search() {
                                     data-voice-tag={tag}
                                     type="button"
                                     onClick={() => toggleTag(tag)}
-                                    className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${active ? 'border border-lime-500 bg-lime-50 text-lime-800' : 'border border-slate-300 bg-white text-slate-800'} ${focusRing}`}
+                                    className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium ${focusVisible} ${
+                                      active
+                                        ? settings.highContrastMode
+                                          ? 'border border-lime-500 bg-lime-900 text-lime-100'
+                                          : settings.theme === 'dark'
+                                            ? 'border border-lime-500 bg-slate-800 text-lime-100'
+                                            : 'border border-lime-500 bg-lime-50 text-lime-800'
+                                        : settings.highContrastMode
+                                          ? 'border border-lime-300 bg-slate-900 text-lime-50'
+                                          : settings.theme === 'dark'
+                                            ? 'border border-slate-700 bg-slate-800 text-slate-100'
+                                            : 'border border-slate-300 bg-white text-slate-800'
+                                    }`}
                                     aria-pressed={active}
                                   >
                                     {tag}
@@ -505,12 +592,12 @@ export default function Search() {
               </section>
 
               {/* Genre dropdown */}
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white p-3">
+              <div className={`mt-5 rounded-xl p-3 ${sectionTone}`}>
                 <label htmlFor="genre" className="block text-sm font-semibold text-slate-700">Genre</label>
                 <select
                   id="genre"
                   ref={genreSelectRef}
-                  className={`mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ${focusRing}`}
+                  className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
                 >
@@ -522,11 +609,12 @@ export default function Search() {
               </div>
 
               {/* Sort dropdown */}
-              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+              <div className={`mt-4 rounded-xl p-3 ${sectionTone}`}>
                 <label htmlFor="sort-by" className="block text-sm font-semibold text-slate-700">Sort By</label>
                 <select
                   id="sort-by"
-                  className={`mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ${focusRing}`}
+                  ref={sortSelectRef}
+                  className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -538,49 +626,66 @@ export default function Search() {
               </div>
 
               <div className="mt-6 flex gap-3">
-                <button type="button" className={`flex-1 rounded-lg border border-lime-500 bg-lime-500/10 px-4 py-2 text-sm font-semibold text-lime-800 hover:bg-lime-500/20 ${focusRing}`}>Apply</button>
+                <button type="button" className={`flex-1 rounded-lg border border-lime-500 bg-lime-500/10 px-4 py-2 text-sm font-semibold text-lime-800 hover:bg-lime-500/20 ${focusVisible} ${reduceMotion}`}>Apply</button>
                 <button
                   type="button"
-                  className={`flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 ${focusRing}`}
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm font-semibold ${focusVisible} ${settings.highContrastMode ? 'border-lime-400 bg-slate-900 text-lime-100 hover:bg-slate-800' : settings.theme === 'dark' ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'}`}
                   onClick={() => { setQuery(''); setSelectedTags(new Set()); setSelectedGenre(''); setSortBy('relevance'); }}
                 >
                   Reset
                 </button>
               </div>
-            </div>
+            </fieldset>
           </aside>
 
           {/* Results */}
           <section ref={resultsRef} className="col-span-12 space-y-4 lg:col-span-8">
             <div className="flex items-center justify-between text-sm text-slate-600">
-              <nav aria-label="Breadcrumbs">Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
-              <span>Filters (open)</span>
+              <nav aria-label="Breadcrumbs" className={`${subTone} font-medium`}>Home › Search › {selectedGenre ? `Results for "${selectedGenre}"` : (query ? `Results for "${query}"` : 'All Results')}</nav>
+              <span className={subTone}>Filters (open)</span>
             </div>
 
             {gamesLoading || serverLoading ? (
               <p className="text-slate-700" role="status" aria-live="polite">Loading games...</p>
             ) : gamesError ? (
-              <p role="alert" className="text-rose-700">{gamesError}</p>
+              <div role="alert" className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
+                settings.highContrastMode
+                  ? 'border-rose-300 bg-rose-950 text-rose-100'
+                  : settings.theme === 'dark'
+                    ? 'border-rose-300/70 bg-rose-900 text-rose-100'
+                    : 'border-rose-200 bg-rose-50 text-rose-800'
+              }`}>
+                <span aria-hidden className="mt-0.5 text-lg">⚠️</span>
+                <p className="font-semibold">Search error: <span className="font-normal">{gamesError}</span></p>
+              </div>
             ) : sortedResults.length === 0 ? (
               <p className="text-slate-700">No games found.</p>
             ) : (
               <ul role="list" aria-live="polite" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {sortedResults.map(g => (
                   <li key={g.id}>
-                    <article className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                      <div className="h-32 w-full bg-slate-200" aria-hidden></div>
+                    <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
+                      <div className={`${settings.highContrastMode ? 'bg-slate-800' : 'bg-slate-200'} h-32 w-full`} aria-hidden></div>
                       <div className="p-4">
                         <header className="flex items-baseline justify-between gap-3">
-                          <h3 className="text-lg font-bold text-slate-900">{g.title}</h3>
+                          <h3 className="text-lg font-bold">{g.title}</h3>
                           <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
                         </header>
                         {Array.isArray(g.tags) && g.tags.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2" aria-label="Accessibility tags">
+                          <div className={`mt-3 flex flex-wrap ${spacingGap}`} aria-label="Accessibility tags">
                             {g.tags.map(t => {
                               const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
                               const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
-                              const activeClasses = 'border border-lime-600 bg-lime-50 text-lime-900';
-                              const inactiveClasses = 'border border-slate-300 bg-slate-50 text-slate-700';
+                              const activeClasses = settings.highContrastMode
+                                ? 'border border-lime-500 bg-lime-900 text-lime-100'
+                                : settings.theme === 'dark'
+                                  ? 'border border-lime-500 bg-slate-800 text-lime-100'
+                                  : 'border border-lime-600 bg-lime-50 text-lime-900';
+                              const inactiveClasses = settings.highContrastMode
+                                ? 'border border-lime-300 bg-slate-900 text-lime-50'
+                                : settings.theme === 'dark'
+                                  ? 'border border-slate-700 bg-slate-800 text-slate-100'
+                                  : 'border border-slate-300 bg-slate-50 text-slate-700';
                               return (
                                 <span
                                   key={`${g.id}-${t}`}
