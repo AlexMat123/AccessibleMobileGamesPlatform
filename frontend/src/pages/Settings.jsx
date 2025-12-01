@@ -297,13 +297,6 @@ export default function Settings() {
                       styles={pillStyles}
                     />
                   ))}
-                  <PillOption
-                    label="High-contrast text"
-                    active={highContrastText}
-                    onClick={() => setHighContrastText(v => !v)}
-                    ariaLabel="Toggle high contrast text"
-                    styles={pillStyles}
-                  />
                 </div>
                 <div className={`mt-3 rounded-xl border px-4 py-3 ${dashedTone} ${sampleTextClasses}`}>
                   “Sample text stays readable. Adjust size and contrast to taste.”

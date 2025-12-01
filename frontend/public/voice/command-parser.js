@@ -41,6 +41,13 @@ const filters = [
   }]
 ];
 
+const sorters = [
+  [/^sort by (relevance|relevant)$/, () => ({ type: 'sort', value: 'relevance' })],
+  [/^sort by (newest|latest)$/, () => ({ type: 'sort', value: 'newest' })],
+  [/^sort by (rating|top rating|top rated)$/, () => ({ type: 'sort', value: 'rating' })],
+  [/^sort by (title|name|a to z|a-z|alphabetical)$/, () => ({ type: 'sort', value: 'title' })]
+];
+
 const gameActions = [
   [/^add to watchlist$/, () => ({ type: 'game', action: 'add-to-watchlist' })],
   [/^(open )?reviews$/, () => ({ type: 'game', action: 'open-reviews' })],
@@ -233,6 +240,7 @@ export function parseCommand(rawTranscript) {
     match(command, navigation) ||
     match(command, searches) ||
     match(command, filters) ||
+    match(command, sorters) ||
     match(command, gameActions) ||
     textSizeFallback(command) ||
     buttonSizeFallback(command) ||

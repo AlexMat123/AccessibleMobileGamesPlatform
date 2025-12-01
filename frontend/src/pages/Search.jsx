@@ -30,6 +30,7 @@ export default function Search() {
   const filtersRef = useRef(null);
   const resultsRef = useRef(null);
   const genreSelectRef = useRef(null);
+  const sortSelectRef = useRef(null);
 
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
@@ -305,6 +306,25 @@ export default function Search() {
     return false;
   };
 
+  const setSortByVoice = (value) => {
+    const select = sortSelectRef.current;
+    if (!select) return false;
+    const target = normalizeText(value);
+    const match = Array.from(select.options).find(opt => {
+      const v = normalizeText(opt.value);
+      const t = normalizeText(opt.textContent);
+      return v === target || t === target || v.includes(target) || target.includes(v) || t.includes(target) || target.includes(t);
+    });
+    if (match) {
+      select.value = match.value;
+      setSortBy(match.value);
+      focusAndFlash(select);
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+    return false;
+  };
+
   // Voice commands: search, filter, and open filters drawer.
   useEffect(() => {
     const matchGenre = (name = '') => {
@@ -404,6 +424,12 @@ export default function Search() {
       if (type === 'ui' && detail.target === 'filters') {
         e.preventDefault();
         filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      if (type === 'sort' && detail.value) {
+        e.preventDefault();
+        setSortByVoice(detail.value);
+        return;
       }
     };
     window.addEventListener('voiceCommand', onVoice);
@@ -587,6 +613,7 @@ export default function Search() {
                 <label htmlFor="sort-by" className="block text-sm font-semibold text-slate-700">Sort By</label>
                 <select
                   id="sort-by"
+                  ref={sortSelectRef}
                   className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
