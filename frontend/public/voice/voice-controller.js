@@ -1,5 +1,5 @@
 import { createVoiceListener } from './voice-listener.js';
-import { parseCommand, WAKE_WORD } from './command-parser.js';
+import { parseCommand, getWakeWord } from './command-parser.js';
 import { dispatchVoiceCommand } from './command-actions.js';
 import { mountFeedback, updateStatus, announceCommand } from './voice-feedback.js';
 import { interpretTranscriptRemote } from './voice-remote.js';
@@ -33,21 +33,22 @@ import { interpretTranscriptRemote } from './voice-remote.js';
   };
   window.addEventListener('click', startOnInteraction, { once: true });
   window.addEventListener('keydown', startOnInteraction, { once: true });
-  setStatus('Click or say “Hey Platform” to start listening');
+  setStatus('Click or say your wake word to start listening');
 
   async function handleTranscript(raw) {
     const lower = raw.toLowerCase();
+    const wakeWord = getWakeWord();
 
     // Refresh wake window when wake word is spoken
-    if (lower.includes(WAKE_WORD)) {
+    if (lower.includes(wakeWord)) {
       awakeUntil = Date.now() + WAKE_WINDOW_MS;
-      setStatus('Wake word detected. Listening briefly…', WAKE_WINDOW_MS);
+      setStatus(`Wake word detected. Listening briefly…`, WAKE_WINDOW_MS);
     }
 
     const isAwake = Date.now() < awakeUntil;
-    if (!isAwake && !lower.includes(WAKE_WORD)) {
+    if (!isAwake && !lower.includes(wakeWord)) {
       // Ignore chatter when not awake; prompt for wake word.
-      setStatus(`Say “${WAKE_WORD} …”`);
+      setStatus(`Say “${wakeWord} …”`);
       return;
     }
 
@@ -57,7 +58,7 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     let cmd = parseCommand(raw);
     // Allow follow-up commands within the wake window without repeating wake word
     if (!cmd && isAwake) {
-      cmd = parseCommand(`${WAKE_WORD} ${raw}`);
+      cmd = parseCommand(`${wakeWord} ${raw}`);
     }
     let usedRemote = false;
     if (!cmd && isAwake) {
@@ -66,7 +67,7 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     }
     if (!cmd) {
       if (Date.now() > awakeUntil) {
-        setStatus(`Heard: "${raw}". Wake window expired. Say “${WAKE_WORD} …”`, 2500);
+        setStatus(`Heard: "${raw}". Wake window expired. Say “${wakeWord} …”`, 2500);
       } else {
         setStatus(`Heard: "${raw}". No command parsed.`, 2000);
       }
