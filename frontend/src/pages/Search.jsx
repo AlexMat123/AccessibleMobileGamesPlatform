@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchGames, fetchTagGroups, searchGames } from '../api';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
@@ -472,6 +472,7 @@ export default function Search() {
                           className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold text-slate-800 ${focusRing}`}
                           aria-expanded={isOpen}
                           aria-controls={panelId}
+                          aria-label={`${cat} dropdown`}
                           onClick={() => toggleCategoryOpen(cat)}
                         >
                           <span>{cat}</span>
@@ -510,6 +511,7 @@ export default function Search() {
                 <select
                   id="genre"
                   ref={genreSelectRef}
+                  aria-label="Genre dropdown"
                   className={`mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ${focusRing}`}
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
@@ -526,6 +528,7 @@ export default function Search() {
                 <label htmlFor="sort-by" className="block text-sm font-semibold text-slate-700">Sort By</label>
                 <select
                   id="sort-by"
+                  aria-label="Sort by dropdown"
                   className={`mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 ${focusRing}`}
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -565,52 +568,60 @@ export default function Search() {
               <p className="text-slate-700">No games found.</p>
             ) : (
               <ul role="list" aria-live="polite" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {sortedResults.map(g => (
+                {sortedResults.map(g => {
+                  const tagCount = Array.isArray(g.tags) ? g.tags.length : 0;
+                  return (
                   <li key={g.id}>
-                    <article className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                      {g.imageUrl ? (
-                        <img
-                          src={g.imageUrl}
-                          alt={`${g.title} cover`}
-                          className="h-32 w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-32 w-full bg-slate-200" aria-hidden></div>
-                      )}
-                      <div className="p-4">
-                        <header className="flex items-baseline justify-between gap-3">
-                          <h3 className="text-lg font-bold text-slate-900">{g.title}</h3>
-                          <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
-                        </header>
-                        {g.rating != null && (
-                          <div className="mt-1 flex items-center gap-2 text-sm text-slate-700">
-                            <span aria-hidden className="text-amber-500">★</span>
-                            <span className="font-semibold">{Number(g.rating).toFixed(1)}</span>
-                            <span className="text-xs text-slate-500">(rating)</span>
-                          </div>
+                    <Link
+                      to={`/games/${g.id}`}
+                      className="block h-full focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2"
+                      aria-label={`${g.title}, rating ${g.rating != null ? Number(g.rating).toFixed(1) : 'not rated'}, ${tagCount} tag${tagCount === 1 ? '' : 's'} available`}
+                    >
+                      <article className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        {g.imageUrl ? (
+                          <img
+                            src={g.imageUrl}
+                            alt={`${g.title} cover`}
+                            className="h-32 w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-32 w-full bg-slate-200" aria-hidden></div>
                         )}
-                        {Array.isArray(g.tags) && g.tags.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2" aria-label="Accessibility tags">
-                            {g.tags.map(t => {
-                              const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
-                              const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
-                              const activeClasses = 'border border-lime-600 bg-lime-50 text-lime-900';
-                              const inactiveClasses = 'border border-slate-300 bg-slate-50 text-slate-700';
-                              return (
-                                <span
-                                  key={`${g.id}-${t}`}
-                                  className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-                                >
-                                  {t}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </article>
+                        <div className="p-4">
+                          <header className="flex items-baseline justify-between gap-3">
+                            <h3 className="text-lg font-bold text-slate-900">{g.title}</h3>
+                            <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
+                          </header>
+                          {g.rating != null && (
+                            <div className="mt-1 flex items-center gap-2 text-sm text-slate-700">
+                              <span aria-hidden className="text-amber-500">★</span>
+                              <span className="font-semibold">{Number(g.rating).toFixed(1)}</span>
+                              <span className="text-xs text-slate-500">(rating)</span>
+                            </div>
+                          )}
+                          {Array.isArray(g.tags) && g.tags.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2" aria-label="Accessibility tags" aria-hidden="true">
+                              {g.tags.map(t => {
+                                const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
+                                const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
+                                const activeClasses = 'border border-lime-600 bg-lime-50 text-lime-900';
+                                const inactiveClasses = 'border border-slate-300 bg-slate-50 text-slate-700';
+                                return (
+                                  <span
+                                    key={`${g.id}-${t}`}
+                                    className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
+                                  >
+                                    {t}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </article>
+                    </Link>
                   </li>
-                ))}
+                )})}
               </ul>
             )}
           </section>
