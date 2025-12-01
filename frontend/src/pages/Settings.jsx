@@ -14,6 +14,7 @@ const buttonSizes = {
   large: 'px-5 py-3 text-base',
   xlarge: 'px-6 py-3.5 text-lg'
 };
+const fallbackWakeWord = 'hey platform';
 
 const flashClass = 'voice-flash';
 
@@ -100,7 +101,12 @@ export default function Settings() {
         setHighContrastMode(Boolean(detail.value));
         break;
       case 'set-wake-word-enabled':
-        setWakeWordEnabled(Boolean(detail.value));
+        if (detail.value === false) {
+          setWakeWordEnabled(false);
+          setWakeWord(fallbackWakeWord);
+        } else {
+          setWakeWordEnabled(true);
+        }
         break;
       case 'set-wake-word':
         setWakeWordEnabled(true);
