@@ -690,6 +690,8 @@ export default function Search() {
               <ul role="list" aria-live="polite" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {sortedResults.map(g => {
                   const tagCount = Array.isArray(g.tags) ? g.tags.length : 0;
+                  const tagNames = tagCount ? g.tags.join(', ') : '';
+                  const tagListId = tagCount ? `game-tags-${g.id}` : undefined;
                   return (
                     <li key={g.id}>
                     <Link
@@ -697,6 +699,7 @@ export default function Search() {
                       data-voice-title={g.title || ''}
                       className={`block h-full ${focusVisible}`}
                       aria-label={`${g.title}, rating ${g.rating != null ? Number(g.rating).toFixed(1) : 'not rated'}, ${tagCount} tag${tagCount === 1 ? '' : 's'} available`}
+                      aria-describedby={tagListId}
                     >
                         <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
                           {g.imageUrl ? (
@@ -747,6 +750,9 @@ export default function Search() {
                                   );
                                 })}
                               </div>
+                            )}
+                            {tagListId && (
+                              <p id={tagListId} className="sr-only">Tags: {tagNames}</p>
                             )}
                           </div>
                         </article>
