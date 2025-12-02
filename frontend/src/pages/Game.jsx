@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames } from '../api';
 import { fetchCurrentUser } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
+import { getAccessibilityPreferences } from '../api';
+import { loadSettings } from '../settings';
 
 function RatingStars({ value }) {
     const v = Math.round(value || 0);
     return (
         <span aria-label={`Rating ${v} of 5`}>
       {Array.from({ length: 5 }, (_, i) => (
-          <span key={i} style={{ color: i < v ? '#f5c518' : '#ccc' }}>★</span>
+          <span key={i} style={{ color: i < v ? 'var(--accent)' : 'var(--text-muted)' }}>★</span>
       ))}
     </span>
     );
@@ -31,6 +33,40 @@ export default function Game() {
     const [currentUser, setCurrentUser] = useState(null);
     const [isFollowed, setIsFollowed] = useState(false);
     const [followBusy, setFollowBusy] = useState(false);
+    const [captionsEnabled, setCaptionsEnabled] = useState(false);
+    const heroVideoRef = useRef(null);
+    const heroTrackRef = useRef(null);
+    const followBtnRef = useRef(null);
+    const reviewBtnRef = useRef(null);
+    const reviewRatingRef = useRef(null);
+    const reviewCommentRef = useRef(null);
+    const reviewSubmitRef = useRef(null);
+    const heroRef = useRef(null);
+    const addCarouselRef = useRef(null);
+
+    // Light flash style for voice feedback
+    const flashClass = 'voice-flash';
+    useEffect(() => {
+        const styleId = 'voice-flash-style';
+        if (document.getElementById(styleId)) return;
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+          .${flashClass} {
+            outline: 3px solid #a5f3fc;
+            outline-offset: 3px;
+            transition: outline-color 0.4s ease;
+          }
+        `;
+        document.head.appendChild(style);
+    }, [showReviewModal, reviewComment, submittingReview]);
+
+    const focusAndFlash = (el) => {
+        if (!el) return;
+        if (typeof el.focus === 'function') el.focus({ preventScroll: true });
+        el.classList.add(flashClass);
+        setTimeout(() => el.classList.remove(flashClass), 1000);
+    };
 
     useEffect(() => {
         let cancelled = false;
@@ -62,6 +98,39 @@ export default function Game() {
 
     useEffect(() => { fetchCurrentUser().then(setCurrentUser).catch(() => {}); }, []);
 
+    // initialising captions from the local Settings
+    useEffect(() => {
+        try {
+            const s = loadSettings();
+            setCaptionsEnabled(Boolean(s?.captionsAlways));
+        } catch { /* ignore */ }
+    }, []);
+
+    // loading accessibility preferences
+    useEffect(() => {
+        let cancelled = false;
+        async function loadPrefs() {
+            if (!currentUser) return;
+            try {
+                const prefs = await getAccessibilityPreferences(currentUser.id);
+                if (!cancelled) {
+                    const local = loadSettings();
+                    const fromSettings = Boolean(local?.captionsAlways);
+                    const fromBackend = !!prefs?.hearing;
+                    setCaptionsEnabled(fromSettings || fromBackend);
+                }
+            } catch (e) {
+                // in case backend fails, applying local settings
+                try {
+                    const local = loadSettings();
+                    setCaptionsEnabled(Boolean(local?.captionsAlways));
+                } catch { /* ignore */ }
+            }
+        }
+        loadPrefs();
+        return () => { cancelled = true; };
+    }, [currentUser]);
+
     // checking follow state once it has user and game
     useEffect(() => {
         let cancelled = false;
@@ -76,12 +145,240 @@ export default function Game() {
         return () => { cancelled = true; };
     }, [currentUser, game]);
 
-    const openReviewModal = () => {
-        setReviewRating(5);
-        setReviewComment('');
-        setSubmitError(null);
+    // this makes sure that the captions are automatically activated when enabled in settings
+    useEffect(() => {
+        const vid = heroVideoRef.current;
+        const trackEl = heroTrackRef.current;
+        if (!vid) return;
+
+        const setTrackModes = () => {
+            try {
+                const list = vid.textTracks;
+                if (!list || list.length === 0) return;
+                let chosen = null;
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    if (!isCaptionLike) { t.mode = 'disabled'; continue; }
+                    const isEn = (t.language || '').toLowerCase() === 'en';
+                    if (!chosen && isCaptionLike) chosen = t;
+                    if (isEn) chosen = t;
+                }
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    t.mode = captionsEnabled && isCaptionLike && t === chosen ? 'showing' : 'disabled';
+                }
+            } catch { /* ignore */ }
+        };
+
+        setTrackModes();
+        const onMeta = () => setTrackModes();
+        const onData = () => setTrackModes();
+        const onAdd = () => setTimeout(setTrackModes, 0);
+        const onTrackLoad = () => setTrackModes();
+
+        vid.addEventListener('loadedmetadata', onMeta);
+        vid.addEventListener('loadeddata', onData);
+        if (vid.textTracks && typeof vid.textTracks.addEventListener === 'function') {
+            vid.textTracks.addEventListener('addtrack', onAdd);
+        }
+        if (trackEl && typeof trackEl.addEventListener === 'function') {
+            trackEl.addEventListener('load', onTrackLoad);
+        }
+
+        return () => {
+            vid.removeEventListener('loadedmetadata', onMeta);
+            vid.removeEventListener('loadeddata', onData);
+            if (vid.textTracks && typeof vid.textTracks.removeEventListener === 'function') {
+                vid.textTracks.removeEventListener('addtrack', onAdd);
+            }
+            if (trackEl && typeof trackEl.removeEventListener === 'function') {
+                trackEl.removeEventListener('load', onTrackLoad);
+            }
+        };
+    }, [captionsEnabled, heroIndex]);
+
+    useEffect(() => {
+        const onSettings = (e) => {
+            const s = (e && e.detail) || loadSettings();
+            if (typeof s?.captionsAlways === 'boolean') {
+                setCaptionsEnabled(Boolean(s.captionsAlways));
+            }
+        };
+        window.addEventListener('settings:changed', onSettings);
+        return () => window.removeEventListener('settings:changed', onSettings);
+    }, []);
+
+    // this makes sure that the captions are automatically activated when enabled in settings
+    useEffect(() => {
+        const vid = heroVideoRef.current;
+        const trackEl = heroTrackRef.current;
+        if (!vid) return;
+
+        const setTrackModes = () => {
+            try {
+                const list = vid.textTracks;
+                if (!list || list.length === 0) return;
+                let chosen = null;
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    if (!isCaptionLike) { t.mode = 'disabled'; continue; }
+                    const isEn = (t.language || '').toLowerCase() === 'en';
+                    if (!chosen && isCaptionLike) chosen = t;
+                    if (isEn) chosen = t;
+                }
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    t.mode = captionsEnabled && isCaptionLike && t === chosen ? 'showing' : 'disabled';
+                }
+            } catch { /* ignore */ }
+        };
+
+        setTrackModes();
+        const onMeta = () => setTrackModes();
+        const onData = () => setTrackModes();
+        const onAdd = () => setTimeout(setTrackModes, 0);
+        const onTrackLoad = () => setTrackModes();
+
+        vid.addEventListener('loadedmetadata', onMeta);
+        vid.addEventListener('loadeddata', onData);
+        if (vid.textTracks && typeof vid.textTracks.addEventListener === 'function') {
+            vid.textTracks.addEventListener('addtrack', onAdd);
+        }
+        if (trackEl && typeof trackEl.addEventListener === 'function') {
+            trackEl.addEventListener('load', onTrackLoad);
+        }
+
+        return () => {
+            vid.removeEventListener('loadedmetadata', onMeta);
+            vid.removeEventListener('loadeddata', onData);
+            if (vid.textTracks && typeof vid.textTracks.removeEventListener === 'function') {
+                vid.textTracks.removeEventListener('addtrack', onAdd);
+            }
+            if (trackEl && typeof trackEl.removeEventListener === 'function') {
+                trackEl.removeEventListener('load', onTrackLoad);
+            }
+        };
+    }, [captionsEnabled, heroIndex]);
+
+    useEffect(() => {
+        const onSettings = (e) => {
+            const s = (e && e.detail) || loadSettings();
+            if (typeof s?.captionsAlways === 'boolean') {
+                setCaptionsEnabled(Boolean(s.captionsAlways));
+            }
+        };
+        window.addEventListener('settings:changed', onSettings);
+        return () => window.removeEventListener('settings:changed', onSettings);
+    }, []);
+
+    useEffect(() => {
+        const onVoice = (e) => {
+            const detail = e.detail || {};
+            if (detail.type !== 'game') return;
+            switch (detail.action) {
+                case 'follow':
+                case 'unfollow':
+                    if (followBtnRef.current) {
+                        followBtnRef.current.click();
+                        focusAndFlash(followBtnRef.current);
+                    }
+                    break;
+                case 'write-review':
+                    e.preventDefault();
+                    openReviewModal();
+                    setTimeout(() => {
+                        focusAndFlash(document.querySelector('textarea'));
+                    }, 50);
+                    break;
+                case 'open-reviews':
+                    e.preventDefault();
+                    openReviewModal();
+                    setTimeout(() => focusAndFlash(reviewRatingRef.current), 50);
+                    break;
+                case 'download':
+                    pushToast('Download action not implemented yet');
+                    break;
+                case 'wishlist':
+                    pushToast('Wishlist action not implemented yet');
+                    break;
+                case 'report':
+                    pushToast('Report action not implemented yet');
+                    break;
+                case 'set-review-rating':
+                    if (!showReviewModal) openReviewModal();
+                    setReviewRating(detail.value || 5);
+                    focusAndFlash(reviewRatingRef.current);
+                    break;
+                case 'focus-review-comment':
+                    if (!showReviewModal) openReviewModal();
+                    setTimeout(() => focusAndFlash(reviewCommentRef.current), 30);
+                    break;
+                case 'set-review-comment':
+                    if (!showReviewModal) openReviewModal();
+                    setReviewComment(detail.value || '');
+                    setTimeout(() => focusAndFlash(reviewCommentRef.current), 30);
+                    break;
+                case 'submit-review':
+                    if (!showReviewModal) openReviewModal({ preserve: true });
+                    // Wait for modal to mount and refs to attach before clicking submit
+                    const clickSubmit = () => {
+                        const btn = reviewSubmitRef.current || document.querySelector('[data-voice-review-submit]');
+                        if (btn && !submittingReview) {
+                            btn.click();
+                            focusAndFlash(btn);
+                            return true;
+                        }
+                        return false;
+                    };
+                    // Retry briefly in case render is delayed
+                    setTimeout(() => {
+                        if (clickSubmit()) return;
+                        setTimeout(() => {
+                            if (clickSubmit()) return;
+                            setTimeout(clickSubmit, 120);
+                        }, 80);
+                    }, 120);
+                    break;
+                case 'cancel-review':
+                    if (showReviewModal) closeReviewModal();
+                    break;
+                case 'next-image':
+                    nextHero();
+                    focusAndFlash(heroRef.current);
+                    break;
+                case 'prev-image':
+                    prevHero();
+                    focusAndFlash(heroRef.current);
+                    break;
+                case 'next-additional':
+                    nextAdditional();
+                    focusAndFlash(addCarouselRef.current);
+                    break;
+                case 'prev-additional':
+                    prevAdditional();
+                    focusAndFlash(addCarouselRef.current);
+                    break;
+                default:
+                    break;
+            }
+        };
+        window.addEventListener('voiceCommand', onVoice);
+        return () => window.removeEventListener('voiceCommand', onVoice);
+    }, []);
+
+    const openReviewModal = (opts = {}) => {
+        const preserve = opts.preserve === true;
+        if (!preserve) {
+            setReviewRating(5);
+            setReviewComment('');
+            setSubmitError(null);
+        }
         setShowReviewModal(true);
-    }
+    };
 
     const closeReviewModal = () => {
         if (submittingReview) return; // prevent closing while submitting
@@ -119,29 +416,8 @@ export default function Game() {
         }
     }
 
-    if (loading) return <div style={{ padding: '1rem' }}>Loading...</div>;
-    if (error) return <div style={{ padding: '1rem', color: 'red' }}>Error: {error}</div>;
-    if (!game) return <div style={{ padding: '1rem' }}>Not found</div>;
-
-    const date = game.releaseDate ? new Date(game.releaseDate).toLocaleDateString() : 'N/A';
-    const images = Array.isArray(game.images) && game.images.length
-        ? game.images
-        : ['/placeholder1.png', '/placeholder2.png', '/placeholder3.png'];
-    const currentHero = images[heroIndex];
-
-    // Additional images carousel logic (show 3)
-    const ADD_VISIBLE = 3;
-    const addWindow = images.slice(addIndex, addIndex + ADD_VISIBLE).length === ADD_VISIBLE
-        ? images.slice(addIndex, addIndex + ADD_VISIBLE)
-        : [...images.slice(addIndex), ...images.slice(0, (addIndex + ADD_VISIBLE) % images.length)];
-
-    const prevHero = () => setHeroIndex((i) => (i - 1 + images.length) % images.length);
-    const nextHero = () => setHeroIndex((i) => (i + 1) % images.length);
-    const prevAdditional = () => setAddIndex(i => (i - 1 + images.length) % images.length);
-    const nextAdditional = () => setAddIndex(i => (i + 1) % images.length);
-
     //Reviews
-    const reviews = game.reviews || [];
+    const reviews = game?.reviews || [];
 
     const ratingCounts = [0, 0, 0, 0, 0];
     reviews.forEach(r => {
@@ -151,26 +427,89 @@ export default function Game() {
     });
     const ratingDist = ratingCounts.reverse();
 
+    if (loading) return <div style={{ padding: '1rem' }}>Loading...</div>;
+    if (error) return <div style={{ padding: '1rem', color: 'red' }}>Error: {error}</div>;
+    if (!game) return <div style={{ padding: '1rem' }}>Not found</div>;
+
+    const date = game.releaseDate ? new Date(game.releaseDate).toLocaleDateString() : 'N/A';
+    const images = Array.isArray(game.images) && game.images.length
+        ? game.images
+        : ['/placeholder1.png', '/placeholder2.png', '/placeholder3.png'];
+    // Trailer being displayed
+    const trailerUrl = (game.name === 'Aurora Quest') ? '/AuroraQuestTrailer.mp4' : null;
+    const media = trailerUrl ? [trailerUrl, ...images] : images;
+    const currentHero = media[heroIndex];
+
+    // Additional images carousel logic
+    const ADD_VISIBLE = 3;
+    const addWindow = media.slice(addIndex, addIndex + ADD_VISIBLE).length === ADD_VISIBLE
+        ? media.slice(addIndex, addIndex + ADD_VISIBLE)
+        : [...media.slice(addIndex), ...media.slice(0, (addIndex + ADD_VISIBLE) % media.length)];
+
+    const prevHero = () => setHeroIndex((i) => (i - 1 + media.length) % media.length);
+    const nextHero = () => setHeroIndex((i) => (i + 1) % media.length);
+    const prevAdditional = () => setAddIndex(i => (i - 1 + media.length) % media.length);
+    const nextAdditional = () => setAddIndex(i => (i + 1) % media.length);
+
+    // //Reviews
+    // const reviews = game.reviews || [];
+
+    // const ratingCounts = [0, 0, 0, 0, 0];
+    // reviews.forEach(r => {
+    //     if (r.rating >= 1 && r.rating <= 5) {
+    //         ratingCounts[r.rating - 1]++;
+    //     }
+    // });
+    // const ratingDist = ratingCounts.reverse();
+
 
     return (
-        <div style={{ background: '#d7edf9', minHeight: '100vh', padding: '1rem', fontFamily: 'Arial, sans-serif' }}>
+        <div style={{ background: 'var(--bg-page)', color: 'var(--text-primary)', minHeight: '100vh', padding: '1rem', fontFamily: 'Arial, sans-serif' }}>
             <div style={{ maxWidth: 1000, margin: '0 auto' }}>
                 {/* Top section */}
-                <div style={{ display: 'flex', gap: '1rem', background: '#f2f2f2', padding: '1rem', borderRadius: 6 }}>
+                <div style={{ display: 'flex', gap: '1rem', background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '1rem', borderRadius: 6 }} ref={heroRef}>
                     {/* Hero image */}
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <button onClick={prevHero} style={sideBtn} aria-label="Previous image">‹</button>
-                            <img
-                                src={currentHero}
-                                alt={`${game.name} screenshot`}
-                                style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                            <button onClick={prevHero} style={sideBtn} aria-label="Previous image">&lt;</button>
+                            {String(currentHero).toLowerCase().endsWith('.mp4') ? (
+                                <video
+                                    key={currentHero}
+                                    ref={heroVideoRef}
+                                    src={currentHero}
+                                    controls
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block', background: '#000' }}
+                                >
+                                    {/* Subtitles track shown automatically when captions are enabled and track exists */}
+                                    {currentHero === '/AuroraQuestTrailer.mp4' ? (
+                                        <track
+                                            key={`captions-${captionsEnabled}`}
+                                            ref={heroTrackRef}
+                                            kind="subtitles"
+                                            src="/AuroraQuestTrailer.vtt"
+                                            srclang="en"
+                                            label="English"
+                                            default={captionsEnabled}
+                                        />
+                                    ) : null}
+                                </video>
+                            ) : (
+                                <img
+                                    src={currentHero}
+                                    alt={`${game.name} media`}
+                                    style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                                    
                             />
-                            <button onClick={nextHero} style={sideBtn} aria-label="Next image">›</button>
+                            )}
+                            <button onClick={nextHero} style={sideBtn} aria-label="Next image">&gt;</button>
                         </div>
 
                         <div style={{ textAlign: 'center', marginTop: 4 }}>
-                            {images.map((_, i) => (
+                            {media.map((_, i) => (
                                 <span
                                     key={i}
                                     onClick={() => setHeroIndex(i)}
@@ -179,7 +518,7 @@ export default function Game() {
                                         width: 8,
                                         height: 8,
                                         borderRadius: '50%',
-                                        background: i === heroIndex ? '#555' : '#ccc',
+                                        background: i === heroIndex ? 'var(--accent)' : 'var(--border)',
                                         margin: 3,
                                         cursor: 'pointer'
                                     }}
@@ -192,7 +531,7 @@ export default function Game() {
                     {/* Details */}
                     <div style={{ flex: 1 }}>
                         <h1 style={{ margin: 0 }}>{game.name}</h1>
-                        <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{game.developer || 'Developer'} • {game.category || 'Category'}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{game.developer || 'Developer'} • {game.category || 'Category'}</div>
                         <div style={{ marginTop: 8 }}>
                             {(() => {
                                 const reviews = game.reviews || [];
@@ -208,7 +547,7 @@ export default function Game() {
                                 return (
                                     <>
                                         <RatingStars value={avgRating} />
-                                        <span style={{ fontSize: 12, color: '#555' }}>
+                                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 {avgRating.toFixed(1)} ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
             </span>
                                     </>
@@ -217,12 +556,12 @@ export default function Game() {
                         </div>
                         <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {(game.tags || []).map(t => (
-                                <span key={t.id} style={{ background: '#e0e0e0', padding: '2px 6px', fontSize: 11, borderRadius: 12 }}>{t.name}</span>
+                                <span key={t.id} style={{ background: 'var(--bg-subtle)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '2px 6px', fontSize: 11, borderRadius: 12 }}>{t.name}</span>
                             ))}
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <button style={primaryBtn}>Download Game</button>
-                            <button style={secBtn} disabled={followBusy} onClick={async () => {
+                            <button style={secBtn} ref={followBtnRef} disabled={followBusy} onClick={async () => {
                                 if (!currentUser) { pushToast('Please log in to follow'); return; }
                                 setFollowBusy(true);
                                 try {
@@ -245,7 +584,7 @@ export default function Game() {
                             {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
                             <button style={dangerBtn}>Report Game</button>
                         </div>
-                        <div style={{ fontSize: 10, marginTop: 12, color: '#555' }}>Release Date: {date}</div>
+                        <div style={{ fontSize: 10, marginTop: 12, color: 'var(--text-muted)' }}>Release Date: {date}</div>
                     </div>
                 </div>
 
@@ -260,23 +599,34 @@ export default function Game() {
                 {/* Additional Images */}
                 <section style={sectionStyle}>
                     <h3 style={sectionTitle}>Additional Images</h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} ref={addCarouselRef}>
                         <button onClick={prevAdditional} style={secBtn} aria-label="Previous additional images">‹</button>
-                        {addWindow.map((url, i) => (
-                            <div key={i} style={{ width: 140, height: 90, background: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
-                                <img src={url} alt={`Additional ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
-                            </div>
-                        ))}
+                        {addWindow.map((url, i) => {
+                            const isVideo = String(url).toLowerCase().endsWith('.mp4');
+                            return (
+                                <div key={i} style={{ width: 140, height: 90, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
+                                    {isVideo ? (
+                                        <video key={url} src={url} muted loop playsInline style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }}>
+                                            {url === '/AuroraQuestTrailer.mp4' ? (
+                                                <track kind="subtitles" src="/AuroraQuestTrailer.vtt" srclang="en" label="English" default={captionsEnabled} />
+                                            ) : null}
+                                        </video>
+                                    ) : (
+                                        <img src={url} alt={`Additional ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
+                                    )}
+                                </div>
+                            );
+                        })}
                         <button onClick={nextAdditional} style={secBtn} aria-label="Next additional images">›</button>
                     </div>
                     <div style={{ textAlign: 'center', marginTop: 6 }}>
-                        {images.map((_, i) => (
+                        {media.map((_, i) => (
                             <span key={i} style={{
                                 display: 'inline-block',
                                 width: 6,
                                 height: 6,
                                 borderRadius: '50%',
-                                background: i === addIndex ? '#555' : '#bbb',
+                                background: i === addIndex ? 'var(--accent)' : 'var(--border)',
                                 margin: 3
                             }} />
                         ))}
@@ -287,18 +637,18 @@ export default function Game() {
                 <section style={sectionStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={sectionTitle}>User Reviews</h3>
-                        <button style={primaryBtn} onClick={openReviewModal}>Write a Review</button>
+                        <button style={primaryBtn} ref={reviewBtnRef} onClick={openReviewModal}>Write a Review</button>
                     </div>
 
                     {/* Review modal */}
                     {showReviewModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                            <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
-                                <div className="flex justify-between items-center border-b px-4 py-3">
+                            <div className="theme-surface border theme-border rounded-lg shadow-lg w-full max-w-md mx-4">
+                                <div className="flex justify-between items-center border-b theme-border px-4 py-3">
                                     <h3 className="text-lg font-semibold">Write a review</h3>
                                     <button
                                         onClick={closeReviewModal}
-                                        className="text-gray-500 hover:text-gray-700"
+                                        className="theme-muted hover:opacity-80"
                                         disabled={submittingReview}
                                     >
                                         ×
@@ -315,12 +665,13 @@ export default function Game() {
 
                                     <div>
                                         <label className="block text-sm font-medium mb-1">
-                                            Rating (1\-5)
+                                            Rating (1-5)
                                         </label>
                                         <select
                                             value={reviewRating}
+                                            ref={reviewRatingRef}
                                             onChange={(e) => setReviewRating(e.target.value)}
-                                            className="border rounded px-2 py-1 w-full"
+                                            className="theme-input rounded px-2 py-1 w-full"
                                             required
                                         >
                                             {[1, 2, 3, 4, 5].map((n) => (
@@ -337,8 +688,9 @@ export default function Game() {
                                         </label>
                                         <textarea
                                             value={reviewComment}
+                                            ref={reviewCommentRef}
                                             onChange={(e) => setReviewComment(e.target.value)}
-                                            className="border rounded px-2 py-1 w-full min-h-[100px]"
+                                            className="theme-input rounded px-2 py-1 w-full min-h-[100px]"
                                             required
                                         />
                                     </div>
@@ -346,7 +698,7 @@ export default function Game() {
                                     <div className="flex justify-end gap-2 pt-2">
                                         <button
                                             type="button"
-                                            className="px-3 py-1 rounded border"
+                                            className="px-3 py-1 rounded border theme-border theme-subtle"
                                             onClick={closeReviewModal}
                                             disabled={submittingReview}
                                         >
@@ -354,7 +706,9 @@ export default function Game() {
                                         </button>
                                         <button
                                             type="submit"
-                                            className="px-4 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                                            ref={reviewSubmitRef}
+                                            data-voice-review-submit
+                                            className="px-4 py-1 rounded theme-btn-strong hover:opacity-90 disabled:opacity-50"
                                             disabled={submittingReview}
                                         >
                                             {submittingReview ? "Submitting..." : "Submit review"}
@@ -371,11 +725,11 @@ export default function Game() {
                             return (
                                 <div key={star} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <span>{'★'.repeat(star)}{'☆'.repeat(5 - star)}</span>
-                                    <div style={{ flex: 1, background: '#ccc', height: 6, borderRadius: 3 }}>
+                                    <div style={{ flex: 1, background: 'var(--border)', height: 6, borderRadius: 3 }}>
                                         <div style={{
-                                            width: Math.min(100, (count / ratingDist[0]) * 100) + '%',
+                                            width: Math.min(100, (ratingDist[0] ? (count / ratingDist[0]) * 100 : 0)) + '%',
                                             height: '100%',
-                                            background: '#4aa3df',
+                                            background: 'var(--accent)',
                                             borderRadius: 3
                                         }} />
                                     </div>
@@ -386,10 +740,10 @@ export default function Game() {
                     </div>
 
                     {reviews.map(r => (
-                        <div key={r.id} style={{ background: '#fff', padding: '8px 10px', borderRadius: 4, marginBottom: 8, fontSize: 12, border: '1px solid #ddd' }}>
+                        <div key={r.id} style={{ background: 'var(--bg-surface)', padding: '8px 10px', borderRadius: 4, marginBottom: 8, fontSize: 12, border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <strong>{r.user?.username || 'Anonymous'}</strong>
-                                <span style={{ color: '#777' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>
                                     {new Date(r.createdAt).toLocaleDateString()}
                                 </span>
                             </div>
@@ -410,8 +764,9 @@ export default function Game() {
 
 // Styles
 const sideBtn = {
-    background: '#e0e0e0',
-    border: 'none',
+    background: 'var(--bg-subtle)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
     cursor: 'pointer',
     width: 32,
     height: 32,
@@ -422,18 +777,18 @@ const sideBtn = {
 };
 
 const primaryBtn = {
-    background: '#4aa3df',
-    color: '#fff',
-    border: 'none',
+    background: 'var(--accent)',
+    color: 'var(--accent-contrast)',
+    border: '1px solid var(--accent)',
     padding: '6px 12px',
     fontSize: 12,
     borderRadius: 4,
     cursor: 'pointer'
 };
 const secBtn = {
-    background: '#e0e0e0',
-    color: '#222',
-    border: 'none',
+    background: 'var(--bg-subtle)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
     padding: '6px 10px',
     fontSize: 12,
     borderRadius: 4,
@@ -441,10 +796,13 @@ const secBtn = {
 };
 const dangerBtn = {
     ...primaryBtn,
-    background: '#ff6b6b'
+    background: '#ff6b6b',
+    borderColor: '#ff6b6b'
 };
 const sectionStyle = {
-    background: '#f2f2f2',
+    background: 'var(--bg-surface)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
     padding: '0.8rem',
     borderRadius: 6,
     marginTop: 16
@@ -453,3 +811,7 @@ const sectionTitle = {
     margin: '0 0 6px',
     fontSize: 14
 };
+
+
+
+

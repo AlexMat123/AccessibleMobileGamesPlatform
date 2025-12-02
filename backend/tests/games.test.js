@@ -27,8 +27,8 @@ describe('Games API (mocked DB)', () => {
 
   it('GET /api/games maps games and sorts tags', async () => {
     mockFindAll.mockResolvedValue([
-      { id: 1, title: 'Alpha', platform: 'Web', releaseDate: null, rating: 3, tags: [{ name: 'Puzzle' }, { name: 'Action' }] },
-      { id: 2, title: 'Beta', platform: 'Mobile', releaseDate: null, rating: 4, tags: [{ name: 'RPG' }] }
+      { id: 1, title: 'Alpha', platform: 'Web', releaseDate: null, rating: 3, thumbImages: [], tags: [{ name: 'Puzzle' }, { name: 'Action' }] },
+      { id: 2, title: 'Beta', platform: 'Mobile', releaseDate: null, rating: 4, thumbImages: [], tags: [{ name: 'RPG' }] }
     ]);
 
     const app = makeApp();
@@ -41,14 +41,14 @@ describe('Games API (mocked DB)', () => {
 
   it('GET /api/games/search without filters delegates to same mapping', async () => {
     mockFindAll.mockResolvedValue([
-      { id: 3, title: 'Gamma', platform: 'PC', releaseDate: null, rating: 5, tags: [{ name: 'Strategy' }, { name: 'Adventure' }] }
+      { id: 3, title: 'Gamma', platform: 'PC', releaseDate: null, rating: 5, thumbImages: [], tags: [{ name: 'Strategy' }, { name: 'Adventure' }] }
     ]);
 
     const app = makeApp();
     const res = await request(app).get('/api/games/search').expect(200);
 
     expect(res.body).toEqual([
-      { id: 3, title: 'Gamma', platform: 'PC', releaseDate: null, rating: 5, tags: ['Adventure','Strategy'] }
+      { id: 3, title: 'Gamma', platform: 'PC', releaseDate: null, rating: 5, imageUrl: null, tags: ['Adventure','Strategy'] }
     ]);
     expect(mockFindAll).toHaveBeenCalled();
   });
