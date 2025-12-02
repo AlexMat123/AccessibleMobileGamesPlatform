@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchCurrentUser } from '../api.js';
+import { getGame } from '../api.js';
 
 export default function Library() {
   const [user, setUser] = useState(null);
@@ -24,11 +25,29 @@ export default function Library() {
         }
         const me = await fetchCurrentUser();
         setUser(me);
-        // loads both lists from localStorage
         const favRaw = localStorage.getItem(`favourites:${me.id}`);
         const wlRaw = localStorage.getItem(`wishlist:${me.id}`);
-        setFavourites(favRaw ? JSON.parse(favRaw) : []);
-        setWishlist(wlRaw ? JSON.parse(wlRaw) : []);
+        const favIds = favRaw ? JSON.parse(favRaw) : [];
+        const wlIds = wlRaw ? JSON.parse(wlRaw) : [];
+        const enrich = async (items) => {
+          const ids = items.map(i => i.id != null ? i.id : i);
+          const results = await Promise.all(ids.map(async (id) => {
+            try { return await getGame(id); } catch { return null; }
+          }));
+          return results.filter(Boolean).map(g => ({
+            id: g.id,
+            title: g.name || g.title,
+            developer: g.developer,
+            category: g.category,
+            rating: g.rating,
+            reviews: g.reviews || [],
+            tags: (g.tags || []).map(t => (t.name || t)),
+            images: g.images || [],
+          }));
+        };
+        const [favFull, wlFull] = await Promise.all([enrich(favIds), enrich(wlIds)]);
+        setFavourites(favFull);
+        setWishlist(wlFull);
       } catch (e) {
         setError(e.message || 'Failed to load library');
       } finally {
@@ -37,14 +56,32 @@ export default function Library() {
     })();
   }, [navigate]);
 
-  // Refresh when other pages dispatch 
   useEffect(() => {
-    const handler = (e) => {
+    const handler = async () => {
       if (!user) return;
       const favRaw = localStorage.getItem(`favourites:${user.id}`);
       const wlRaw = localStorage.getItem(`wishlist:${user.id}`);
-      setFavourites(favRaw ? JSON.parse(favRaw) : []);
-      setWishlist(wlRaw ? JSON.parse(wlRaw) : []);
+      const favIds = favRaw ? JSON.parse(favRaw) : [];
+      const wlIds = wlRaw ? JSON.parse(wlRaw) : [];
+      const enrich = async (items) => {
+        const ids = items.map(i => i.id != null ? i.id : i);
+        const results = await Promise.all(ids.map(async (id) => {
+          try { return await getGame(id); } catch { return null; }
+        }));
+        return results.filter(Boolean).map(g => ({
+          id: g.id,
+          title: g.name || g.title,
+          developer: g.developer,
+          category: g.category,
+          rating: g.rating,
+          reviews: g.reviews || [],
+          tags: (g.tags || []).map(t => (t.name || t)),
+          images: g.images || [],
+        }));
+      };
+      const [favFull, wlFull] = await Promise.all([enrich(favIds), enrich(wlIds)]);
+      setFavourites(favFull);
+      setWishlist(wlFull);
     };
     window.addEventListener('library:updated', handler);
     return () => window.removeEventListener('library:updated', handler);
@@ -73,9 +110,7 @@ export default function Library() {
 
   const moveToWishlist = (game) => {
     if (!user) return;
-    // removing game from favourites
     const favNext = favourites.filter(g => g.id !== game.id);
-    // adding to wishlist if not present
     const wlExists = wishlist.some(g => g.id === game.id);
     const wlNext = wlExists ? wishlist : [...wishlist, game];
     saveFavourites(favNext);
@@ -85,9 +120,7 @@ export default function Library() {
 
   const moveToFavourites = (game) => {
     if (!user) return;
-    // removing from wishlist
     const wlNext = wishlist.filter(g => g.id !== game.id);
-    // adding to favourites if not present
     const favExists = favourites.some(g => g.id === game.id);
     const favNext = favExists ? favourites : [...favourites, game];
     saveWishlist(wlNext);
@@ -99,7 +132,6 @@ export default function Library() {
     if (!game) return '/placeholder1.png';
     if (game.imageUrl) return game.imageUrl;
     if (Array.isArray(game.images) && game.images.length) return game.images[0];
-    if (Array.isArray(game.thumbImages) && game.thumbImages.length) return game.thumbImages[0];
     return '/placeholder1.png';
   };
 
