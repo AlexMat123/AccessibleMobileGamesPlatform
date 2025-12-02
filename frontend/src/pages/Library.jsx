@@ -9,6 +9,9 @@ export default function Library() {
   const [error, setError] = useState(null);
   const [tab, setTab] = useState('favourites');
   const [query, setQuery] = useState('');
+  const [sortBy, setSortBy] = useState('relevance');
+  const [selectedTags, setSelectedTags] = useState(() => new Set());
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [favourites, setFavourites] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -135,17 +138,42 @@ export default function Library() {
     return '/placeholder1.png';
   };
 
-  const filteredFav = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return favourites;
-    return favourites.filter(g => (g.title || '').toLowerCase().includes(q));
-  }, [query, favourites]);
+  const availableTags = useMemo(() => {
+    const set = new Set();
+    const source = [...favourites, ...wishlist];
+    source.forEach(g => (g.tags || []).forEach(t => set.add(typeof t === 'string' ? t : (t?.name || ''))));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [favourites, wishlist]);
 
-  const filteredWish = useMemo(() => {
+  const toggleTag = (tag) => {
+    setSelectedTags(prev => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag); else next.add(tag);
+      return next;
+    });
+  };
+
+  const applyFilters = (list) => {
     const q = query.trim().toLowerCase();
-    if (!q) return wishlist;
-    return wishlist.filter(g => (g.title || '').toLowerCase().includes(q));
-  }, [query, wishlist]);
+    const tags = Array.from(selectedTags);
+    const filtered = list.filter(g => {
+      const mq = !q || (g.title || '').toLowerCase().includes(q);
+      const mt = tags.length === 0 || tags.every(t => (g.tags || []).map(x => (typeof x === 'string' ? x : (x?.name || ''))).includes(t));
+      return mq && mt;
+    });
+    const arr = [...filtered];
+    switch (sortBy) {
+      case 'rating':
+        return arr.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      case 'title':
+        return arr.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      default:
+        return arr;
+    }
+  };
+
+  const filteredFav = useMemo(() => applyFilters(favourites), [favourites, query, selectedTags, sortBy]);
+  const filteredWish = useMemo(() => applyFilters(wishlist), [wishlist, query, selectedTags, sortBy]);
 
   if (loading) return <div className="p-4">Loading…</div>;
   if (error) return <div className="p-4 text-red-600">{error}</div>;
@@ -172,7 +200,7 @@ export default function Library() {
           <span className="theme-muted text-xs">{g.rating?.toFixed?.(1) || '—'} ({g.reviews?.length || 0})</span>
         </div>
         <div className="mt-2 flex gap-2 flex-wrap">
-          {(g.tags || []).slice(0,3).map((t, i) => (
+          {(g.tags || []).slice(0, 3).map((t, i) => (
             <span key={i} className="theme-subtle border theme-border px-2 py-[2px] rounded-full text-[10px] leading-none theme-text">
               {typeof t === 'string' ? t : t?.name || ''}
             </span>
@@ -209,9 +237,38 @@ export default function Library() {
 
           <div className="flex items-center gap-3 mb-4">
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="flex-1 rounded-md theme-input py-2 px-3" />
-            <button className="rounded-md theme-subtle px-3 py-2 border theme-border">Sort by</button>
-            <button className="rounded-md theme-subtle px-3 py-2 border theme-border">Filter ▾</button>
+            <select aria-label="Sort by" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="rounded-md theme-input px-3 py-2">
+              <option value="relevance">Relevance</option>
+              <option value="rating">Rating</option>
+              <option value="title">Title</option>
+            </select>
+            <button className="rounded-md theme-subtle px-3 py-2 border theme-border" onClick={() => setFiltersOpen(v => !v)} aria-expanded={filtersOpen} aria-controls="lib-filters">Filter ▾</button>
           </div>
+
+          {filtersOpen && (
+            <div id="lib-filters" className={`${subtleCard} p-3 mb-4`}>
+              <div className="flex flex-wrap gap-2">
+                {availableTags.length === 0 && <span className="text-sm theme-muted">No tags available</span>}
+                {availableTags.map(tag => {
+                  const active = selectedTags.has(tag);
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className={`px-2 py-1 rounded-full text-xs border ${active ? 'theme-btn' : 'theme-subtle theme-border'}`}
+                      aria-pressed={active}
+                      data-voice-tag={tag}
+                    >{tag}</button>
+                  );
+                })}
+              </div>
+              {selectedTags.size > 0 && (
+                <div className="mt-3 flex gap-2">
+                  <button className="theme-subtle border theme-border px-3 py-1 rounded-md text-xs" onClick={() => setSelectedTags(new Set())}>Clear filters</button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-4">
             {(tab === 'favourites' ? filteredFav : filteredWish).map(renderCard)}
