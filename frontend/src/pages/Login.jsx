@@ -106,6 +106,60 @@ export default function Login() {
     return () => window.removeEventListener('voiceCommand', onVoice);
   }, []);
 
+  const applySpelling = (detail) => {
+    const normalizeField = (field) => {
+      const f = (field || '').toLowerCase();
+      if (f === 'identifier' || f === 'login') return 'identifier';
+      if (f === 'password') return 'password';
+      return 'identifier';
+    };
+    const target = normalizeField(detail.field || voiceFieldRef.current);
+    if (!target) return;
+    const update = (current) => {
+      let next = detail.clear ? '' : current;
+      if (detail.backspaces) next = next.slice(0, Math.max(0, next.length - detail.backspaces));
+      if (detail.value) next += detail.value;
+      return next;
+    };
+    if (target === 'identifier') setIdentifier((prev) => update(prev));
+    if (target === 'password') setPassword((prev) => update(prev));
+    voiceFieldRef.current = target;
+    if (target === 'identifier') identifierRef.current?.focus({ preventScroll: true });
+    if (target === 'password') passwordRef.current?.focus({ preventScroll: true });
+  };
+
+  useEffect(() => {
+    const onSpell = (e) => {
+      const detail = e.detail || {};
+      if (detail.type !== 'spell') return;
+      if (detail.action === 'start') {
+        const field = (detail.field || '').toLowerCase();
+        if (field === 'identifier' || field === 'email' || field === 'login' || field === 'username') {
+          identifierRef.current?.focus({ preventScroll: true });
+          voiceFieldRef.current = 'identifier';
+        }
+        if (field === 'password') {
+          passwordRef.current?.focus({ preventScroll: true });
+          voiceFieldRef.current = 'password';
+        }
+        if (detail.clear) {
+          setIdentifier('');
+          setPassword('');
+        }
+        return;
+      }
+      if (detail.action === 'stop') {
+        voiceFieldRef.current = null;
+        return;
+      }
+      if (detail.action === 'append' || detail.action === 'clear') {
+        applySpelling(detail);
+      }
+    };
+    window.addEventListener('voiceCommand', onSpell);
+    return () => window.removeEventListener('voiceCommand', onSpell);
+  }, []);
+
   return (
     <div className="min-h-screen theme-page flex items-center justify-center p-6">
       <form

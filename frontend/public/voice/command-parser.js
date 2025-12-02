@@ -4,6 +4,14 @@ const DEFAULT_WAKE_WORD = 'hey platform';
 const SETTINGS_KEY = 'appSettings';
 const ratingWords = { one: 1, two: 2, three: 3, four: 4, five: 5 };
 const normaliseTag = (text = '') => text.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+const normaliseField = (text = '') => {
+  const f = String(text || '').toLowerCase().replace(/e[-\s]?mail/g, 'email');
+  if (f.includes('user')) return 'username';
+  if (f.includes('identifier') || f.includes('login')) return 'identifier';
+  if (f.includes('email')) return 'email';
+  if (f.includes('confirm')) return 'confirm';
+  return 'password';
+};
 
 const navigation = [
   [/^go( to)? home$/, () => ({ type: 'navigate', target: 'home' })],
@@ -135,6 +143,12 @@ const authActions = [
   // Navigation aliases
   [/^(log in|login|sign in)$/, () => ({ type: 'navigate', target: 'login' })],
   [/^(sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
+  [/^spell (e-?mail|email|password|username|user name|login|identifier)$/, (_, field) => ({
+    type: 'spell',
+    action: 'start',
+    field: normaliseField(field)
+  })],
+  [/^(stop|end|finish) spelling$/, () => ({ type: 'spell', action: 'stop' })],
   // Focus a specific field before dictation
   [/^(focus|select|go to)\s+(username|user name)$/, () => ({ type: 'auth', action: 'focus', field: 'username', form: 'signup' })],
   [/^(focus|select|go to)\s+(email|email address)$/, () => ({ type: 'auth', action: 'focus', field: 'email' })],
