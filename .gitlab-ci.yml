@@ -26,6 +26,8 @@ docker-build:
   services:
     - name: docker:24.0.7-dind
       command: ["--tls=false"]
+      privileged: true
+      alias: docker
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
