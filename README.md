@@ -1,4 +1,4 @@
-# Team 13 Group Project
+﻿# Team 13 Group Project
 
 
 
@@ -23,6 +23,124 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 - [Search Page](#search-page-tags--accessibility): genre/accessibility filters, voice filters.
 - [Voice Control](#voice-control-no-ai-required): wake word + intents.
 - [Settings Page](#settings-page-accessibility--personalization): text size, captions/alerts, buttons/spacing, theme/high-contrast, wake word, reduce motion; voice-driven toggles.
+
+## Architecture (C4)
+
+### Level 1 - System Context
+```mermaid
+flowchart LR
+  user([Player])
+  admin([Content Admin])
+  extLLM[(Optional Ollama LLM<br/>for voice intent)]
+  system[[Accessible Games Platform]]
+  user --> system
+  admin --> system
+  system -. optional intent ->. extLLM
+```
+
+### Level 2 - Containers
+```mermaid
+flowchart TB
+  user([Player])
+  admin([Content Admin])
+
+  subgraph Platform [Accessible Games Platform]
+    web[[Frontend SPA<br/>React/Vite]]
+    voice[[Voice Client<br/>Web Speech + heuristics]]
+    api[[Backend API<br/>Node/Express]]
+    db[(Database<br/>MariaDB in prod<br/>SQLite in tests)]
+  end
+
+  llm[(Optional Ollama LLM<br/>/voice/interpret fallback)]
+
+  user --> web
+  admin --> web
+  web --> api
+  voice --> api
+  api --> db
+  api -. optional .-> llm
+```
+
+### Level 3 â€“ Components (Backend API)
+```mermaid
+flowchart LR
+  subgraph API [Backend API (Express)]
+    routerLibrary[/Routes: library.js<br/>/api/tag-groups, /api/games, /api/games/search/]
+    routerGames[/Routes: games.js<br/>/api/games/:id, reviews/]
+    routerAuth[/Routes: auth.js<br/>/api/auth/*/]
+    routerUsers[/Routes: users.js<br/>/api/users/*/]
+    routerVoice[/Routes: voice.js<br/>/api/voice/interpret/]
+    authMW[[JWT Middleware<br/>middleware/auth.js]]
+    orm[[Sequelize Models<br/>Game, Tag, Review, User, joins]]
+    seed[[Seed/Data Prep<br/>config/seedGames.js, models/tags.js]]
+  end
+
+  db[(MariaDB/SQLite)]
+
+  routerAuth --> authMW
+  routerUsers --> authMW
+  routerGames --> authMW
+
+  routerLibrary --> orm
+  routerGames --> orm
+  routerAuth --> orm
+  routerUsers --> orm
+  routerVoice --> orm
+
+  orm --> db
+  seed --> orm
+```
+
+### Level 4 - Code/Class
+```mermaid
+classDiagram
+  class Game {
+    +id
+    +title
+    +platform
+    +developer
+    +category
+    +releaseDate
+    +rating
+    +description
+    +thumbImages[]
+  }
+
+  class Tag {
+    +id
+    +name
+  }
+
+  class Review {
+    +id
+    +rating
+    +comment
+    +createdAt
+  }
+
+  class User {
+    +id
+    +username
+    +email
+    +password(hash)
+    +accessibilityPreferences(JSON)
+  }
+
+  class GameTags {
+    +gameId
+    +tagId
+  }
+
+  class UserFollows {
+    +userId
+    +gameId
+  }
+
+  Game "1" -- "many" Review : has
+  User "1" -- "many" Review : writes
+  Game "many" -- "many" Tag : via GameTags
+  Game "many" -- "many" User : via UserFollows (follows)
+```
 
 ## Add your files
 
@@ -91,15 +209,15 @@ Use examples liberally, and show the expected output if you can. It's helpful to
 The project includes an accessible Search page to filter games by genre and accessibility tags.
 
 - Backend endpoints
-  - `GET /api/tag-groups` – canonical groups and tag names from `backend/models/tags.js`
-  - `GET /api/games` – games with associated tag names
+  - `GET /api/tag-groups` â€“ canonical groups and tag names from `backend/models/tags.js`
+  - `GET /api/games` â€“ games with associated tag names
 - Voice Control (Heuristic, No AI Required)
-  - Wake word: “Hey Platform” opens a brief listening window.
+  - Wake word: â€œHey Platformâ€ opens a brief listening window.
   - Supported intents: navigate (`go to search`), search (`search for puzzle games` / `show puzzle games`), filters (`filter by motor` / `apply filters colourblind mode and high contrast`), reset filters (`reset filters` / `clear filters`), scroll (`scroll up/down`).
-  - Genre mentions alone trigger filters (e.g., “show puzzle games” → Puzzle filter).
+  - Genre mentions alone trigger filters (e.g., â€œshow puzzle gamesâ€ â†’ Puzzle filter).
   - Visual feedback: status banner; `voiceCommand` events dispatch to pages (Search page updates filters/tags/genre).
   - Frontend voice modules live in `frontend/public/voice/*`; `voiceCommand` handlers in `Search.jsx`.
-  - Backend heuristic intent API: `POST /api/voice/interpret` → `{ intent|null }` (no model needed).
+  - Backend heuristic intent API: `POST /api/voice/interpret` â†’ `{ intent|null }` (no model needed).
   - Run:
     - Backend: `npm --prefix backend run dev` (API on http://localhost:5000)
     - Frontend: `npm --prefix frontend run dev` (Vite on http://localhost:5173)
@@ -108,13 +226,13 @@ The project includes an accessible Search page to filter games by genre and acce
     - API: `curl -X POST http://localhost:5000/api/voice/interpret -H "Content-Type: application/json" -d '{"transcript":"hey platform maybe show puzzle games"}'`
     - Console: `interpretTranscriptRemote('hey platform filter by motor').then(console.log);`
     - Dispatch event: `window.dispatchEvent(new CustomEvent('voiceCommand', { detail: { type:'filter', tag:'Puzzle' } }));`
-    - Voice: say “Hey Platform, filter by colourblind mode” and watch filters update.
+    - Voice: say â€œHey Platform, filter by colourblind modeâ€ and watch filters update.
   - Tests:
     - Backend: `npm --prefix backend test` (includes `/api/voice/interpret`)
     - Frontend: `npm --prefix frontend test` (parser, event dispatch, Search page voice handler integration, plus page tests)
   - Optional AI/LLM: disabled by default; heuristic only. Ollama env placeholders exist in `backend/.env` (commented). Leave them commented to stay heuristic-only.
 - Frontend route
-  - `/search` – keyboard-only friendly page with labelled inputs, visible focus, and polite live status updates
+  - `/search` â€“ keyboard-only friendly page with labelled inputs, visible focus, and polite live status updates
 - Keyboard usage
   - Tab/Shift+Tab to move focus; Enter/Space to toggle tag buttons
   - "Clear search & tags" resets input and selections
@@ -145,11 +263,11 @@ The project includes an accessible Search page to filter games by genre and acce
 ## Voice Control (no AI required)
 
 - Wake word & intents
-  - Wake word: “Hey Platform” opens a brief listening window.
-  - Intents: navigate (`go to search`), search (`search/show puzzle games`), filters (`filter by motor`, `apply filters colourblind mode and high contrast`), reset filters, scroll up/down. Genre mentions alone trigger filters (e.g., “show puzzle games” → Puzzle).
+  - Wake word: â€œHey Platformâ€ opens a brief listening window.
+  - Intents: navigate (`go to search`), search (`search/show puzzle games`), filters (`filter by motor`, `apply filters colourblind mode and high contrast`), reset filters, scroll up/down. Genre mentions alone trigger filters (e.g., â€œshow puzzle gamesâ€ â†’ Puzzle).
 - Architecture
   - Frontend voice modules: `frontend/public/voice/*` (parser, dispatcher, feedback). Pages listen for `voiceCommand` (e.g., `Search.jsx` applies filters/genre).
-  - Backend heuristic intent API: `POST /api/voice/interpret` → `{ intent|null }` (no model needed).
+  - Backend heuristic intent API: `POST /api/voice/interpret` â†’ `{ intent|null }` (no model needed).
 - Run
   - Backend: `npm --prefix backend run dev` (API on http://localhost:5000)
   - Frontend: `npm --prefix frontend run dev` (http://localhost:5173). Frontend calls `http://localhost:5000/api/voice/interpret` by default; override with `window.VOICE_API_BASE='http://localhost:5000/api'` if needed.
@@ -157,7 +275,7 @@ The project includes an accessible Search page to filter games by genre and acce
   - API: `curl -X POST http://localhost:5000/api/voice/interpret -H "Content-Type: application/json" -d '{"transcript":"hey platform maybe show puzzle games"}'`
   - Console: `interpretTranscriptRemote('hey platform filter by motor').then(console.log);`
   - Dispatch event: `window.dispatchEvent(new CustomEvent('voiceCommand', { detail: { type:'filter', tag:'Puzzle' } }));`
-  - Voice: say “Hey Platform, filter by colourblind mode” and watch filters update.
+  - Voice: say â€œHey Platform, filter by colourblind modeâ€ and watch filters update.
  - Tests
   - Backend: `npm --prefix backend test` (includes `/api/voice/interpret`)
   - Frontend: `npm --prefix frontend test` (parser, `voiceCommand` dispatch, Search page voice handler integration, plus page tests)
@@ -168,13 +286,13 @@ The project includes an accessible Search page to filter games by genre and acce
 
 - Backend tests (Jest)
   - Run all: `npm run test:backend`
-  - What’s covered: tag-groups API, games API mapping, search query building (unit + opt-in SQLite integration).
+  - Whatâ€™s covered: tag-groups API, games API mapping, search query building (unit + opt-in SQLite integration).
   - Integration tests: use an in-memory SQLite DB via `DB_DIALECT=sqlite`. To run them locally, first install `sqlite3` in `backend` (`cd backend && npm install sqlite3 --save-dev`), then run `npm run test:backend:int` from the project root. MariaDB remains the main runtime database; SQLite is used only for fast, isolated tests.
 
 - Frontend tests (Vitest + React Testing Library)
   - Run all: `npm run test:frontend`
   - Watch mode: `npm run test:frontend:watch`
-  - What’s covered: Search page renders, keyboard accordion + tag toggles, debounced server search, loading status during in-flight requests, and selected genre/tags reflected in server calls.
+  - Whatâ€™s covered: Search page renders, keyboard accordion + tag toggles, debounced server search, loading status during in-flight requests, and selected genre/tags reflected in server calls.
 
 - Manual API checks (PowerShell)
   - Tag groups: `Invoke-RestMethod http://localhost:5000/api/tag-groups | ConvertTo-Json -Depth 6`
@@ -186,10 +304,10 @@ The project includes an accessible Search page to filter games by genre and acce
 - Pipelines: `.gitlab-ci.yml` runs `npm test` (backend SQLite integration + frontend) then `npm --prefix frontend run build` and stores `frontend/dist` as an artifact. A GitHub Actions CI mirror lives in `.github/workflows/ci.yml`.
 - GitLab runner (Windows, shell executor):
   1) Download `gitlab-runner-windows-amd64.exe` from GitLab docs; place in `C:\GitLab-Runner` and rename to `gitlab-runner.exe`.
-  2) In admin PowerShell: `cd C:\GitLab-Runner` then `.\gitlab-runner.exe register --url https://git.cardiff.ac.uk --token <project-token>` → executor: `shell`, tags: leave empty (allow untagged jobs), description: `team13-node-runner` (or similar).
+  2) In admin PowerShell: `cd C:\GitLab-Runner` then `.\gitlab-runner.exe register --url https://git.cardiff.ac.uk --token <project-token>` â†’ executor: `shell`, tags: leave empty (allow untagged jobs), description: `team13-node-runner` (or similar).
   3) Set `shell = "powershell"` in `C:\GitLab-Runner\config.toml` under your runner.
   4) In admin PowerShell: `.\gitlab-runner.exe install` then `.\gitlab-runner.exe start`.
-- After pushing changes (`git push`), check `CI/CD → Pipelines` in GitLab; jobs should run on `team13-node-runner`.
+- After pushing changes (`git push`), check `CI/CD â†’ Pipelines` in GitLab; jobs should run on `team13-node-runner`.
 
 ## Support
 Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
@@ -214,3 +332,4 @@ For open source projects, say how it is licensed.
 If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
 
 test pipeline
+
