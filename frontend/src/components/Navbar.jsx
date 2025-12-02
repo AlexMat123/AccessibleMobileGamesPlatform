@@ -93,12 +93,12 @@ export default function Navbar() {
   };
 
   return (
-    <Disclosure as="nav" className="relative bg-gray-800">
+    <Disclosure as="nav" className="relative theme-surface border-b theme-border">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
         <div className="relative flex h-16 items-center justify-between">
           {/* Mobile menu button */}
           <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-            <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-white/5 hover:text-white">
+            <DisclosureButton className="group relative inline-flex items-center justify-center rounded-md p-2 theme-muted hover:opacity-80">
               <Bars3Icon aria-hidden="true" className="block h-6 w-6 group-data-open:hidden" />
               <XMarkIcon aria-hidden="true" className="hidden h-6 w-6 group-data-open:block" />
             </DisclosureButton>
@@ -119,9 +119,7 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   className={classNames(
-                    item.current
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-white/5 hover:text-white',
+                    item.current ? 'theme-btn-strong' : 'theme-text hover:opacity-80',
                     'rounded-md px-3 py-2 text-sm font-medium'
                   )}
                   aria-current={item.current ? 'page' : undefined}
@@ -144,18 +142,18 @@ export default function Navbar() {
                   onFocus={() => results.length && setOpen(true)}
                   placeholder="Search games..."
                   aria-label="Search games"
-                  className="w-full rounded-md bg-white/95 text-gray-900 placeholder-gray-500 py-2 pl-3 pr-3 shadow focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full rounded-md theme-input py-2 pl-3 pr-3 shadow focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </form>
               {open && results.length > 0 && (
-                <div className="absolute z-30 mt-1 w-full max-h-72 overflow-auto rounded-md bg-white shadow-lg ring-1 ring-black/5">
-                  <ul className="divide-y divide-gray-100">
+                <div className="absolute z-30 mt-1 w-full max-h-72 overflow-auto rounded-md theme-surface shadow-lg ring-1 ring-black/5 theme-border">
+                  <ul className="divide-y theme-border">
                     {results.map(r => (
-                      <li key={r.id} className="px-3 py-2 hover:bg-gray-50 cursor-pointer">
-                        <a href={`/games/${r.id}`} className="flex items-center justify-between text-sm text-gray-700">
+                      <li key={r.id} className="px-3 py-2 hover:opacity-80 cursor-pointer">
+                        <a href={`/games/${r.id}`} className="flex items-center justify-between text-sm theme-text">
                           <span className="font-medium">{r.title}</span>
                           {r.rating != null && (
-                            <span className="ml-2 text-xs text-gray-500">★ {Number(r.rating).toFixed(1)}</span>
+                            <span className="ml-2 text-xs theme-muted">★ {Number(r.rating).toFixed(1)}</span>
                           )}
                         </a>
                       </li>
@@ -174,7 +172,7 @@ export default function Navbar() {
                 <a
                   href="/library"
                   className={classNames(
-                    'text-gray-300 hover:bg-white/5 hover:text-white',
+                    'theme-text hover:opacity-80',
                     'rounded-md px-3 py-2 text-sm font-medium'
                   )}
                 >
@@ -186,9 +184,7 @@ export default function Navbar() {
                   key={item.name}
                   href={item.href}
                   className={classNames(
-                    item.current
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-300 hover:bg-white/5 hover:text-white',
+                    item.current ? 'theme-btn-strong' : 'theme-text hover:opacity-80',
                     'rounded-md px-3 py-2 text-sm font-medium'
                   )}
                   aria-current={item.current ? 'page' : undefined}
@@ -199,26 +195,29 @@ export default function Navbar() {
             </div>
 
             <Menu as="div" className="relative ml-3">
-              <MenuButton className="relative flex rounded-full focus:outline-none focus:ring-2 focus:ring-white">
+              <MenuButton
+                aria-label="Open profile menu"
+                className="relative flex rounded-full focus:outline-none focus:ring-2 focus:ring-white"
+              >
                 <img alt="" src={profile} className="h-8 w-8 rounded-full" />
               </MenuButton>
-              <MenuItems className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg">
+              <MenuItems className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md theme-surface py-1 shadow-lg theme-border">
                 {isAuthenticated ? (
                   <>
                     <MenuItem>
-                      <a href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your profile</a>
+                      <a href="/profile" className="block px-4 py-2 text-sm theme-text hover:opacity-80">Your profile</a>
                     </MenuItem>
                     <MenuItem>
-                      <button onClick={handleSignOut} className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+                      <button onClick={handleSignOut} className="w-full text-left block px-4 py-2 text-sm theme-text hover:opacity-80">Sign out</button>
                     </MenuItem>
                   </>
                 ) : (
                   <>
                     <MenuItem>
-                      <a href="/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Log in</a>
+                      <a href="/login" className="block px-4 py-2 text-sm theme-text hover:opacity-80">Log in</a>
                     </MenuItem>
                     <MenuItem>
-                      <a href="/signup" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign up</a>
+                      <a href="/signup" className="block px-4 py-2 text-sm theme-text hover:opacity-80">Sign up</a>
                     </MenuItem>
                   </>
                 )}
@@ -237,9 +236,7 @@ export default function Navbar() {
               as="a"
               href={item.href}
               className={classNames(
-                item.current
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-300 hover:bg-white/5 hover:text-white',
+                item.current ? 'theme-btn-strong' : 'theme-text hover:opacity-80',
                 'block rounded-md px-3 py-2 text-base font-medium'
               )}
             >

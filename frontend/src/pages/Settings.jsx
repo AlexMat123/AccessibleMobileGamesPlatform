@@ -186,31 +186,31 @@ export default function Settings() {
   const sampleButtonClass = buttonSizes[buttonSize] || buttonSizes.normal;
   const pageTone = useMemo(() => {
     if (highContrastMode) return 'bg-slate-900 text-lime-50';
-    if (theme === 'dark') return 'bg-slate-900 text-slate-100';
+    if (theme === 'dark') return 'bg-slate-900 text-slate-50';
     return 'bg-white text-slate-900';
   }, [highContrastMode, theme]);
 
   const cardTone = useMemo(() => {
     if (highContrastMode) return 'border border-lime-300 bg-slate-950 text-lime-50 shadow-[0_0_0_1px_rgba(190,242,100,0.25)]';
-    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-100 shadow-sm shadow-black/20';
+    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-50 shadow-sm shadow-black/20';
     return 'border border-slate-200 bg-white text-slate-900 shadow-sm';
   }, [highContrastMode, theme]);
 
   const softCardTone = useMemo(() => {
     if (highContrastMode) return 'border border-lime-300/70 bg-slate-900 text-lime-50';
-    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-100';
+    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-50';
     return 'border border-slate-200 bg-white text-slate-900';
   }, [highContrastMode, theme]);
 
   const sampleSurfaceTone = useMemo(() => {
     if (highContrastMode) return 'border border-lime-300/70 bg-slate-900 text-lime-50';
-    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-100';
+    if (theme === 'dark') return 'border border-slate-700 bg-slate-800 text-slate-50';
     return 'border border-slate-300 bg-slate-50 text-slate-900';
   }, [highContrastMode, theme]);
 
   const dashedTone = useMemo(() => {
     if (highContrastMode) return 'border-dashed border-lime-300/70 bg-slate-800 text-lime-50';
-    if (theme === 'dark') return 'border-dashed border-slate-600 bg-slate-800 text-slate-100';
+    if (theme === 'dark') return 'border-dashed border-slate-600 bg-slate-800 text-slate-50';
     return 'border-dashed border-slate-300 bg-slate-50 text-slate-900';
   }, [highContrastMode, theme]);
 
@@ -253,8 +253,8 @@ export default function Settings() {
     };
   }, [highContrastMode, theme]);
 
-  const headingTone = highContrastMode ? 'text-lime-50' : (theme === 'dark' ? 'text-slate-100' : 'text-slate-800');
-  const subTone = highContrastMode ? 'text-lime-200' : (theme === 'dark' ? 'text-slate-300' : 'text-slate-600');
+  const headingTone = highContrastMode ? 'text-lime-50' : (theme === 'dark' ? 'text-slate-50' : 'text-slate-800');
+  const subTone = highContrastMode ? 'text-lime-200' : (theme === 'dark' ? 'text-slate-200' : 'text-slate-600');
   const bodyTone = highContrastMode ? 'text-lime-100' : (theme === 'dark' ? 'text-slate-200' : 'text-slate-700');
   const inputToneEnabled = useMemo(() => {
     if (highContrastMode) return 'border-lime-300 bg-slate-900 text-lime-100 placeholder-lime-200';
@@ -267,11 +267,13 @@ export default function Settings() {
     return 'border-slate-200 bg-slate-100 text-slate-500';
   }, [highContrastMode, theme]);
 
+  const accentTone = highContrastMode ? 'text-lime-200' : (theme === 'dark' ? 'text-lime-300' : 'text-lime-700');
+
   return (
     <div className={`min-h-screen ${pageTone}`}>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
         <header className="space-y-3">
-          <p className="text-sm font-semibold uppercase tracking-wide text-lime-700">Settings</p>
+          <p className={`text-sm font-semibold uppercase tracking-wide ${accentTone}`}>Settings</p>
           <h1 className={`text-3xl font-bold sm:text-4xl ${headingTone}`}>Accessibility first</h1>
         </header>
 
@@ -285,9 +287,9 @@ export default function Settings() {
             </div>
 
             <div className="mt-4 space-y-4">
-              <div className={`rounded-xl ${sampleSurfaceTone} p-4`}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`text-sm font-semibold ${headingTone}`}>Text size</span>
+              <fieldset className={`rounded-xl ${sampleSurfaceTone} p-4`} aria-label="Text size options">
+                <legend className={`text-sm font-semibold ${headingTone}`}>Text size</legend>
+                <div className="flex flex-wrap items-center gap-2 mt-2" role="group" aria-label="Choose text size">
                   {['small', 'medium', 'large'].map(size => (
                     <PillOption
                       key={size}
@@ -295,13 +297,14 @@ export default function Settings() {
                       active={textSize === size}
                       onClick={() => setTextSize(size)}
                       styles={pillStyles}
+                      ariaLabel={`Text size ${size}`}
                     />
                   ))}
                 </div>
-                <div className={`mt-3 rounded-xl border px-4 py-3 ${dashedTone} ${sampleTextClasses}`}>
+                <div className={`mt-3 rounded-xl border px-4 py-3 ${dashedTone} ${sampleTextClasses}`} aria-live="polite">
                   “Sample text stays readable. Adjust size and contrast to taste.”
                 </div>
-              </div>
+              </fieldset>
 
               <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
                 <h3 className={`text-sm font-semibold ${headingTone}`}>Captions & visual feedback</h3>
@@ -326,9 +329,9 @@ export default function Settings() {
               <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
                 <h3 className={`text-sm font-semibold ${headingTone}`}>Motor accessibility</h3>
                 <div className="mt-3 space-y-3">
-                  <div>
-                    <p className={`text-sm font-semibold ${headingTone}`}>Button size</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                  <fieldset>
+                    <legend className={`text-sm font-semibold ${headingTone}`}>Button size</legend>
+                    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Choose button size">
                       {[
                         { id: 'normal', label: 'Normal' },
                         { id: 'large', label: 'Large' },
@@ -340,14 +343,15 @@ export default function Settings() {
                           active={buttonSize === opt.id}
                           onClick={() => setButtonSize(opt.id)}
                           styles={pillStyles}
+                          ariaLabel={`Button size ${opt.label}`}
                         />
                       ))}
                     </div>
-                  </div>
+                  </fieldset>
 
-                  <div>
-                    <p className={`text-sm font-semibold ${headingTone}`}>Spacing between elements</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                  <fieldset>
+                    <legend className={`text-sm font-semibold ${headingTone}`}>Spacing between elements</legend>
+                    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Choose spacing">
                       {[
                         { id: 'snug', label: 'Tight' },
                         { id: 'roomy', label: 'Roomy' },
@@ -359,15 +363,16 @@ export default function Settings() {
                           active={spacing === opt.id}
                           onClick={() => setSpacing(opt.id)}
                           styles={pillStyles}
+                          ariaLabel={`Spacing ${opt.label}`}
                         />
                       ))}
                     </div>
-                  </div>
+                  </fieldset>
 
-                  <div className={`rounded-xl border ${dashedTone} p-4 ${spacingClass}`}>
-                    <button type="button" className={`rounded-lg bg-lime-600 font-semibold text-white shadow-sm transition hover:bg-lime-700 ${sampleButtonClass}`}>Tap</button>
-                    <button type="button" className={`rounded-lg bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 ${sampleButtonClass}`}>Confirm</button>
-                    <button type="button" className={`rounded-lg bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 ${sampleButtonClass}`}>Cancel</button>
+                  <div className={`rounded-xl border ${dashedTone} p-4 ${spacingClass}`} aria-hidden tabIndex={-1}>
+                    <button type="button" tabIndex={-1} className={`rounded-lg bg-lime-700 font-semibold text-white shadow-sm transition hover:bg-lime-800 ${sampleButtonClass}`}>Tap</button>
+                    <button type="button" tabIndex={-1} className={`rounded-lg bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 ${sampleButtonClass}`}>Confirm</button>
+                    <button type="button" tabIndex={-1} className={`rounded-lg bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 ${sampleButtonClass}`}>Cancel</button>
                   </div>
                 </div>
               </div>
@@ -463,7 +468,7 @@ export default function Settings() {
               <ul className={`list-disc space-y-1 pl-5 ${bodyTone}`}>
                 <li>WCAG 2.1 AA intent; captions and visual alerts default on.</li>
                 <li>Supports screen readers, keyboard-only navigation, and voice with wake word.</li>
-                <li>Contact: <a href="mailto:accessibility@team13.games" className="text-lime-700 underline">accessibility@team13.games</a> for issues.</li>
+                <li>Contact: <a href="mailto:accessibility@team13.games" className={`${accentTone} underline`}>accessibility@team13.games</a> for issues.</li>
               </ul>
             </div>
           </section>

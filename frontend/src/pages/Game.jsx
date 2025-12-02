@@ -9,7 +9,7 @@ function RatingStars({ value }) {
     return (
         <span aria-label={`Rating ${v} of 5`}>
       {Array.from({ length: 5 }, (_, i) => (
-          <span key={i} style={{ color: i < v ? '#f5c518' : '#ccc' }}>★</span>
+          <span key={i} style={{ color: i < v ? 'var(--accent)' : 'var(--text-muted)' }}>★</span>
       ))}
     </span>
     );
@@ -282,10 +282,10 @@ export default function Game() {
 
 
     return (
-        <div style={{ background: '#d7edf9', minHeight: '100vh', padding: '1rem', fontFamily: 'Arial, sans-serif' }}>
+        <div style={{ background: 'var(--bg-page)', color: 'var(--text-primary)', minHeight: '100vh', padding: '1rem', fontFamily: 'Arial, sans-serif' }}>
             <div style={{ maxWidth: 1000, margin: '0 auto' }}>
                 {/* Top section */}
-                <div style={{ display: 'flex', gap: '1rem', background: '#f2f2f2', padding: '1rem', borderRadius: 6 }} ref={heroRef}>
+                <div style={{ display: 'flex', gap: '1rem', background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '1rem', borderRadius: 6 }} ref={heroRef}>
                     {/* Hero image */}
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -309,7 +309,7 @@ export default function Game() {
                                         width: 8,
                                         height: 8,
                                         borderRadius: '50%',
-                                        background: i === heroIndex ? '#555' : '#ccc',
+                                        background: i === heroIndex ? 'var(--accent)' : 'var(--border)',
                                         margin: 3,
                                         cursor: 'pointer'
                                     }}
@@ -322,7 +322,7 @@ export default function Game() {
                     {/* Details */}
                     <div style={{ flex: 1 }}>
                         <h1 style={{ margin: 0 }}>{game.name}</h1>
-                        <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>{game.developer || 'Developer'} • {game.category || 'Category'}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{game.developer || 'Developer'} • {game.category || 'Category'}</div>
                         <div style={{ marginTop: 8 }}>
                             {(() => {
                                 const reviews = game.reviews || [];
@@ -338,7 +338,7 @@ export default function Game() {
                                 return (
                                     <>
                                         <RatingStars value={avgRating} />
-                                        <span style={{ fontSize: 12, color: '#555' }}>
+                                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 {avgRating.toFixed(1)} ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
             </span>
                                     </>
@@ -347,7 +347,7 @@ export default function Game() {
                         </div>
                         <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                             {(game.tags || []).map(t => (
-                                <span key={t.id} style={{ background: '#e0e0e0', padding: '2px 6px', fontSize: 11, borderRadius: 12 }}>{t.name}</span>
+                                <span key={t.id} style={{ background: 'var(--bg-subtle)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '2px 6px', fontSize: 11, borderRadius: 12 }}>{t.name}</span>
                             ))}
                         </div>
                         <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -375,7 +375,7 @@ export default function Game() {
                             {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
                             <button style={dangerBtn}>Report Game</button>
                         </div>
-                        <div style={{ fontSize: 10, marginTop: 12, color: '#555' }}>Release Date: {date}</div>
+                        <div style={{ fontSize: 10, marginTop: 12, color: 'var(--text-muted)' }}>Release Date: {date}</div>
                     </div>
                 </div>
 
@@ -393,7 +393,7 @@ export default function Game() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} ref={addCarouselRef}>
                         <button onClick={prevAdditional} style={secBtn} aria-label="Previous additional images">‹</button>
                         {addWindow.map((url, i) => (
-                            <div key={i} style={{ width: 140, height: 90, background: '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
+                            <div key={i} style={{ width: 140, height: 90, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, border: '1px solid var(--border)' }}>
                                 <img src={url} alt={`Additional ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
                             </div>
                         ))}
@@ -406,7 +406,7 @@ export default function Game() {
                                 width: 6,
                                 height: 6,
                                 borderRadius: '50%',
-                                background: i === addIndex ? '#555' : '#bbb',
+                                background: i === addIndex ? 'var(--accent)' : 'var(--border)',
                                 margin: 3
                             }} />
                         ))}
@@ -423,12 +423,12 @@ export default function Game() {
                     {/* Review modal */}
                     {showReviewModal && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                            <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
-                                <div className="flex justify-between items-center border-b px-4 py-3">
+                            <div className="theme-surface border theme-border rounded-lg shadow-lg w-full max-w-md mx-4">
+                                <div className="flex justify-between items-center border-b theme-border px-4 py-3">
                                     <h3 className="text-lg font-semibold">Write a review</h3>
                                     <button
                                         onClick={closeReviewModal}
-                                        className="text-gray-500 hover:text-gray-700"
+                                        className="theme-muted hover:opacity-80"
                                         disabled={submittingReview}
                                     >
                                         ×
@@ -451,7 +451,7 @@ export default function Game() {
                                             value={reviewRating}
                                             ref={reviewRatingRef}
                                             onChange={(e) => setReviewRating(e.target.value)}
-                                            className="border rounded px-2 py-1 w-full"
+                                            className="theme-input rounded px-2 py-1 w-full"
                                             required
                                         >
                                             {[1, 2, 3, 4, 5].map((n) => (
@@ -470,7 +470,7 @@ export default function Game() {
                                             value={reviewComment}
                                             ref={reviewCommentRef}
                                             onChange={(e) => setReviewComment(e.target.value)}
-                                            className="border rounded px-2 py-1 w-full min-h-[100px]"
+                                            className="theme-input rounded px-2 py-1 w-full min-h-[100px]"
                                             required
                                         />
                                     </div>
@@ -478,7 +478,7 @@ export default function Game() {
                                     <div className="flex justify-end gap-2 pt-2">
                                         <button
                                             type="button"
-                                            className="px-3 py-1 rounded border"
+                                            className="px-3 py-1 rounded border theme-border theme-subtle"
                                             onClick={closeReviewModal}
                                             disabled={submittingReview}
                                         >
@@ -488,7 +488,7 @@ export default function Game() {
                                             type="submit"
                                             ref={reviewSubmitRef}
                                             data-voice-review-submit
-                                            className="px-4 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300"
+                                            className="px-4 py-1 rounded theme-btn-strong hover:opacity-90 disabled:opacity-50"
                                             disabled={submittingReview}
                                         >
                                             {submittingReview ? "Submitting..." : "Submit review"}
@@ -505,11 +505,11 @@ export default function Game() {
                             return (
                                 <div key={star} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                     <span>{'★'.repeat(star)}{'☆'.repeat(5 - star)}</span>
-                                    <div style={{ flex: 1, background: '#ccc', height: 6, borderRadius: 3 }}>
+                                    <div style={{ flex: 1, background: 'var(--border)', height: 6, borderRadius: 3 }}>
                                         <div style={{
-                                            width: Math.min(100, (count / ratingDist[0]) * 100) + '%',
+                                            width: Math.min(100, (ratingDist[0] ? (count / ratingDist[0]) * 100 : 0)) + '%',
                                             height: '100%',
-                                            background: '#4aa3df',
+                                            background: 'var(--accent)',
                                             borderRadius: 3
                                         }} />
                                     </div>
@@ -520,10 +520,10 @@ export default function Game() {
                     </div>
 
                     {reviews.map(r => (
-                        <div key={r.id} style={{ background: '#fff', padding: '8px 10px', borderRadius: 4, marginBottom: 8, fontSize: 12, border: '1px solid #ddd' }}>
+                        <div key={r.id} style={{ background: 'var(--bg-surface)', padding: '8px 10px', borderRadius: 4, marginBottom: 8, fontSize: 12, border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <strong>{r.user?.username || 'Anonymous'}</strong>
-                                <span style={{ color: '#777' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>
                                     {new Date(r.createdAt).toLocaleDateString()}
                                 </span>
                             </div>
@@ -544,8 +544,9 @@ export default function Game() {
 
 // Styles
 const sideBtn = {
-    background: '#e0e0e0',
-    border: 'none',
+    background: 'var(--bg-subtle)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
     cursor: 'pointer',
     width: 32,
     height: 32,
@@ -556,18 +557,18 @@ const sideBtn = {
 };
 
 const primaryBtn = {
-    background: '#4aa3df',
-    color: '#fff',
-    border: 'none',
+    background: 'var(--accent)',
+    color: 'var(--accent-contrast)',
+    border: '1px solid var(--accent)',
     padding: '6px 12px',
     fontSize: 12,
     borderRadius: 4,
     cursor: 'pointer'
 };
 const secBtn = {
-    background: '#e0e0e0',
-    color: '#222',
-    border: 'none',
+    background: 'var(--bg-subtle)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
     padding: '6px 10px',
     fontSize: 12,
     borderRadius: 4,
@@ -575,10 +576,13 @@ const secBtn = {
 };
 const dangerBtn = {
     ...primaryBtn,
-    background: '#ff6b6b'
+    background: '#ff6b6b',
+    borderColor: '#ff6b6b'
 };
 const sectionStyle = {
-    background: '#f2f2f2',
+    background: 'var(--bg-surface)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
     padding: '0.8rem',
     borderRadius: 6,
     marginTop: 16
