@@ -236,6 +236,35 @@ router.patch('/reports/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// DELETE /api/games/:id (admin only)
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ message: 'Admins only' });
+        }
+        const id = Number(req.params.id);
+        if (Number.isNaN(id)) {
+            return res.status(400).json({ message: 'Invalid id' });
+        }
+        const game = await Game.findByPk(id);
+        if (!game) {
+            return res.status(404).json({ message: 'Game not found' });
+        }
+
+        // Mark all reports for this game as resolved before deletion
+        await GameReport.update(
+            { status: true },
+            { where: { gameId: id } }
+        );
+
+        await game.destroy();
+        return res.sendStatus(204);
+    } catch (e) {
+        console.error('Error deleting game:', e);
+        return res.status(500).json({ message: 'Failed to delete game' });
+    }
+});
+
 // GET /api/games/:id (must come after more specific routes like /search, /reports, /:id/reviews)
 router.get('/:id', async (req, res) => {
     try {

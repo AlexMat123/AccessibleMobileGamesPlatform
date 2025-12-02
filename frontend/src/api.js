@@ -217,3 +217,15 @@ export async function resolveGameReport(id) {
   }
   return { ok: true, status: res.status };
 }
+
+export async function deleteGame(id) {
+  const res = await fetch(`${API_URL}/games/${id}`, {
+    method: 'DELETE',
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to delete game');
+  }
+  return { ok: true, status: res.status };
+}

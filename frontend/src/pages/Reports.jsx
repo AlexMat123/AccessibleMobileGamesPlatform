@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getGameReports, fetchCurrentUser, resolveGameReport } from '../api';
+import { getGameReports, fetchCurrentUser, resolveGameReport, deleteGame } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -85,6 +85,27 @@ export default function ReportsPage() {
       pushToast('Report marked as resolved');
     } catch (e) {
       pushToast(e.message || 'Failed to resolve report');
+    }
+  };
+
+  const handleDeleteGame = async (gameId) => {
+    if (!gameId) return;
+    if (!window.confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await deleteGame(gameId);
+      // Mark reports for this game as resolved locally
+      setReports((prev) =>
+        prev.map((r) =>
+          r.game && r.game.id === gameId
+            ? { ...r, status: true }
+            : r
+        )
+      );
+      pushToast('Game deleted and associated reports marked as resolved');
+    } catch (e) {
+      pushToast(e.message || 'Failed to delete game');
     }
   };
 
@@ -175,13 +196,24 @@ export default function ReportsPage() {
                     </td>
                     <td className="px-3 py-2">
                       {!r.status && (
-                        <button
-                          type="button"
-                          onClick={() => handleResolve(r.id)}
-                          className="px-3 py-1 rounded bg-accent text-accent-contrast text-xs font-medium hover:opacity-90"
-                        >
-                          Resolve
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleResolve(r.id)}
+                            className="px-3 py-1 mr-2 rounded bg-blue-500 text-white bg-accent text-accent-contrast text-xs font-medium hover:opacity-90"
+                          >
+                            Resolve
+                          </button>
+                          {r.game && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGame(r.game.id)}
+                              className="px-3 py-1 rounded bg-red-600 text-white text-xs font-medium hover:opacity-90"
+                            >
+                              Delete game
+                            </button>
+                          )}
+                        </>
                       )}
                     </td>
                   </tr>
