@@ -103,32 +103,47 @@ import { interpretTranscriptRemote } from './voice-remote.js';
 
     const tokens = lower.split(/\s+/).filter(Boolean);
     const fillers = new Set(['hey', 'platform', ...wakeParts, 'type', 'write', 'enter', 'say', 'letter', 'letters', 'word', 'words', 'and', 'then', 'please']);
+    const capitalOnce = new Set(['capital', 'cap', 'capitals', 'upper']);
+
     let value = '';
     let backspaces = 0;
+    let capitalizeNext = false;
     for (const t of tokens) {
       const cleaned = t.replace(/[^a-z0-9-]/g, '');
       if (!cleaned) continue;
       if (fillers.has(cleaned)) continue;
+      if (capitalOnce.has(cleaned)) {
+        capitalizeNext = true;
+        continue;
+      }
       const mapped = SPELL_MAP[cleaned];
       if (mapped === '<backspace>') {
         backspaces += 1;
         continue;
       }
       if (typeof mapped === 'string') {
-        value += mapped;
+        const letter = capitalizeNext ? mapped.toUpperCase() : mapped;
+        value += letter;
+        capitalizeNext = false;
         continue;
       }
       const letterName = LETTER_NAMES[cleaned];
       if (letterName) {
-        value += letterName;
+        const letter = capitalizeNext ? letterName.toUpperCase() : letterName;
+        value += letter;
+        capitalizeNext = false;
         continue;
       }
       if (/^[a-z]$/.test(cleaned)) {
-        value += cleaned;
+        const letter = capitalizeNext ? cleaned.toUpperCase() : cleaned;
+        value += letter;
+        capitalizeNext = false;
         continue;
       }
       if (/^[a-z]{2,}$/.test(cleaned)) {
-        value += cleaned;
+        const word = capitalizeNext ? cleaned.toUpperCase() : cleaned;
+        value += word;
+        capitalizeNext = false;
         continue;
       }
       if (/^[0-9]$/.test(cleaned)) {
