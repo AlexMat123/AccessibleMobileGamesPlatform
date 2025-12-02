@@ -109,24 +109,24 @@ export default function Home() {
   const totalFeatured = featuredGames.length;
 
   const renderStars = (rating) => Array.from({ length: 5 }, (_, i) => (
-    <span key={i} className={i < Math.round(rating) ? "text-yellow-500" : "text-gray-300"}>★</span>
+    <span key={i} className={i < Math.round(rating) ? "text-amber-400" : "theme-muted"}>★</span>
   ));
 
   return (
-    <div className="bg-sky-100 min-h-screen flex justify-center py-10 lg:pb-20">
+    <div className="theme-page min-h-screen flex justify-center py-10 lg:pb-20">
       {/* Main container */}
-      <div className="bg-gray-100 rounded-2xl shadow-lg p-8 w-full max-w-6xl">
+      <div className="theme-surface border theme-border rounded-2xl shadow-lg p-8 w-full max-w-6xl">
         {/* Featured / Newest Games (carousel) */}
         <section className="mb-10">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Featured / Newest Games</h2>
-          <div className="flex flex-col md:flex-row bg-white rounded-xl shadow p-6 gap-6">
+          <h2 className="text-2xl font-bold theme-text mb-6 border-b pb-2 theme-border">Featured / Newest Games</h2>
+          <div className="flex flex-col md:flex-row theme-surface rounded-xl shadow p-6 gap-6 border theme-border">
             {/* Image + arrows */}
             <div className="flex flex-col items-center md:w-1/2 gap-4">
               <div className="flex items-center justify-center gap-4 w-full">
                 <button
                   aria-label="Previous featured game"
                   onClick={prevFeatured}
-                  className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                  className="w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center"
                 >
                   ←
                 </button>
@@ -138,7 +138,7 @@ export default function Home() {
                 <button
                   aria-label="Next featured game"
                   onClick={nextFeatured}
-                  className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                  className="w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center"
                 >
                   →
                 </button>
@@ -152,7 +152,8 @@ export default function Home() {
                       key={g.id}
                       aria-label={`Go to ${g.title}`}
                       onClick={() => goToFeatured(i)}
-                      className={`w-3 h-3 rounded-full transition-colors ${i === featuredIndex ? 'bg-sky-600' : 'bg-gray-300 hover:bg-gray-400'}`}
+                      className="w-3 h-3 rounded-full transition-colors"
+                      style={{ backgroundColor: i === featuredIndex ? 'var(--accent)' : 'var(--border)' }}
                     />
                   ))}
                 </div>
@@ -164,30 +165,30 @@ export default function Home() {
               <div>
                 <div className="flex justify-between items-start flex-wrap gap-2">
                   <h3 className="text-2xl font-semibold">{fg.title}</h3>
-                  <p className="text-sm text-gray-600">Release Date: <span className="font-semibold">{fg.releaseDate}</span></p>
+                  <p className="text-sm theme-muted">Release Date: <span className="font-semibold theme-text">{fg.releaseDate}</span></p>
                 </div>
-                <p className="text-gray-700 mt-2">
+                <p className="theme-text mt-2">
                   <span className="font-semibold">Developer:</span> {fg.developer} • {fg.category}
                 </p>
                 {/* Rating */}
                 <div className="flex items-center mt-3">
                   {Array.from({ length: 5 }, (_, i) => (
-                    <span key={i} className={i < Math.round(fg.rating) ? "text-yellow-500" : "text-gray-300"}>★</span>
+                    <span key={i} className={i < Math.round(fg.rating) ? "text-amber-400" : "text-gray-400"}>★</span>
                   ))}
-                  <span className="ml-2 text-gray-700">{fg.rating.toFixed(1)} ({fg.ratingCount})</span>
+                  <span className="ml-2 theme-muted">{fg.rating.toFixed(1)} ({fg.ratingCount})</span>
                 </div>
                 {/* Tags */}
                 <div className="flex gap-2 mt-4 flex-wrap">
                   {fg.tags.map((tag) => (
-                    <span key={tag} className="bg-gray-200 px-3 py-1 rounded-full text-sm text-gray-700">{tag}</span>
+                    <span key={tag} className="theme-subtle border theme-border px-3 py-1 rounded-full text-sm theme-text">{tag}</span>
                   ))}
                 </div>
               </div>
               {/* Buttons */}
               <div className="flex gap-3 mt-6">
-                <button className="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2 rounded-lg font-medium transition">View More</button>
-                <button className="bg-orange-400 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-medium transition"> Add to Wishlist</button>
-                <button className="bg-pink-400 hover:bg-pink-600 text-white px-5 py-2 rounded-lg font-medium transition"> Add to Favourites</button>
+                <button className="theme-btn-strong px-5 py-2 rounded-lg font-medium transition hover:opacity-90">View More</button>
+                <button className="theme-btn px-5 py-2 rounded-lg font-medium transition hover:opacity-90">Add to Wishlist</button>
+                <button className="theme-subtle border theme-border px-5 py-2 rounded-lg font-medium transition hover:opacity-90">Add to Favourites</button>
               </div>
             </div>
           </div>
@@ -196,15 +197,15 @@ export default function Home() {
         {/* Adventure Games */}
         <section className="mb-10">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Adventure Games</h2>
+            <h2 className="text-xl font-bold theme-text">Adventure Games</h2>
           </div>
           <div className="flex items-center justify-center gap-4">
-            <button aria-label="Previous adventure game" onClick={prevAdv} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+            <button aria-label="Previous adventure game" onClick={prevAdv} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">←</button>
             <div className="flex gap-4">
               {getWindow(adventureGames, advIndex, VISIBLE).map((g) => (
                 <div
                   key={g.id}
-                  className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                  className="relative flex-none w-48 rounded-md shadow-md theme-surface border theme-border overflow-visible hover:shadow-lg transition"
                   onMouseEnter={() => setHoveredAdv(g.id)}
                   onMouseLeave={() => setHoveredAdv(null)}
                 >
@@ -216,13 +217,13 @@ export default function Home() {
                     />
                   </div>
                   {hoveredAdv === g.id && (
-                    <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
-                      <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
-                      <p className="text-gray-600 truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
-                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 text-gray-500">({g.ratingCount})</span></div>
+                    <div className="absolute left-0 top-full mt-1 w-full theme-surface border theme-border shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                      <h4 className="text-sm font-semibold theme-text truncate" title={g.title}>{g.title}</h4>
+                      <p className="theme-muted truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
+                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 theme-text text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 theme-muted">({g.ratingCount})</span></div>
                       <div className="flex flex-wrap gap-1 pt-1">
                         {g.tags.slice(0,3).map(t => (
-                          <span key={t} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{t}</span>
+                          <span key={t} className="theme-subtle border theme-border px-2 py-[2px] rounded-full text-[10px] leading-none theme-text">{t}</span>
                         ))}
                       </div>
                     </div>
@@ -230,19 +231,19 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button aria-label="Next adventure game" onClick={nextAdv} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+            <button aria-label="Next adventure game" onClick={nextAdv} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">→</button>
           </div>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Blind-friendly Games</h2>
+          <h2 className="text-xl font-bold theme-text mb-4">Blind-friendly Games</h2>
           <div className="flex items-center justify-center gap-4">
-            <button aria-label="Previous blind-friendly game" onClick={prevBlind} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+            <button aria-label="Previous blind-friendly game" onClick={prevBlind} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">←</button>
             <div className="flex gap-4">
               {getWindow(blindGames, blindIndex, VISIBLE).map((g) => (
                 <div
                   key={g.id}
-                  className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                  className="relative flex-none w-48 rounded-md shadow-md theme-surface border theme-border overflow-visible hover:shadow-lg transition"
                   onMouseEnter={() => setHoveredBlind(g.id)}
                   onMouseLeave={() => setHoveredBlind(null)}
                 >
@@ -254,13 +255,13 @@ export default function Home() {
                     />
                   </div>
                   {hoveredBlind === g.id && (
-                    <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
-                      <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
-                      <p className="text-gray-600 truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
-                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 text-gray-500">({g.ratingCount})</span></div>
+                    <div className="absolute left-0 top-full mt-1 w-full theme-surface border theme-border shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                      <h4 className="text-sm font-semibold theme-text truncate" title={g.title}>{g.title}</h4>
+                      <p className="theme-muted truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
+                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 theme-text text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 theme-muted">({g.ratingCount})</span></div>
                       <div className="flex flex-wrap gap-1 pt-1">
                         {g.tags.slice(0,3).map(t => (
-                          <span key={t} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{t}</span>
+                          <span key={t} className="theme-subtle border theme-border px-2 py-[2px] rounded-full text-[10px] leading-none theme-text">{t}</span>
                         ))}
                       </div>
                     </div>
@@ -268,7 +269,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button aria-label="Next blind-friendly game" onClick={nextBlind} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+            <button aria-label="Next blind-friendly game" onClick={nextBlind} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">→</button>
           </div>
         </section>
       </div>

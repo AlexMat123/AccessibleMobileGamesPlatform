@@ -1,0 +1,183 @@
+:root {
+  --bg-page: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --border: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-muted: #475569;
+  --accent: #16a34a;
+  --accent-strong: #15803d;
+  --accent-contrast: #ffffff;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+/* Global spacing & control sizing driven by settings */
+body {
+  --global-gap: 1rem;
+  --global-btn-px: 1rem;
+  --global-btn-py: 0.6rem;
+  --global-btn-font: 1rem;
+}
+
+body[data-spacing="snug"] {
+  --global-gap: 0.6rem;
+}
+body[data-spacing="airy"] {
+  --global-gap: 1.4rem;
+}
+
+body[data-button-size="normal"] {
+  --global-btn-px: 1rem;
+  --global-btn-py: 0.6rem;
+  --global-btn-font: 1rem;
+}
+body[data-button-size="large"] {
+  --global-btn-px: 1.15rem;
+  --global-btn-py: 0.7rem;
+  --global-btn-font: 1.05rem;
+}
+body[data-button-size="xlarge"] {
+  --global-btn-px: 1.35rem;
+  --global-btn-py: 0.8rem;
+  --global-btn-font: 1.1rem;
+}
+
+/* Apply spacing to common flex/grid layouts */
+body .flex,
+body .grid {
+  gap: var(--global-gap) !important;
+  row-gap: var(--global-gap) !important;
+  column-gap: var(--global-gap) !important;
+}
+
+/* Apply control sizing broadly to buttons/inputs */
+body button,
+body [role="button"],
+body input[type="button"],
+body input[type="submit"],
+body input[type="reset"] {
+  padding: var(--global-btn-py) var(--global-btn-px) !important;
+  font-size: var(--global-btn-font) !important;
+}
+
+body[data-text-size="small"] {
+  font-size: 14px;
+}
+
+body[data-text-size="medium"] {
+  font-size: 16px;
+}
+
+body[data-text-size="large"] {
+  font-size: 18px;
+}
+
+body[data-theme="dark"] {
+  --bg-page: #0f172a;
+  --bg-surface: #1f2937;
+  --bg-subtle: #111827;
+  --border: #334155;
+  --text-primary: #f8fafc;
+  --text-muted: #e2e8f0cc;
+  --accent: #22c55e;
+  --accent-strong: #16a34a;
+  --accent-contrast: #0b1b0f;
+}
+
+body[data-hc="true"] {
+  --bg-page: #020617;
+  --bg-surface: #0b1224;
+  --bg-subtle: #0a162f;
+  --border: #a3e635;
+  --text-primary: #eaffc7;
+  --text-muted: #d9f99d;
+  --accent: #a3e635;
+  --accent-strong: #84cc16;
+  --accent-contrast: #051203;
+}
+
+/* Optional helper classes to gradually adopt the tokens */
+.tone-page {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+.tone-surface {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.tone-subtle {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.tone-muted {
+  color: var(--text-muted);
+}
+
+.tone-accent {
+  color: var(--accent);
+}
+
+.btn-accent {
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn-accent-strong {
+  background-color: var(--accent-strong);
+  color: var(--accent-contrast);
+}
+
+/* Utility helpers to avoid hard-coded colors */
+.theme-page {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+.theme-surface {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.theme-subtle {
+  background-color: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.theme-border {
+  border-color: var(--border);
+}
+
+.theme-text {
+  color: var(--text-primary);
+}
+
+.theme-muted {
+  color: var(--text-muted);
+}
+
+.theme-accent {
+  color: var(--accent);
+}
+
+.theme-btn {
+  background-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.theme-btn-strong {
+  background-color: var(--accent-strong);
+  color: var(--accent-contrast);
+}
+
+.theme-input {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}

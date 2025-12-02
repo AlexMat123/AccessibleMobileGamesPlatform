@@ -35,6 +35,8 @@ export function saveSettings(next = {}) {
   try {
     const merged = { ...loadSettings(), ...next };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+    // Let the rest of the app react to theme/contrast changes.
+    window.dispatchEvent(new CustomEvent('settings-changed', { detail: merged }));
     return merged;
   } catch (e) {
     console.warn('[settings] failed to save', e);

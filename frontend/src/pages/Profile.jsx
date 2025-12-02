@@ -128,42 +128,42 @@ export default function Profile() {
     : '';
 
   return (
-    <div className="min-h-screen bg-sky-100 flex justify-center py-10">
-      <div className="w-full max-w-6xl bg-gray-100 rounded-2xl shadow-lg p-8">
-        {loading && <p className="text-gray-700">Loading profile…</p>}
+    <div className="min-h-screen theme-page flex justify-center py-10">
+      <div className="w-full max-w-6xl theme-surface border theme-border rounded-2xl shadow-lg p-8">
+        {loading && <p className="theme-text">Loading profile…</p>}
         {!loading && error && <p className="text-red-600 text-sm mb-4">{error}</p>}
         {!loading && !error && user && (
-          <div>
+          <div className="theme-text">
             {/* Top row containing user information */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               {/* Avatar + main user info */}
-              <div className="bg-white rounded-xl shadow p-4 flex gap-4 items-center lg:col-span-2">
-                <div className="flex items-center justify-center w-24 h-24 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+              <div className="theme-surface border theme-border rounded-xl shadow p-4 flex gap-4 items-center lg:col-span-2">
+                <div className="flex items-center justify-center w-24 h-24 rounded-full theme-subtle border theme-border overflow-hidden flex-shrink-0">
                   <img src={profile} alt="User avatar" className="w-20 h-20 object-cover rounded-full" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <h1 className="text-xl font-semibold text-gray-900">{user.username}</h1>
-                  <p className="text-sm text-gray-700">{user.email}</p>
+                  <h1 className="text-xl font-semibold theme-text">{user.username}</h1>
+                  <p className="text-sm theme-muted">{user.email}</p>
                   {memberSince && (
-                    <p className="text-xs text-gray-500 mt-2">Member Since <span className="font-medium">{memberSince}</span></p>
+                    <p className="text-xs theme-muted mt-2">Member Since <span className="font-medium theme-text">{memberSince}</span></p>
                   )}
                 </div>
               </div>
 
               {/* Basic information box */}
-              <div className="bg-white rounded-xl shadow p-4 flex flex-col justify-between">
+              <div className="theme-surface border theme-border rounded-xl shadow p-4 flex flex-col justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-gray-900 mb-2">Basic Information</h2>
-                  <div className="space-y-1 text-sm text-gray-800">
+                  <h2 className="text-base font-semibold theme-text mb-2">Basic Information</h2>
+                  <div className="space-y-1 text-sm theme-text">
                     <div><span className="font-medium">Username:</span> {user.username}</div>
                     <div><span className="font-medium">Email:</span> {user.email}</div>
                   </div>
                 </div>
                 <div className="mt-4 flex gap-3">
-                  <button className="flex-1 bg-sky-600 text-white text-sm font-medium py-2 rounded-md" onClick={onOpenEdit}>
+                  <button className="flex-1 theme-btn-strong text-sm font-medium py-2 rounded-md hover:opacity-90" onClick={onOpenEdit}>
                     Edit Profile
                   </button>
-                  <button className="flex-1 bg-sky-500 text-white text-sm font-medium py-2 rounded-md" onClick={onOpenPwd}>
+                  <button className="flex-1 theme-btn text-sm font-medium py-2 rounded-md hover:opacity-90" onClick={onOpenPwd}>
                     Change Password
                   </button>
                 </div>
@@ -181,10 +181,10 @@ export default function Profile() {
                   <StatBox label="Reviews" value={reviews.length} />
                   <StatBox label="Helpful Votes" value={0} />
                 </div>                {/* Accessibility needs (auto height) */}
-                <div className="bg-white rounded-xl shadow p-4 flex flex-col">
+                <div className="theme-surface border theme-border rounded-xl shadow p-4 flex flex-col">
                   <div>
                     <h3 className="text-sm font-semibold mb-3">My Accessibility Needs</h3>
-                    {prefsLoading && <p className="text-xs text-gray-500">Loading preferences…</p>}
+                    {prefsLoading && <p className="text-xs theme-muted">Loading preferences…</p>}
                     {prefsError && <p className="text-xs text-red-600 mb-2">{prefsError}</p>}
                     <form onSubmit={handleSavePrefs} className="space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -194,7 +194,7 @@ export default function Profile() {
                         <Checkbox id="pref-hearing" label="Hearing Impairments" desc="Recommend games with hearing accessibility" checked={prefs.hearing} onChange={(v) => setPrefs(p => ({ ...p, hearing: v }))} />
                       </div>
                       <div className="flex justify-end">
-                        <button type="submit" disabled={savingPrefs} className="px-3 py-1 rounded-md text-xs font-medium bg-sky-600 text-white disabled:opacity-50">
+                        <button type="submit" disabled={savingPrefs} className="px-3 py-1 rounded-md text-xs font-medium theme-btn-strong disabled:opacity-50 hover:opacity-90">
                           {savingPrefs ? 'Saving…' : 'Confirm Preferences'}
                         </button>
                       </div>
@@ -204,15 +204,15 @@ export default function Profile() {
               </div>
 
               {/* Recent Reviews (fixed laptop height, scaled up on larger screens) */}
-              <div className="bg-white rounded-xl shadow p-4 lg:col-span-1 flex flex-col h-[307px] lg:h-[360px] xl:h-[307px] 2xl:h-[387px]">
+              <div className="theme-surface border theme-border rounded-xl shadow p-4 lg:col-span-1 flex flex-col h-[307px] lg:h-[360px] xl:h-[307px] 2xl:h-[387px]">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-semibold">Recent Reviews</h3>
-                  {revLoading && <span className="text-xs text-gray-500">Loading…</span>}
+                  {revLoading && <span className="text-xs theme-muted">Loading…</span>}
                 </div>
                 {revError && <p className="text-xs text-red-600 mb-2">{revError}</p>}
                 <div className="space-y-2 md:space-y-3 overflow-y-auto pr-1 flex-1" aria-label="User reviews list">
                   {reviews.length === 0 && !revLoading && !revError && (
-                    <p className="text-xs md:text-sm text-gray-500">You have not posted any reviews yet.</p>
+                    <p className="text-xs md:text-sm theme-muted">You have not posted any reviews yet.</p>
                   )}
                   {reviews.map(r => <ReviewCard key={r.id} review={r} />)}
                 </div>
@@ -220,23 +220,23 @@ export default function Profile() {
             </div>
 
             {/* Followed Games full width */}
-            <div className="bg-white rounded-xl shadow p-4">
+            <div className="theme-surface border theme-border rounded-xl shadow p-4">
               <h3 className="text-sm font-semibold mb-2">Followed Games</h3>
               {followedGames.length === 0 && (
-                <p className="text-xs text-gray-500">You are not following any games yet.</p>
+                <p className="text-xs theme-muted">You are not following any games yet.</p>
               )}
               {followedGames.length > 0 && followedGames.length <= VISIBLE && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                   {followedGames.map(g => (
                     <a key={g.id} href={`/games/${g.id}`} className="block group">
-                      <div className="aspect-video bg-gray-200 rounded overflow-hidden flex items-center justify-center">
+                      <div className="aspect-video theme-subtle border theme-border rounded overflow-hidden flex items-center justify-center">
                         {g.images && g.images.length ? (
                           <img src={g.images[0]} alt={g.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         ) : (
-                          <span className="text-[10px] text-gray-500">No image</span>
+                          <span className="text-[10px] theme-muted">No image</span>
                         )}
                       </div>
-                      <div className="mt-1 text-[11px] font-medium truncate" title={g.title}>{g.title}</div>
+                      <div className="mt-1 text-[11px] font-medium truncate theme-text" title={g.title}>{g.title}</div>
                     </a>
                   ))}
                 </div>
@@ -247,7 +247,7 @@ export default function Profile() {
                   <button
                     aria-label="Previous followed games"
                     onClick={() => setFgIndex(i => (i - 1 + followedGames.length) % followedGames.length)}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center"
                   >
                     <span className="text-sm">&lt;</span>
                   </button>
@@ -255,7 +255,7 @@ export default function Profile() {
                   <button
                     aria-label="Next followed games"
                     onClick={() => setFgIndex(i => (i + 1) % followedGames.length)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center"
                   >
                     <span className="text-sm">&gt;</span>
                   </button>
@@ -263,14 +263,14 @@ export default function Profile() {
                     <div className="grid grid-cols-5 gap-4">
                       {getWindow(followedGames, fgIndex, VISIBLE).map(g => (
                         <a key={`${g.id}-${fgIndex}`} href={`/games/${g.id}`} className="block group">
-                          <div className="aspect-video bg-gray-200 rounded overflow-hidden flex items-center justify-center">
+                          <div className="aspect-video theme-subtle border theme-border rounded overflow-hidden flex items-center justify-center">
                             {g.images && g.images.length ? (
                               <img src={g.images[0]} alt={g.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                             ) : (
-                              <span className="text-[10px] text-gray-500">No image</span>
+                              <span className="text-[10px] theme-muted">No image</span>
                             )}
                           </div>
-                          <div className="mt-1 text-[11px] font-medium truncate" title={g.title}>{g.title}</div>
+                          <div className="mt-1 text-[11px] font-medium truncate theme-text" title={g.title}>{g.title}</div>
                         </a>
                       ))}
                     </div>
@@ -282,21 +282,21 @@ export default function Profile() {
             {/* Edit Profile modal */}
             {showEdit && (
               <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                <div className="bg-white rounded-xl shadow p-6 w-full max-w-md">
+                <div className="theme-surface border theme-border rounded-xl shadow p-6 w-full max-w-md">
                   <h3 className="text-base font-semibold mb-3">Edit Profile</h3>
                   {editError && <p className="text-xs text-red-600 mb-2">{editError}</p>}
                   <form onSubmit={handleSaveEdit} className="space-y-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Username</label>
-                      <input type="text" value={editForm.username} onChange={(e) => setEditForm(f => ({ ...f, username: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                      <label className="block text-xs font-medium theme-text mb-1">Username</label>
+                      <input type="text" value={editForm.username} onChange={(e) => setEditForm(f => ({ ...f, username: e.target.value }))} className="w-full theme-input rounded px-3 py-2 text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                      <input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                      <label className="block text-xs font-medium theme-text mb-1">Email</label>
+                      <input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full theme-input rounded px-3 py-2 text-sm" />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => setShowEdit(false)} className="px-3 py-1 rounded-md text-xs font-medium bg-gray-200">Cancel</button>
-                      <button type="submit" disabled={savingEdit} className="px-3 py-1 rounded-md text-xs font-medium bg-sky-600 text-white">{savingEdit ? 'Updating…' : 'Update Profile'}</button>
+                      <button type="button" onClick={() => setShowEdit(false)} className="px-3 py-1 rounded-md text-xs font-medium theme-subtle border theme-border hover:opacity-90">Cancel</button>
+                      <button type="submit" disabled={savingEdit} className="px-3 py-1 rounded-md text-xs font-medium theme-btn-strong">{savingEdit ? 'Updating…' : 'Update Profile'}</button>
                     </div>
                   </form>
                 </div>
@@ -306,21 +306,21 @@ export default function Profile() {
             {/* Change Password modal */}
             {showPwd && (
               <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                <div className="bg-white rounded-xl shadow p-6 w-full max-w-md">
+                <div className="theme-surface border theme-border rounded-xl shadow p-6 w-full max-w-md">
                   <h3 className="text-base font-semibold mb-3">Change Password</h3>
                   {pwdError && <p className="text-xs text-red-600 mb-2">{pwdError}</p>}
                   <form onSubmit={handleSavePwd} className="space-y-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Current Password</label>
-                      <input type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm(f => ({ ...f, currentPassword: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                      <label className="block text-xs font-medium theme-text mb-1">Current Password</label>
+                      <input type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm(f => ({ ...f, currentPassword: e.target.value }))} className="w-full theme-input rounded px-3 py-2 text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">New Password</label>
-                      <input type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm(f => ({ ...f, newPassword: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" />
+                      <label className="block text-xs font-medium theme-text mb-1">New Password</label>
+                      <input type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm(f => ({ ...f, newPassword: e.target.value }))} className="w-full theme-input rounded px-3 py-2 text-sm" />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => setShowPwd(false)} className="px-3 py-1 rounded-md text-xs font-medium bg-gray-200">Cancel</button>
-                      <button type="submit" disabled={savingPwd} className="px-3 py-1 rounded-md text-xs font-medium bg-sky-600 text-white">{savingPwd ? 'Updating…' : 'Update Password'}</button>
+                      <button type="button" onClick={() => setShowPwd(false)} className="px-3 py-1 rounded-md text-xs font-medium theme-subtle border theme-border hover:opacity-90">Cancel</button>
+                      <button type="submit" disabled={savingPwd} className="px-3 py-1 rounded-md text-xs font-medium theme-btn-strong">{savingPwd ? 'Updating…' : 'Update Password'}</button>
                     </div>
                   </form>
                 </div>
@@ -338,14 +338,14 @@ function ReviewCard({ review }) {
   const { game, rating, comment, createdAt } = review;
   const stars = Math.round(rating || 0);
   const starEls = Array.from({ length: 5 }, (_, i) => (
-    <span key={i} className={i < stars ? 'text-yellow-500' : 'text-gray-300'}>&#9733;</span>
+    <span key={i} className={i < stars ? 'text-amber-400' : 'theme-muted'}>&#9733;</span>
   ));
   const timeAgo = formatTimeAgo(createdAt);
   return (
-    <div className="border rounded-md p-3 md:p-4 bg-gray-50 text-[11px] md:text-xs lg:text-sm text-gray-800">
+    <div className="border theme-border rounded-md p-3 md:p-4 theme-subtle text-[11px] md:text-xs lg:text-sm theme-text">
       <div className="flex justify-between mb-1 md:mb-2">
         <span className="font-semibold truncate" title={game?.title || 'Game'}>{game?.title || 'Game'}</span>
-        <span className="text-gray-500 whitespace-nowrap">{timeAgo}</span>
+        <span className="theme-muted whitespace-nowrap">{timeAgo}</span>
       </div>
       <div className="mb-1" aria-label={`Rating ${stars} of 5`}>{starEls}</div>
       <p className="leading-snug md:leading-normal">{comment || 'No comment provided.'}</p>
@@ -356,9 +356,9 @@ function ReviewCard({ review }) {
 // Component to display a single stat box
 function StatBox({ label, value }) {
   return (
-    <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center justify-center text-center">
-      <div className="text-sky-600 text-xl font-semibold" aria-label={`${label} count`}>{value}</div>
-      <div className="text-xs text-gray-600">{label}</div>
+    <div className="theme-surface border theme-border rounded-xl shadow p-4 flex flex-col items-center justify-center text-center">
+      <div className="text-xl font-semibold theme-accent" aria-label={`${label} count`}>{value}</div>
+      <div className="text-xs theme-muted">{label}</div>
     </div>
   );
 }
@@ -384,17 +384,18 @@ function formatTimeAgo(dateStr) {
 
 function Checkbox({ id, label, desc, checked, onChange }) {
   return (
-    <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-md p-2">
+    <div className="flex items-start gap-2 theme-subtle border theme-border rounded-md p-2">
       <input
         id={id}
         type="checkbox"
-        className="mt-1 accent-sky-600"
+        className="mt-1"
+        style={{ accentColor: 'var(--accent)' }}
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
       />
       <label htmlFor={id} className="text-xs leading-snug cursor-pointer select-none">
         <span className="font-medium">{label}</span><br />
-        <span className="text-gray-600">{desc}</span>
+        <span className="theme-muted">{desc}</span>
       </label>
     </div>
   );
