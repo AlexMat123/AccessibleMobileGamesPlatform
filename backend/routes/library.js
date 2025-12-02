@@ -31,7 +31,7 @@ router.get('/games', async (req, res) => {
       platform: g.platform,
       releaseDate: g.releaseDate,
       rating: g.rating,
-      imageUrl: Array.isArray(g.thumbImages) && g.thumbImages.length ? g.thumbImages[0] : null,
+      images: Array.isArray(g.thumbImages) ? g.thumbImages : [],
       tags: (g.tags || []).map((t) => t.name).sort()
     }));
 
@@ -77,7 +77,7 @@ router.get('/games/search', async (req, res) => {
         platform: g.platform,
         releaseDate: g.releaseDate,
         rating: g.rating,
-        imageUrl: Array.isArray(g.thumbImages) && g.thumbImages.length ? g.thumbImages[0] : null,
+        images: Array.isArray(g.thumbImages) ? g.thumbImages : [],
         tags: (g.tags || []).map((t) => t.name).sort()
       }));
       return res.json(payload);
@@ -116,7 +116,7 @@ router.get('/games/search', async (req, res) => {
       platform: g.platform,
       releaseDate: g.releaseDate,
       rating: g.rating,
-      imageUrl: Array.isArray(g.thumbImages) && g.thumbImages.length ? g.thumbImages[0] : null,
+      images: Array.isArray(g.thumbImages) ? g.thumbImages : [],
       tags: (g.tags || []).map((t) => t.name).sort()
     }));
     return res.json(payload);

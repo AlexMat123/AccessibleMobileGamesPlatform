@@ -243,6 +243,7 @@ router.get('/:id/recommended-games', authenticateToken, async (req, res) => {
         title: g.title,
         platform: g.platform,
         rating: g.rating,
+        images: Array.isArray(g.thumbImages) ? g.thumbImages : [],
         tags: filtered
       };
     });

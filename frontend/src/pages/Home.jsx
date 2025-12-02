@@ -190,7 +190,7 @@ export default function Home() {
     if (game && Array.isArray(game.images) && game.images.length > 0) {
       return game.images[0];
     }
-    return '/placeholder1.png';
+    return null; // Return null to show placeholder div instead
   };
 
   const formatDate = (dateString) => {
@@ -257,11 +257,17 @@ export default function Home() {
                         className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">
                       ←
                     </button>
-                    <img
-                      src={getImageUrl(fg)}
-                      alt={fg.title}
-                      className="rounded-lg shadow-md w-full max-w-md object-cover"
-                    />
+                    {getImageUrl(fg) ? (
+                      <img
+                        src={getImageUrl(fg)}
+                        alt={fg.title}
+                        className="rounded-lg shadow-md w-full max-w-md object-cover"
+                      />
+                    ) : (
+                      <div className="bg-slate-200 rounded-lg shadow-md w-full max-w-md h-64 flex items-center justify-center text-slate-400" aria-hidden>
+                        No Image
+                      </div>
+                    )}
                     <button
                         aria-label="Next featured game"
                         onClick={nextFeatured}
@@ -341,11 +347,17 @@ export default function Home() {
                           onMouseLeave={() => setHoveredVision(null)}
                         >
                           <div className="overflow-hidden rounded-t-md">
-                            <img
-                              src={getImageUrl(g)}
-                              alt={g.title}
-                              className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                            />
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
                           </div>
                           {hoveredVision === g.id && (
                             <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
@@ -384,11 +396,17 @@ export default function Home() {
                           onMouseLeave={() => setHoveredHearing(null)}
                         >
                           <div className="overflow-hidden rounded-t-md">
-                            <img
-                              src={getImageUrl(g)}
-                              alt={g.title}
-                              className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                            />
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
                           </div>
                           {hoveredHearing === g.id && (
                             <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
@@ -427,11 +445,17 @@ export default function Home() {
                           onMouseLeave={() => setHoveredMotor(null)}
                         >
                           <div className="overflow-hidden rounded-t-md">
-                            <img
-                              src={getImageUrl(g)}
-                              alt={g.title}
-                              className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                            />
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
                           </div>
                           {hoveredMotor === g.id && (
                             <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
@@ -470,11 +494,17 @@ export default function Home() {
                           onMouseLeave={() => setHoveredCognitive(null)}
                         >
                           <div className="overflow-hidden rounded-t-md">
-                            <img
-                              src={getImageUrl(g)}
-                              alt={g.title}
-                              className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                            />
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
                           </div>
                           {hoveredCognitive === g.id && (
                             <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
@@ -516,11 +546,17 @@ export default function Home() {
                           onMouseLeave={() => setHoveredAdv(null)}
                       >
                         <div className="overflow-hidden rounded-t-md">
-                          <img
+                          {getImageUrl(g) ? (
+                            <img
                               src={getImageUrl(g)}
                               alt={g.title}
                               className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                          />
+                            />
+                          ) : (
+                            <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                              No Image
+                            </div>
+                          )}
                         </div>
                         {hoveredAdv === g.id && (
                             <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
@@ -558,11 +594,17 @@ export default function Home() {
                           onMouseLeave={() => setHoveredBlind(null)}
                       >
                         <div className="overflow-hidden rounded-t-md">
-                          <img
+                          {getImageUrl(g) ? (
+                            <img
                               src={getImageUrl(g)}
                               alt={g.title}
                               className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                          />
+                            />
+                          ) : (
+                            <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                              No Image
+                            </div>
+                          )}
                         </div>
                         {hoveredBlind === g.id && (
                             <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
