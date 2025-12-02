@@ -692,13 +692,20 @@ export default function Search() {
                   const tagCount = Array.isArray(g.tags) ? g.tags.length : 0;
                   const tagNames = tagCount ? g.tags.join(', ') : '';
                   const tagListId = tagCount ? `game-tags-${g.id}` : undefined;
+                  const accessibleLabel = [
+                    g.title || 'Game',
+                    g.platform || '',
+                    g.rating != null ? `rating ${Number(g.rating).toFixed(1)}` : 'not rated',
+                    tagCount ? `${tagCount} tag${tagCount === 1 ? '' : 's'}` : 'no tags',
+                    tagNames ? `tags: ${tagNames}` : ''
+                  ].filter(Boolean).join(', ');
                   return (
                     <li key={g.id}>
                     <Link
                       to={`/games/${g.id}`}
                       data-voice-title={g.title || ''}
                       className={`block h-full ${focusVisible}`}
-                      aria-label={`${g.title}, rating ${g.rating != null ? Number(g.rating).toFixed(1) : 'not rated'}, ${tagCount} tag${tagCount === 1 ? '' : 's'} available`}
+                      aria-label={accessibleLabel}
                       aria-describedby={tagListId}
                     >
                         <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
