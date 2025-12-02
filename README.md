@@ -29,6 +29,22 @@
 - Backend hermetic/in-memory (SQLite, recommended locally): `npm run test:backend:int`.
 - Frontend: `npm run test:frontend` or watch mode with `npm run test:frontend:watch`.
 
+## Docker
+
+- Prereqs: Docker Desktop/Engine with Compose v2 (`docker compose`).
+- Dev (hot reload, Vite + nodemon): `docker compose -f docker-compose.dev.yml up --build`
+  - Frontend: http://localhost:5173
+  - API: http://localhost:5000/api
+  - DB: MariaDB on localhost:3306 (persisted volume `db_data`)
+- Prod-like build (Nginx + built frontend): `docker compose up --build`
+  - Frontend: http://localhost:8080
+  - API: http://localhost:5000/api
+- Stop/clean: `docker compose -f docker-compose.dev.yml down` (or `docker compose down`) and add `-v` to drop DB volume.
+- Manual smoke tests once containers are up:
+  - Tag groups: `curl http://localhost:5000/api/tag-groups`
+  - Games: `curl http://localhost:5000/api/games`
+  - Voice intent: `curl -X POST http://localhost:5000/api/voice/interpret -H "Content-Type: application/json" -d '{"transcript":"hey platform show puzzle games"}'`
+
 ## Architecture assumptions
 
 - Monorepo with an Express 5 API (`backend/`) and a Vite/React client (`frontend/`). Client calls the API via `frontend/src/api.js` and expects the base URL at `VITE_API_BASE` (defaults to `http://localhost:5000/api`).
@@ -47,6 +63,10 @@
 - [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) + [bcrypt](https://github.com/kelektiv/node.bcrypt.js/): widely used auth primitives for stateless JWT flows and password hashing.
 - [Jest](https://jestjs.io/) + [Supertest](https://github.com/visionmedia/supertest): backend unit/integration tests that exercise the API surface.
 - [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) + [jsdom](https://github.com/jsdom/jsdom): frontend tests focused on user-observable behavior and accessibility.
+- [Headless UI](https://headlessui.com/) + [Heroicons](https://heroicons.com/): accessible UI primitives and icons without locking styling.
+- [cors](https://github.com/expressjs/cors) + [dotenv](https://github.com/motdotla/dotenv): cross-origin API access from the frontend and environment-based config.
+- [nodemon](https://nodemon.io/) + [concurrently](https://github.com/open-cli-tools/concurrently): faster backend reloads and running frontend/backend dev servers together.
+- [sqlite3](https://www.npmjs.com/package/sqlite3) (dev only): lightweight DB driver for fast, hermetic backend integration tests.
 
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
