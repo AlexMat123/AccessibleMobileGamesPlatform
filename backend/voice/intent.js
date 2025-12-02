@@ -17,6 +17,10 @@ const KEYWORDS = {
 
 const GENRES = ['action', 'adventure', 'puzzle', 'strategy', 'simulation', 'casual', 'rpg', 'platformer', 'sports', 'kids'];
 
+const NAV_LIBRARY = ['library', 'my library', 'open library'];
+const NAV_WISHLIST = ['wishlist', 'wish list'];
+const NAV_FAVOURITES = ['favourites', 'favorites', 'favs', 'favourited', 'favorite list'];
+
 function includesAny(text, arr) {
   return arr.some((k) => text.includes(k));
 }
@@ -75,6 +79,17 @@ export function interpretTranscript(transcript) {
     return { type: 'navigate', target: 'search', utterance: stripped };
   }
 
+  // command to navigate to the library page and its subsections
+  if (includesAny(stripped, NAV_LIBRARY) || stripped.includes('go to library') || stripped.includes('open my library')) {
+    return { type: 'navigate', target: 'library', utterance: stripped };
+  }
+  if (stripped.includes('go to wishlist') || stripped.includes('open wishlist') || includesAny(stripped, NAV_WISHLIST)) {
+    return { type: 'navigate', target: 'wishlist', utterance: stripped };
+  }
+  if (stripped.includes('go to favourites') || stripped.includes('go to favorites') || stripped.includes('open favourites') || stripped.includes('open favorites') || includesAny(stripped, NAV_FAVOURITES)) {
+    return { type: 'navigate', target: 'favourites', utterance: stripped };
+  }
+
   if (includesAny(stripped, KEYWORDS.scrollUp)) {
     return { type: 'scroll', direction: 'up', utterance: stripped };
   }
@@ -82,7 +97,16 @@ export function interpretTranscript(transcript) {
     return { type: 'scroll', direction: 'down', utterance: stripped };
   }
 
-  // Genre-driven filters even without explicit "filter"
+  // command to remove games form wishilit or favourites
+  const removeMatch = stripped.match(/^(?:remove|delete)\s+(.+?)\s+from\s+(favourites|favorites|wishlist)\b/);
+  if (removeMatch) {
+    const title = removeMatch[1].trim();
+    const listRaw = removeMatch[2].toLowerCase();
+    const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
+    return { type: 'library', action: 'remove', list, title, utterance: stripped };
+  }
+
+  // command to apply filters
   const genres = findGenres(stripped);
   if (genres.length === 1) {
     return { type: 'filter', tag: genres[0], utterance: stripped };

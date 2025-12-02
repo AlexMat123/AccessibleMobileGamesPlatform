@@ -18,6 +18,134 @@ export default function Library() {
 
   const navigate = useNavigate();
 
+  // voice feedback style
+  const flashClass = 'voice-flash';
+  useEffect(() => {
+    const styleId = 'voice-flash-style';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `.${flashClass}{outline:3px solid #a5f3fc;outline-offset:3px;transition: outline-color .4s ease}`;
+    document.head.appendChild(style);
+  }, []);
+  const focusAndFlash = (el) => { if (!el) return; try { el.focus?.({ preventScroll: true }); } catch {} el.classList.add(flashClass); setTimeout(()=>el.classList.remove(flashClass), 1000); };
+  const normalizeText = (s = '') => s.toLowerCase().replace(/[.,!?]/g, '').trim();
+
+  // voice command handling
+  useEffect(() => {
+    const onVoice = (e) => {
+      const detail = e.detail || {};
+      const { type } = detail;
+      if (!type) return;
+
+      // query for searching
+      if (type === 'search' && detail.query != null) {
+        setQuery(String(detail.query));
+        const input = document.querySelector('input[placeholder="Search"]');
+        focusAndFlash(input);
+        return;
+      }
+      // query for filters
+      if (type === 'filter') {
+        const tags = detail.tags || (detail.tag ? [detail.tag] : []);
+        if (tags.length === 0) return;
+        // Map incoming tags to canonical availableTags by case-insensitive match
+        const canon = (raw) => {
+          const needle = normalizeText(String(raw));
+          const match = availableTags.find(t => normalizeText(t) === needle || normalizeText(t).includes(needle) || needle.includes(normalizeText(t)));
+          return match || raw;
+        };
+        setSelectedTags(prev => {
+          const next = new Set(prev);
+          tags.map(canon).forEach(t => next.add(t));
+          return next;
+        });
+        setFiltersOpen(true);
+        const panel = document.getElementById('lib-filters');
+        panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        focusAndFlash(panel);
+        return;
+      }
+      // resetting filters
+      if (type === 'reset-filters') {
+        setSelectedTags(new Set());
+        const panel = document.getElementById('lib-filters');
+        focusAndFlash(panel);
+        return;
+      }
+      // Sort by value
+      if (type === 'sort' && detail.value) {
+        const target = normalizeText(detail.value);
+        const options = ['relevance','rating','title'];
+        const match = options.find(o => normalizeText(o) === target || normalizeText(o).includes(target) || target.includes(normalizeText(o)));
+        if (match) {
+          setSortBy(match);
+          const select = document.querySelector('select[aria-label="Sort by"]');
+          if (select) { select.value = match; focusAndFlash(select); select.dispatchEvent(new Event('change', { bubbles: true })); }
+        }
+        return;
+      }
+      // this will navigate tabs
+      if (type === 'navigate' && detail.target) {
+        const t = normalizeText(detail.target);
+        const desired = t.includes('wishlist') ? 'wishlist' : (t.includes('favourites') || t.includes('favorites')) ? 'favourites' : null;
+        if (!desired) return;
+        //  will ignore if already on desired tab
+        if (tab === desired) return;
+        // debounce rapid repeats
+        if (window.__libTabDebounce) return;
+        window.__libTabDebounce = true;
+        setTab(desired);
+        setTimeout(() => { window.__libTabDebounce = false; }, 300);
+        return;
+      }
+      // this will open a specific game card
+      if (type === 'game-card' && detail.title) {
+        const needle = normalizeText(detail.title);
+        const cards = Array.from(document.querySelectorAll('[data-voice-title]'));
+        const card = cards.find(c => {
+          const attr = normalizeText(c.getAttribute('data-voice-title') || '');
+          const text = normalizeText(c.textContent || '');
+          return attr === needle || text.includes(needle) || needle.includes(attr);
+        });
+        if (card) {
+          e.preventDefault?.();
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          focusAndFlash(card);
+          if (detail.action === 'open') setTimeout(()=>card.querySelector('a,button')?.click(), 120);
+        }
+        return;
+      }
+      // this will scroll
+      if (type === 'scroll') {
+        const dir = detail.direction;
+        window.scrollBy({ top: dir === 'up' ? -400 : 400, behavior: 'smooth' });
+        return;
+      }
+      // operation to remove games by title from library
+      if (type === 'library' && detail.action === 'remove' && detail.title) {
+        const titleNeedle = normalizeText(detail.title);
+        const which = (detail.list === 'wishlist') ? 'wishlist' : 'favourites';
+        const list = which === 'wishlist' ? wishlist : favourites;
+        const match = list.find(g => normalizeText(g.title || g.name || '') === titleNeedle || normalizeText(g.title || g.name || '').includes(titleNeedle) || titleNeedle.includes(normalizeText(g.title || g.name || '')));
+        if (match) {
+          e.preventDefault?.();
+          const card = document.querySelector(`[data-voice-title="${match.title || match.name}"]`);
+          focusAndFlash(card);
+          if (which === 'wishlist') {
+            removeFromWishlist(match.id);
+          } else {
+            removeFromFavourites(match.id);
+          }
+          window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: which, gameId: match.id } }));
+        }
+        return;
+      }
+    };
+    window.addEventListener('voiceCommand', onVoice);
+    return () => window.removeEventListener('voiceCommand', onVoice);
+  }, [wishlist, favourites, tab]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -158,7 +286,9 @@ export default function Library() {
     const tags = Array.from(selectedTags);
     const filtered = list.filter(g => {
       const mq = !q || (g.title || '').toLowerCase().includes(q);
-      const mt = tags.length === 0 || tags.every(t => (g.tags || []).map(x => (typeof x === 'string' ? x : (x?.name || ''))).includes(t));
+      // Case-insensitive tag matching
+      const gameTags = (g.tags || []).map(x => normalizeText(typeof x === 'string' ? x : (x?.name || '')));
+      const mt = tags.length === 0 || tags.every(t => gameTags.includes(normalizeText(t)));
       return mq && mt;
     });
     const arr = [...filtered];
@@ -186,7 +316,7 @@ export default function Library() {
   const smallMeta = 'text-sm theme-muted';
 
   const renderCard = (g) => (
-    <div key={g.id} className={`relative flex items-start gap-4 ${cardTone} p-4`}>
+    <div key={g.id} className={`relative flex items-start gap-4 ${cardTone} p-4`} data-voice-title={g.title || g.name}>
       <div className="overflow-hidden rounded-xl">
         <img src={getImageUrl(g)} alt={g.title} className="w-28 h-20 object-cover" />
       </div>
