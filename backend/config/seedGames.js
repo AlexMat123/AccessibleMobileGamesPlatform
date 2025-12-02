@@ -76,9 +76,10 @@ const sample = [
 ];
 
 const sampleUsers = [
-    { username: 'alice', password: 'password123', email: 'alice@example.local' },
-    { username: 'bob', password: 'password456', email: 'bob@example.local' },
-    { username: 'charlie', password: 'password789', email: 'charlie@example.local' }
+    { username: 'admin', password: 'adminPass123', email: 'admin@example.local', isAdmin: true },
+    { username: 'alice', password: 'password123', email: 'alice@example.local', isAdmin: false },
+    { username: 'bob', password: 'password456', email: 'bob@example.local', isAdmin: false },
+    { username: 'charlie', password: 'password789', email: 'charlie@example.local', isAdmin: false }
 ];
 
 const sampleReviews = [
@@ -113,7 +114,12 @@ export async function seedGames({ reset = false } = {}) {
             const hashed = await bcrypt.hash(u.password, 10);
             await User.findOrCreate({
                 where: { username: u.username },
-                defaults: { username: u.username, email: u.email, password: hashed },
+                defaults: {
+                    username: u.username,
+                    email: u.email,
+                    password: hashed,
+                    isAdmin: !!u.isAdmin,
+                },
                 transaction: t
             });
         }

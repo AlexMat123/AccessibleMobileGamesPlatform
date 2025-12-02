@@ -11,6 +11,7 @@ import Signup from './pages/Signup.jsx';
 import ToastHost from './components/ToastHost.jsx';
 import Settings from './pages/Settings.jsx';
 import Profile from './pages/Profile.jsx';
+import ReportsPage from './pages/Reports.jsx';
 import { loadSettings } from './settings';
 
 const applyThemeFromSettings = (settings) => {
@@ -63,10 +64,22 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route
+          path="/admin"
+          element={<AdminRedirect />}
+        />
       </Routes>
       <ToastHost />
     </Router>
   );
+}
+
+function AdminRedirect() {
+  useEffect(() => {
+    pushToast('You are not allowed to access /admin. Redirected to home.');
+  }, []);
+  return <Home />;
 }
 
 export default App;

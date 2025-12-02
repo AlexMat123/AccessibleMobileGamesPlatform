@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AgentMigrationStateService">
+    <option name="pendingSessionIds">
+      <option value="3e30a223-ac10-4279-8f2d-6113bfc61776" />
+    </option>
+    <option name="pendingTurns">
+      <map>
+        <entry key="3e30a223-ac10-4279-8f2d-6113bfc61776">
+          <value>
+            <set>
+              <option value="39c66313-4c56-4681-a547-b09d0c751889" />
+              <option value="3cca7301-ae69-419f-ae6c-b8c606e5c846" />
+              <option value="11179d34-0067-4f93-b59d-dac89d05fcb5" />
+              <option value="ad62e86c-a28b-4ca7-ab36-e2ca34a7e519" />
+              <option value="8a687ca7-efc0-4bd3-baed-c51d0a5f6d64" />
+              <option value="c78880c4-be9c-41c5-b7f7-5d6c63f24ed9" />
+            </set>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <pendingWorkingSetItems>
+      <entry key="3e30a223-ac10-4279-8f2d-6113bfc61776">
+        <set>
+          <option value="file://$PROJECT_DIR$/frontend/src/api.js" />
+          <option value="file://$PROJECT_DIR$/backend/routes/games.js" />
+          <option value="file://$PROJECT_DIR$/frontend/src/pages/Game.jsx" />
+        </set>
+      </entry>
+    </pendingWorkingSetItems>
+  </component>
+</project>

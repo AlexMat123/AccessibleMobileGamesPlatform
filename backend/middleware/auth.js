@@ -1,9 +1,11 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import User from "../models/User.js";
+
 dotenv.config();
 
 {/* Middleware to authenticate JWT token */}
-export default function authenticateToken(req, res, next) {
+export default async function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader) {
         return res.status(401).json({ message: "Authorization header missing" });
@@ -15,7 +17,12 @@ export default function authenticateToken(req, res, next) {
 
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = { id: payload.id };
+        // Load user to attach isAdmin flag (and guard against deleted users)
+        const user = await User.findByPk(payload.id, { attributes: ['id', 'isAdmin'] });
+        if (!user) {
+            return res.status(401).json({ message: "User not found" });
+        }
+        req.user = { id: user.id, isAdmin: !!user.isAdmin };
         next();
     } catch (e) {
         console.error("JWT verify failed:", e.message);

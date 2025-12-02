@@ -72,7 +72,7 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ message: 'Invalid token' });
     }
 
-    const user = await User.findByPk(payload.id, { attributes: ['id', 'username', 'email', 'createdAt'] });
+    const user = await User.findByPk(payload.id, { attributes: ['id', 'username', 'email', 'createdAt', 'isAdmin'] });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.json(user);
