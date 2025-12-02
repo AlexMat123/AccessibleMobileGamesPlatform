@@ -7,14 +7,18 @@ stages:
 cache:
   paths:
     - node_modules/
-    - backend/node_modules/
     - frontend/node_modules/
+    # NOTE: backend/node_modules is intentionally NOT cached
+    # to avoid permission issues with cross-env
 
 before_script:
+  # Make sure backend deps are freshly installed on Linux
+  - rm -rf backend/node_modules
+
   # Install dependencies for root, backend, and frontend
-  - npm install
-  - npm install --prefix backend
-  - npm install --prefix frontend
+  - npm ci
+  - npm ci --prefix backend
+  - npm ci --prefix frontend
 
 # ---- TEST JOB ----
 test_all:
