@@ -22,6 +22,43 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     }
   };
 
+  const WAKE_TOLERANCE_RATIO = 0.25; // allow mild slips like "hay platform"
+
+  const normalize = (text = '') => String(text || '').toLowerCase().replace(/[.,!?]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  const levenshtein = (a, b) => {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    const v0 = new Array(b.length + 1).fill(0);
+    const v1 = new Array(b.length + 1).fill(0);
+    for (let i = 0; i < v0.length; i++) v0[i] = i;
+    for (let i = 0; i < a.length; i++) {
+      v1[0] = i + 1;
+      for (let j = 0; j < b.length; j++) {
+        const cost = a[i] === b[j] ? 0 : 1;
+        v1[j + 1] = Math.min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost);
+      }
+      for (let j = 0; j < v0.length; j++) v0[j] = v1[j];
+    }
+    return v1[b.length];
+  };
+
+  const looksLikeWakeWord = (raw, wakeWord) => {
+    const norm = normalize(raw);
+    const target = normalize(wakeWord);
+    if (!target) return false;
+    if (norm.includes(target)) return true;
+    const tolerance = Math.max(1, Math.ceil(target.length * WAKE_TOLERANCE_RATIO));
+    const window = target.length + 2;
+    for (let i = 0; i <= Math.max(0, norm.length - target.length); i++) {
+      const slice = norm.slice(i, i + window);
+      const dist = levenshtein(slice.slice(0, target.length), target);
+      if (dist <= tolerance) return true;
+    }
+    return false;
+  };
+
   const SPELL_MAP = {
     dot: '.',
     period: '.',
@@ -175,6 +212,7 @@ import { interpretTranscriptRemote } from './voice-remote.js';
   async function handleTranscript(raw) {
     const lower = raw.toLowerCase();
     const wakeWord = getWakeWord();
+    const heardWake = looksLikeWakeWord(lower, wakeWord);
 
     // If we're spelling, bypass the wake word gate so the user can keep dictating characters.
     if (spellSession) {
@@ -196,13 +234,13 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     }
 
     // Refresh wake window when wake word is spoken
-    if (lower.includes(wakeWord)) {
+    if (heardWake) {
       awakeUntil = Date.now() + WAKE_WINDOW_MS;
       setStatus(`Wake word detected. Listening briefly…`, WAKE_WINDOW_MS);
     }
 
     const isAwake = Date.now() < awakeUntil;
-    if (!isAwake && !lower.includes(wakeWord)) {
+    if (!isAwake && !heardWake) {
       // Ignore chatter when not awake; prompt for wake word.
       setStatus(`Say "${wakeWord}" 👋`);
       return;

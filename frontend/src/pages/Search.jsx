@@ -274,6 +274,7 @@ export default function Search() {
     { phrase: 'Open filters', description: 'Scroll to the filters panel.' },
     { phrase: 'Open genre dropdown', description: 'Focus the genre selector.' },
     { phrase: 'Sort by rating/newest/title', description: 'Change how results are ordered.' },
+    { phrase: 'Open <game name>', description: 'Open a specific game card from results.' },
     { phrase: 'Scroll down/up', description: 'Scroll the results list.' },
     { phrase: 'Open commands', description: 'Show this command list.' },
     { phrase: 'Close commands', description: 'Hide the command list.' },
