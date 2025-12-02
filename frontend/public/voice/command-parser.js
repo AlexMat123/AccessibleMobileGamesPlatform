@@ -8,6 +8,8 @@ const navigation = [
   [/^(open )?(filters|filter panel)$/, () => ({ type: 'ui', target: 'filters', action: 'open' })],
   [/^(open )?favourites?$/, () => ({ type: 'navigate', target: 'favourites' })],
   [/^(go to|open) search$/, () => ({ type: 'navigate', target: 'search' })],
+  [/^(go to|open|show) login$/, () => ({ type: 'navigate', target: 'login' })],
+  [/^(go to|open|show) (sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
   [/^next page$/, () => ({ type: 'navigate', target: 'next-page' })],
   [/^back$/, () => ({ type: 'navigate', target: 'back' })],
   [/^open settings$/, () => ({ type: 'navigate', target: 'settings' })]
@@ -53,6 +55,47 @@ const gameActions = [
   [/^(open )?reviews$/, () => ({ type: 'game', action: 'open-reviews' })],
   [/^scroll down$/, () => ({ type: 'scroll', direction: 'down' })],
   [/^scroll up$/, () => ({ type: 'scroll', direction: 'up' })]
+];
+
+const authActions = [
+  // Navigation aliases
+  [/^(log in|login|sign in)$/, () => ({ type: 'navigate', target: 'login' })],
+  [/^(sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
+  // Focus a specific field before dictation
+  [/^(focus|select|go to)\s+(username|user name)$/, () => ({ type: 'auth', action: 'focus', field: 'username', form: 'signup' })],
+  [/^(focus|select|go to)\s+(email|email address)$/, () => ({ type: 'auth', action: 'focus', field: 'email' })],
+  [/^(focus|select|go to)\s+(identifier|login|login field)$/, () => ({ type: 'auth', action: 'focus', field: 'identifier', form: 'login' })],
+  [/^(focus|select|go to)\s+(password)$/, () => ({ type: 'auth', action: 'focus', field: 'password' })],
+  [/^(focus|select|go to)\s+(confirm|confirm password|repeat password)$/, () => ({
+    type: 'auth',
+    action: 'focus',
+    field: 'confirm',
+    form: 'signup'
+  })],
+  // Dictate into the last focused field
+  [/^(type|enter|dictate|write|fill in)\s+(.+)/, (_, value) => ({ type: 'auth', action: 'type', value: value.trim() })],
+  // Field setting
+  [/^(set|fill|enter|type)\s+(email address|email|username|user name|identifier)\s+(.+)/, (_, field, value) => {
+    const normField = field.includes('user') || field === 'username' ? 'username' : field.includes('identifier') ? 'identifier' : 'email';
+    const form = normField === 'username' ? 'signup' : undefined;
+    return { type: 'auth', action: 'set-field', field: normField === 'email' ? 'email' : normField, value: value.trim(), form };
+  }],
+  [/^(set|fill|enter|type)\s+password\s+(.+)/, (_, value) => ({ type: 'auth', action: 'set-field', field: 'password', value: value.trim() })],
+  [/^(set|fill|enter|type)\s+(confirm|confirm password|repeat password)\s+(.+)/, (_, __, value) => ({
+    type: 'auth',
+    action: 'set-field',
+    field: 'confirm',
+    value: value.trim(),
+    form: 'signup'
+  })],
+  // Submit / clear
+  [/^(submit|send|confirm)\s+(login|log in|sign in)$/, () => ({ type: 'auth', action: 'submit', form: 'login' })],
+  [/^(submit|send|confirm)\s+(sign up|signup|register|registration)$/, () => ({ type: 'auth', action: 'submit', form: 'signup' })],
+  [/^(clear|reset)\s+(form|login|sign up|signup|register)$/, (_, target) => ({
+    type: 'auth',
+    action: 'clear',
+    form: target.includes('login') ? 'login' : target.includes('sign') || target.includes('register') ? 'signup' : undefined
+  })]
 ];
 
 // Forgiving keyword map to recover a filter intent from noisy phrases
@@ -292,6 +335,51 @@ export function parseCommand(rawTranscript) {
       build: () => ({ type: 'ui', target: 'filters', action: 'open' })
     },
     {
+      phrases: ['focus username', 'focus user name'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'username', form: 'signup' })
+    },
+    {
+      phrases: ['focus email', 'focus email address'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'email' })
+    },
+    {
+      phrases: ['focus login', 'focus identifier'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'identifier', form: 'login' })
+    },
+    {
+      phrases: ['focus password'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'password' })
+    },
+    {
+      phrases: ['focus confirm', 'focus confirm password', 'focus repeat password'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'confirm', form: 'signup' })
+    },
+    {
+      phrases: ['type', 'enter', 'dictate', 'write'],
+      tolerance: 0.3,
+      build: (phrase, cmd) => {
+        const remainder = cmd.replace(new RegExp(`^${phrase}\\s*`, 'i'), '').trim();
+        if (!remainder) return null;
+        return { type: 'auth', action: 'type', value: remainder };
+      }
+    },
+    {
+      phrases: ['log in', 'login', 'sign in'],
+      build: () => ({ type: 'navigate', target: 'login' })
+    },
+    {
+      phrases: ['sign up', 'signup', 'register'],
+      build: () => ({ type: 'navigate', target: 'signup' })
+    },
+    {
+      phrases: ['submit login', 'submit log in', 'submit sign in', 'send login'],
+      build: () => ({ type: 'auth', action: 'submit', form: 'login' })
+    },
+    {
+      phrases: ['submit signup', 'submit sign up', 'submit register', 'send sign up'],
+      build: () => ({ type: 'auth', action: 'submit', form: 'signup' })
+    },
+    {
       phrases: [
         'sort by relevance',
         'sort by newest',
@@ -317,6 +405,7 @@ export function parseCommand(rawTranscript) {
     match(command, filters) ||
     match(command, sorters) ||
     match(command, gameActions) ||
+    match(command, authActions) ||
     textSizeFallback(command) ||
     buttonSizeFallback(command) ||
     spacingFallback(command) ||
