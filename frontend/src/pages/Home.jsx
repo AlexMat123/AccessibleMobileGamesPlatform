@@ -19,6 +19,7 @@ export default function Home() {
   const [hearingIndex, setHearingIndex] = useState(0);
   const [motorIndex, setMotorIndex] = useState(0);
   const [cognitiveIndex, setCognitiveIndex] = useState(0);
+  const [commandsOpen, setCommandsOpen] = useState(false);
 
   const autoplayRef = useRef(null);
   const autoplayPausedRef = useRef(false);
@@ -155,6 +156,12 @@ export default function Home() {
     const onVoice = (e) => {
       const detail = e.detail || {};
       const { type, action, title } = detail;
+      if (type === "commands") {
+        e.preventDefault();
+        if (action === "open") setCommandsOpen(true);
+        if (action === "close") setCommandsOpen(false);
+        return;
+      }
       if (type === "home" && action === "open-featured" && fg?.id) {
         e.preventDefault?.();
         navigate(`/games/${fg.id}`);
@@ -271,6 +278,13 @@ export default function Home() {
   const subtleCard = "theme-subtle border theme-border rounded-xl";
   const controlTone = "theme-surface border theme-border shadow hover:opacity-80";
   const smallMeta = "text-sm theme-muted";
+  const voiceCommands = [
+    { phrase: "Open commands", description: "Show this command list." },
+    { phrase: "Close commands", description: "Hide this command list." },
+    { phrase: "Open featured game", description: "Open the current featured card." },
+    { phrase: "Open <game name>", description: "Open a specific game card by title." },
+    { phrase: "Scroll down/up", description: "Scroll the page." },
+  ];
 
   const renderTag = (text, idxKey) => (
     <span key={idxKey} className="theme-subtle border theme-border rounded-full px-3 py-1 text-xs font-semibold theme-text">
@@ -380,8 +394,51 @@ export default function Home() {
     <div className={`home-page ${shellTone} min-h-screen`} ref={homePageRef}>
       <main className="page-shell max-w-6xl space-y-12 pb-16" id="page-content" role="main">
         <header className="space-y-3 pb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide theme-accent">Welcome</p>
-          <h1 className="text-3xl font-bold sm:text-4xl theme-text">Discover accessible games</h1>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide theme-accent">Welcome</p>
+              <h1 className="text-3xl font-bold sm:text-4xl theme-text">Discover accessible games</h1>
+            </div>
+            <div className="flex items-start gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCommandsOpen((v) => !v)}
+                className="rounded-lg px-3 py-2 text-xs font-semibold underline theme-text"
+                aria-expanded={commandsOpen}
+                aria-controls="home-voice-commands"
+              >
+                {commandsOpen ? "Hide voice commands" : "Show voice commands"}
+              </button>
+              <a className={`rounded-lg px-4 py-2 text-sm font-semibold ${controlTone}`} href="/search">Search games</a>
+              <a className={`rounded-lg px-4 py-2 text-sm font-semibold ${controlTone}`} href="/settings">Settings</a>
+            </div>
+          </div>
+          {commandsOpen && (
+            <section
+              id="home-voice-commands"
+              className="rounded-xl border theme-border theme-surface px-4 py-3 text-sm theme-text"
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold theme-text">Voice commands for Home</p>
+                <button
+                  type="button"
+                  className="text-xs font-semibold underline theme-muted"
+                  onClick={() => setCommandsOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {voiceCommands.map((cmd) => (
+                  <li key={cmd.phrase}>
+                    <span className="font-semibold">{cmd.phrase}</span>
+                    <span className="ml-2 text-xs theme-muted">{cmd.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </header>
 
         {fg && (
