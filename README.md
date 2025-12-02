@@ -65,14 +65,14 @@ flowchart TB
 ```mermaid
 flowchart LR
   subgraph API [Backend API (Express)]
-    routerLibrary[/Routes: library.js\n/api/tag-groups\n/api/games\n/api/games/search/]
-    routerGames[/Routes: games.js\n/api/games/:id\nreviews/]
-    routerAuth[/Routes: auth.js\n/api/auth/*/]
-    routerUsers[/Routes: users.js\n/api/users/*/]
-    routerVoice[/Routes: voice.js\n/api/voice/interpret/]
-    authMW[[JWT Middleware\nmiddleware/auth.js]]
-    orm[[Sequelize Models\nGame, Tag, Review, User\njoin tables]]
-    seed[[Seed/Data Prep\nconfig/seedGames.js\nmodels/tags.js]]
+    routerLibrary[/Routes: library.js, api/tag-groups, api/games, api/games/search/]
+    routerGames[/Routes: games.js, api/games/:id, reviews/]
+    routerAuth[/Routes: auth.js, api/auth/*/]
+    routerUsers[/Routes: users.js, api/users/*/]
+    routerVoice[/Routes: voice.js, api/voice/interpret/]
+    authMW[[JWT Middleware (middleware/auth.js)]]
+    orm[[Sequelize Models (Game, Tag, Review, User, joins)]]
+    seed[[Seed/Data Prep (config/seedGames.js, models/tags.js)]]
   end
 
   db[(MariaDB/SQLite)]
