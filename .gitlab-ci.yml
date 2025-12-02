@@ -2,18 +2,9 @@ stages:
   - test
   - docker
 
-# Avoid relying on job-level images when running on the Windows shell executor;
-# keep everything in PowerShell with the installed tooling.
-default:
-  before_script:
-    - $ErrorActionPreference = 'Stop'
-
-variables:
-  REGISTRY_HOST: registry.git.cardiff.ac.uk
-  IMAGE_PREFIX: $REGISTRY_HOST/$CI_PROJECT_PATH
-
 test:
   stage: test
+  image: node:20
   cache:
     key: npm-cache
     paths:
@@ -21,7 +12,7 @@ test:
       - backend/node_modules/
       - frontend/node_modules/
   before_script:
-    - $ErrorActionPreference = 'Stop'
+    - set -e
     - node -v
     - npm ci
     - npm ci --prefix backend
@@ -32,16 +23,24 @@ test:
 
 docker-build:
   stage: docker
+  image: docker:24.0.7
+  services:
+    - name: docker:24.0.7-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
   rules:
     - if: $CI_COMMIT_BRANCH
   before_script:
-    - $ErrorActionPreference = 'Stop'
+    - set -e
     - docker version
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$REGISTRY_HOST"
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
   script:
-    - docker build -f backend.Dockerfile -t "$IMAGE_PREFIX/backend:$CI_COMMIT_SHA" -t "$IMAGE_PREFIX/backend:latest" .
-    - docker build -f frontend.Dockerfile --build-arg VITE_API_BASE=${FRONTEND_API_BASE:-http://backend:5000/api} -t "$IMAGE_PREFIX/frontend:$CI_COMMIT_SHA" -t "$IMAGE_PREFIX/frontend:latest" .
-    - docker push "$IMAGE_PREFIX/backend:$CI_COMMIT_SHA"
-    - docker push "$IMAGE_PREFIX/backend:latest"
-    - docker push "$IMAGE_PREFIX/frontend:$CI_COMMIT_SHA"
-    - docker push "$IMAGE_PREFIX/frontend:latest"
+    - docker build -f backend.Dockerfile -t "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/backend:latest" .
+    - docker build -f frontend.Dockerfile --build-arg VITE_API_BASE=${FRONTEND_API_BASE:-http://backend:5000/api} -t "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/frontend:latest" .
+    - docker push "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE/backend:latest"
+    - docker push "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE/frontend:latest"
