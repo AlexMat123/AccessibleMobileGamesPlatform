@@ -22,8 +22,10 @@ export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return { ...defaultSettings };
-    const parsed = JSON.parse(raw);
-    return { ...defaultSettings, ...(parsed || {}) };
+    const parsed = JSON.parse(raw) || {};
+    const theme = parsed.theme || defaultSettings.theme;
+    const highContrastMode = Boolean(parsed.highContrastMode) || theme === 'high-contrast';
+    return { ...defaultSettings, ...parsed, theme, highContrastMode };
   } catch (e) {
     console.warn('[settings] failed to parse, using defaults', e);
     return { ...defaultSettings };

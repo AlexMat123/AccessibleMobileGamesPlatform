@@ -91,14 +91,24 @@ export default function Settings() {
   const [spacing, setSpacing] = useState(defaults.spacing);
   const [wakeWordEnabled, setWakeWordEnabled] = useState(defaults.wakeWordEnabled);
   const [wakeWord, setWakeWord] = useState(defaults.wakeWord);
-  const [theme, setTheme] = useState(defaults.theme);
-  const [highContrastMode, setHighContrastMode] = useState(defaults.highContrastMode);
+  const [theme, setTheme] = useState(defaults.theme === 'high-contrast' ? 'high-contrast' : defaults.theme);
+  const [highContrastMode, setHighContrastMode] = useState(defaults.highContrastMode || defaults.theme === 'high-contrast');
   const [reduceMotion, setReduceMotion] = useState(defaults.reduceMotion);
+
+  useEffect(() => {
+    setHighContrastMode(theme === 'high-contrast');
+  }, [theme]);
 
   const applyVoiceSettings = (detail) => {
     switch (detail.action) {
       case 'set-high-contrast-mode':
-        setHighContrastMode(Boolean(detail.value));
+        if (detail.value) {
+          setTheme('high-contrast');
+          setHighContrastMode(true);
+        } else {
+          setTheme('light');
+          setHighContrastMode(false);
+        }
         break;
       case 'set-wake-word-enabled':
         if (detail.value === false) {
@@ -146,7 +156,7 @@ export default function Settings() {
       wakeWordEnabled,
       wakeWord,
       theme,
-      highContrastMode,
+      highContrastMode: theme === 'high-contrast' ? true : highContrastMode,
       reduceMotion
     });
   }, [
@@ -424,22 +434,20 @@ export default function Settings() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {[
                     { id: 'light', label: 'Light' },
-                    { id: 'dark', label: 'Dark' }
+                    { id: 'dark', label: 'Dark' },
+                    { id: 'high-contrast', label: 'High contrast' }
                   ].map(opt => (
                     <PillOption
                       key={opt.id}
                       label={opt.label}
                       active={theme === opt.id}
-                      onClick={() => setTheme(opt.id)}
+                      onClick={() => {
+                        setTheme(opt.id);
+                        setHighContrastMode(opt.id === 'high-contrast');
+                      }}
                       styles={pillStyles}
                     />
                   ))}
-                  <PillOption
-                    label="High contrast mode"
-                    active={highContrastMode}
-                    onClick={() => setHighContrastMode(v => !v)}
-                    styles={pillStyles}
-                  />
                 </div>
               </div>
 

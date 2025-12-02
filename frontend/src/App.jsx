@@ -17,18 +17,18 @@ import { loadSettings } from './settings';
 const applyThemeFromSettings = (settings) => {
   if (typeof document === 'undefined') return;
   const body = document.body;
-  const theme = settings?.theme === 'dark' ? 'dark' : 'light';
-  const highContrast = !!settings?.highContrastMode;
+  const isHighContrast = settings?.theme === 'high-contrast' || !!settings?.highContrastMode;
+  const theme = settings?.theme === 'dark' ? 'dark' : isHighContrast ? 'dark' : 'light';
   const textSize = ['small', 'large', 'medium'].includes(settings?.textSize) ? settings.textSize : 'medium';
   const spacing = ['snug', 'roomy', 'airy'].includes(settings?.spacing) ? settings.spacing : 'roomy';
   const buttonSize = ['normal', 'large', 'xlarge'].includes(settings?.buttonSize) ? settings.buttonSize : 'normal';
   body.dataset.theme = theme;
-  body.dataset.hc = highContrast ? 'true' : 'false';
+  body.dataset.hc = isHighContrast ? 'true' : 'false';
   body.dataset.textSize = textSize;
   body.dataset.spacing = spacing;
   body.dataset.buttonSize = buttonSize;
   // Helps form controls and scrollbars pick the right default colors.
-  body.style.colorScheme = (theme === 'dark' || highContrast) ? 'dark' : 'light';
+  body.style.colorScheme = (theme === 'dark' || isHighContrast) ? 'dark' : 'light';
   body.style.fontSize = textSize === 'small' ? '14px' : textSize === 'large' ? '18px' : '16px';
 };
 
