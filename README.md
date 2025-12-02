@@ -245,13 +245,11 @@ The project includes an accessible Search page to filter games by genre and acce
 
 ## CI/CD (GitLab runner)
 
-- Pipelines: `.gitlab-ci.yml` runs `npm test` (backend SQLite integration + frontend) then `npm --prefix frontend run build` and stores `frontend/dist` as an artifact. A GitHub Actions CI mirror lives in `.github/workflows/ci.yml`.
-- GitLab runner (Windows, shell executor):
-  1) Download `gitlab-runner-windows-amd64.exe` from GitLab docs; place in `C:\GitLab-Runner` and rename to `gitlab-runner.exe`.
-  2) In admin PowerShell: `cd C:\GitLab-Runner` then `.\gitlab-runner.exe register --url https://git.cardiff.ac.uk --token <project-token>` → executor: `shell`, tags: leave empty (allow untagged jobs), description: `team13-node-runner` (or similar).
-  3) Set `shell = "powershell"` in `C:\GitLab-Runner\config.toml` under your runner.
-  4) In admin PowerShell: `.\gitlab-runner.exe install` then `.\gitlab-runner.exe start`.
-- After pushing changes (`git push`), check `CI/CD → Pipelines` in GitLab; jobs should run on `team13-node-runner`.
+- Pipeline flow: test stage uses `node:20` to run `npm test` and validate `backend/openapi.yaml`; docker stage builds backend/frontend images with Kaniko (no Docker daemon or privileged runner needed) and pushes to `$CI_REGISTRY_IMAGE`.
+- Kaniko auth: `.gitlab-ci.yml` writes `$CI_REGISTRY_USER/$CI_REGISTRY_PASSWORD` into `/kaniko/.docker/config.json`. Update there if the registry host changes.
+- Runner expectations: works on shared university Docker runners without privileged mode (DinD blocked). A Windows shell runner can still run tests if Node is installed; Docker builds stay on the shared runners.
+- Caching: `npm-cache` stores `node_modules` for root/backend/frontend; drop these paths and cache `~/.npm` instead if cache upload is slow.
+- After pushing (`git push`), check `CI/CD -> Pipelines` in GitLab. A GitHub Actions mirror lives in `.github/workflows/ci.yml`.
 
 ## Support
 Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
