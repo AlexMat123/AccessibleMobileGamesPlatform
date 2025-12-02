@@ -16,27 +16,13 @@ before_script:
   - npm install --prefix backend
   - npm install --prefix frontend
 
-# ---- TEST JOBS ----
-
-test_root:
+# ---- TEST JOB ----
+test_all:
   stage: test
   script:
     - npm test
 
-test_backend:
-  stage: test
-  script:
-    - cd backend
-    - npm test
-
-test_frontend:
-  stage: test
-  script:
-    - cd frontend
-    - npm test
-
-# ---- OPTIONAL BUILD JOBS (REMOVE IF YOU DON'T NEED THEM YET) ----
-
+# ---- OPTIONAL BUILD JOBS ----
 build_backend:
   stage: build
   script:
