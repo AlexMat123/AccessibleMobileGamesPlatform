@@ -26,6 +26,8 @@ docker-build:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
   rules:
+    - if: '$CI_RUNNER_OS == "windows"'
+      when: never
     - if: $CI_COMMIT_BRANCH
   variables:
     DOCKER_CONFIG: /kaniko/.docker
