@@ -182,6 +182,28 @@ function fuzzyRegistryMatch(command, registry) {
   return best ? best.intent : null;
 }
 
+function fuzzyPhraseMatch(command, entries) {
+  const normalized = command.toLowerCase().trim();
+  let best = null;
+
+  for (const entry of entries) {
+    for (const phrase of entry.phrases) {
+      const target = phrase.toLowerCase().trim();
+      const slice = normalized.slice(0, target.length);
+      const dist = levenshtein(slice, target);
+      const tolerance = Math.max(1, Math.ceil(target.length * (entry.tolerance || 0.25)));
+      if (dist <= tolerance) {
+        if (!best || dist < best.dist) {
+          best = { dist, phrase: target, entry };
+        }
+      }
+    }
+  }
+
+  if (!best) return null;
+  return best.entry.build(best.phrase, command);
+}
+
 function textSizeFallback(command) {
   // Catch noisy phrases like "can you set text size maybe medium"
   const sizeHit = command.match(/\b(text size|font size).*\b(small|medium|large)\b/);
@@ -235,6 +257,59 @@ export function parseCommand(rawTranscript) {
 
   const fuzzyRegistry = fuzzyRegistryMatch(command, [...navigationIntents, ...settingsIntents]);
   if (fuzzyRegistry) return fuzzyRegistry;
+
+  const fuzzyIntent = fuzzyPhraseMatch(command, [
+    {
+      phrases: ['search for', 'search', 'find', 'look for', 'show', 'show me'],
+      build: (phrase, cmd) => {
+        const remainder = cmd.replace(new RegExp(`^${phrase}\\s*`, 'i'), '').trim();
+        return { type: 'search', query: remainder || cmd };
+      }
+    },
+    {
+      phrases: ['filter by', 'apply filter', 'apply filters', 'filter'],
+      build: (phrase, cmd) => {
+        const remainder = cmd.replace(new RegExp(`^${phrase}\\s*`, 'i'), '').trim();
+        if (!remainder) return { type: 'filter', tags: [] };
+        const parts = remainder
+          .split(/(?:\band\b|,)/i)
+          .map((p) => p.trim())
+          .filter(Boolean);
+        if (parts.length > 1) return { type: 'filter', tags: parts };
+        return { type: 'filter', tag: parts[0] };
+      }
+    },
+    {
+      phrases: ['reset filters', 'clear filters', 'reset filter', 'clear filter'],
+      build: () => ({ type: 'reset-filters' })
+    },
+    {
+      phrases: ['scroll down', 'scroll up', 'page down', 'page up'],
+      build: (phrase) => ({ type: 'scroll', direction: phrase.includes('up') ? 'up' : 'down' })
+    },
+    {
+      phrases: ['open filters', 'filter panel', 'filters panel'],
+      build: () => ({ type: 'ui', target: 'filters', action: 'open' })
+    },
+    {
+      phrases: [
+        'sort by relevance',
+        'sort by newest',
+        'sort by latest',
+        'sort by rating',
+        'sort by title',
+        'sort by name',
+        'sort by a to z'
+      ],
+      build: (phrase) => {
+        if (phrase.includes('relevance')) return { type: 'sort', value: 'relevance' };
+        if (phrase.includes('newest') || phrase.includes('latest')) return { type: 'sort', value: 'newest' };
+        if (phrase.includes('rating')) return { type: 'sort', value: 'rating' };
+        return { type: 'sort', value: 'title' };
+      }
+    }
+  ]);
+  if (fuzzyIntent) return { ...fuzzyIntent, utterance: command };
 
   const result =
     match(command, navigation) ||
