@@ -287,9 +287,9 @@ export default function Settings() {
             </div>
 
             <div className="mt-4 space-y-4">
-              <div className={`rounded-xl ${sampleSurfaceTone} p-4`}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`text-sm font-semibold ${headingTone}`}>Text size</span>
+              <fieldset className={`rounded-xl ${sampleSurfaceTone} p-4`} aria-label="Text size options">
+                <legend className={`text-sm font-semibold ${headingTone}`}>Text size</legend>
+                <div className="flex flex-wrap items-center gap-2 mt-2" role="group" aria-label="Choose text size">
                   {['small', 'medium', 'large'].map(size => (
                     <PillOption
                       key={size}
@@ -297,13 +297,14 @@ export default function Settings() {
                       active={textSize === size}
                       onClick={() => setTextSize(size)}
                       styles={pillStyles}
+                      ariaLabel={`Text size ${size}`}
                     />
                   ))}
                 </div>
-                <div className={`mt-3 rounded-xl border px-4 py-3 ${dashedTone} ${sampleTextClasses}`}>
+                <div className={`mt-3 rounded-xl border px-4 py-3 ${dashedTone} ${sampleTextClasses}`} aria-live="polite">
                   “Sample text stays readable. Adjust size and contrast to taste.”
                 </div>
-              </div>
+              </fieldset>
 
               <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
                 <h3 className={`text-sm font-semibold ${headingTone}`}>Captions & visual feedback</h3>
@@ -328,9 +329,9 @@ export default function Settings() {
               <div className={`rounded-xl ${softCardTone} p-4 shadow-sm`}>
                 <h3 className={`text-sm font-semibold ${headingTone}`}>Motor accessibility</h3>
                 <div className="mt-3 space-y-3">
-                  <div>
-                    <p className={`text-sm font-semibold ${headingTone}`}>Button size</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                  <fieldset>
+                    <legend className={`text-sm font-semibold ${headingTone}`}>Button size</legend>
+                    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Choose button size">
                       {[
                         { id: 'normal', label: 'Normal' },
                         { id: 'large', label: 'Large' },
@@ -342,14 +343,15 @@ export default function Settings() {
                           active={buttonSize === opt.id}
                           onClick={() => setButtonSize(opt.id)}
                           styles={pillStyles}
+                          ariaLabel={`Button size ${opt.label}`}
                         />
                       ))}
                     </div>
-                  </div>
+                  </fieldset>
 
-                  <div>
-                    <p className={`text-sm font-semibold ${headingTone}`}>Spacing between elements</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                  <fieldset>
+                    <legend className={`text-sm font-semibold ${headingTone}`}>Spacing between elements</legend>
+                    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Choose spacing">
                       {[
                         { id: 'snug', label: 'Tight' },
                         { id: 'roomy', label: 'Roomy' },
@@ -361,15 +363,16 @@ export default function Settings() {
                           active={spacing === opt.id}
                           onClick={() => setSpacing(opt.id)}
                           styles={pillStyles}
+                          ariaLabel={`Spacing ${opt.label}`}
                         />
                       ))}
                     </div>
-                  </div>
+                  </fieldset>
 
-                  <div className={`rounded-xl border ${dashedTone} p-4 ${spacingClass}`}>
-                    <button type="button" className={`rounded-lg bg-lime-700 font-semibold text-white shadow-sm transition hover:bg-lime-800 ${sampleButtonClass}`}>Tap</button>
-                    <button type="button" className={`rounded-lg bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 ${sampleButtonClass}`}>Confirm</button>
-                    <button type="button" className={`rounded-lg bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 ${sampleButtonClass}`}>Cancel</button>
+                  <div className={`rounded-xl border ${dashedTone} p-4 ${spacingClass}`} aria-hidden tabIndex={-1}>
+                    <button type="button" tabIndex={-1} className={`rounded-lg bg-lime-700 font-semibold text-white shadow-sm transition hover:bg-lime-800 ${sampleButtonClass}`}>Tap</button>
+                    <button type="button" tabIndex={-1} className={`rounded-lg bg-slate-900 font-semibold text-white shadow-sm transition hover:bg-slate-800 ${sampleButtonClass}`}>Confirm</button>
+                    <button type="button" tabIndex={-1} className={`rounded-lg bg-white font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 ${sampleButtonClass}`}>Cancel</button>
                   </div>
                 </div>
               </div>

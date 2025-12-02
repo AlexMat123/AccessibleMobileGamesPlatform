@@ -530,13 +530,6 @@ export default function Search() {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search games"
           />
-          <button type="button" aria-label="Voice search" className={`rounded-md p-2 text-slate-500 hover:text-slate-700 ${reduceMotion}`}>
-            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"></path>
-              <path d="M19 11a7 7 0 0 1-14 0"></path>
-              <path d="M12 19v3"></path>
-            </svg>
-          </button>
         </div>
 
         <div className="mt-8 grid grid-cols-12 gap-6">

@@ -18,10 +18,17 @@ const applyThemeFromSettings = (settings) => {
   const body = document.body;
   const theme = settings?.theme === 'dark' ? 'dark' : 'light';
   const highContrast = !!settings?.highContrastMode;
+  const textSize = ['small', 'large', 'medium'].includes(settings?.textSize) ? settings.textSize : 'medium';
+  const spacing = ['snug', 'roomy', 'airy'].includes(settings?.spacing) ? settings.spacing : 'roomy';
+  const buttonSize = ['normal', 'large', 'xlarge'].includes(settings?.buttonSize) ? settings.buttonSize : 'normal';
   body.dataset.theme = theme;
   body.dataset.hc = highContrast ? 'true' : 'false';
+  body.dataset.textSize = textSize;
+  body.dataset.spacing = spacing;
+  body.dataset.buttonSize = buttonSize;
   // Helps form controls and scrollbars pick the right default colors.
   body.style.colorScheme = (theme === 'dark' || highContrast) ? 'dark' : 'light';
+  body.style.fontSize = textSize === 'small' ? '14px' : textSize === 'large' ? '18px' : '16px';
 };
 
 // Apply theme immediately on first load to avoid white flash before React mounts.

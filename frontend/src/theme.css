@@ -15,6 +15,67 @@ body {
   color: var(--text-primary);
 }
 
+/* Global spacing & control sizing driven by settings */
+body {
+  --global-gap: 1rem;
+  --global-btn-px: 1rem;
+  --global-btn-py: 0.6rem;
+  --global-btn-font: 1rem;
+}
+
+body[data-spacing="snug"] {
+  --global-gap: 0.6rem;
+}
+body[data-spacing="airy"] {
+  --global-gap: 1.4rem;
+}
+
+body[data-button-size="normal"] {
+  --global-btn-px: 1rem;
+  --global-btn-py: 0.6rem;
+  --global-btn-font: 1rem;
+}
+body[data-button-size="large"] {
+  --global-btn-px: 1.15rem;
+  --global-btn-py: 0.7rem;
+  --global-btn-font: 1.05rem;
+}
+body[data-button-size="xlarge"] {
+  --global-btn-px: 1.35rem;
+  --global-btn-py: 0.8rem;
+  --global-btn-font: 1.1rem;
+}
+
+/* Apply spacing to common flex/grid layouts */
+body .flex,
+body .grid {
+  gap: var(--global-gap) !important;
+  row-gap: var(--global-gap) !important;
+  column-gap: var(--global-gap) !important;
+}
+
+/* Apply control sizing broadly to buttons/inputs */
+body button,
+body [role="button"],
+body input[type="button"],
+body input[type="submit"],
+body input[type="reset"] {
+  padding: var(--global-btn-py) var(--global-btn-px) !important;
+  font-size: var(--global-btn-font) !important;
+}
+
+body[data-text-size="small"] {
+  font-size: 14px;
+}
+
+body[data-text-size="medium"] {
+  font-size: 16px;
+}
+
+body[data-text-size="large"] {
+  font-size: 18px;
+}
+
 body[data-theme="dark"] {
   --bg-page: #0f172a;
   --bg-surface: #1f2937;

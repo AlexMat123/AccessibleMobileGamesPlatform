@@ -9,6 +9,7 @@ const navigation = [
   [/^(open )?(filters|filter panel)$/, () => ({ type: 'ui', target: 'filters', action: 'open' })],
   [/^(open )?favourites?$/, () => ({ type: 'navigate', target: 'favourites' })],
   [/^(go to|open) search$/, () => ({ type: 'navigate', target: 'search' })],
+  [/^(go to|open) profile$/, () => ({ type: 'navigate', target: 'profile' })],
   [/^next page$/, () => ({ type: 'navigate', target: 'next-page' })],
   [/^back$/, () => ({ type: 'navigate', target: 'back' })],
   [/^open settings$/, () => ({ type: 'navigate', target: 'settings' })]
