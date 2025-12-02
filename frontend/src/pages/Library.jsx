@@ -151,62 +151,76 @@ export default function Library() {
   if (error) return <div className="p-4 text-red-600">{error}</div>;
   if (!user) return null;
 
+  // this uses tone tokens already used across the other pages
+  const shellTone = 'theme-page';
+  const cardTone = 'theme-surface border theme-border rounded-2xl shadow-lg';
+  const subtleCard = 'theme-subtle border theme-border rounded-xl';
+  const smallMeta = 'text-sm theme-muted';
+
   const renderCard = (g) => (
-    <div key={g.id} className="relative flex items-start gap-4 theme-surface border theme-border rounded-xl p-4">
-      <img src={getImageUrl(g)} alt={g.title} className="w-28 h-20 object-cover rounded-md" />
+    <div key={g.id} className={`relative flex items-start gap-4 ${cardTone} p-4`}>
+      <div className="overflow-hidden rounded-xl">
+        <img src={getImageUrl(g)} alt={g.title} className="w-28 h-20 object-cover" />
+      </div>
       <div className="flex-1">
-        <h3 className="text-lg font-semibold">{g.title || g.name}</h3>
-        <p className="text-xs theme-muted">{g.developer || 'Developer'} • {g.category || 'Category'}</p>
-        <div className="mt-1 text-yellow-500 text-sm">★★★★★ <span className="theme-muted text-xs">{g.rating?.toFixed?.(1) || '—'} ({g.reviews?.length || 0})</span></div>
-        <div className="mt-2 flex gap-2">
+        <h3 className="text-lg font-semibold theme-text truncate">{g.title || g.name}</h3>
+        <p className={`${smallMeta}`}>
+          {g.developer || 'Developer'} • {g.category || 'Category'}
+        </p>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-yellow-500 text-sm">★★★★★</span>
+          <span className="theme-muted text-xs">{g.rating?.toFixed?.(1) || '—'} ({g.reviews?.length || 0})</span>
+        </div>
+        <div className="mt-2 flex gap-2 flex-wrap">
           {(g.tags || []).slice(0,3).map((t, i) => (
-            <span key={i} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{typeof t === 'string' ? t : t?.name || ''}</span>
+            <span key={i} className="theme-subtle border theme-border px-2 py-[2px] rounded-full text-[10px] leading-none theme-text">
+              {typeof t === 'string' ? t : t?.name || ''}
+            </span>
           ))}
         </div>
       </div>
       <div className="absolute right-3 top-3 flex gap-2">
         {tab === 'favourites' ? (
-          <button onClick={() => moveToWishlist(g)} className="bg-pink-500 hover:bg-pink-600 text-white px-3 py-1 rounded-md" aria-label="Move to wishlist">♥</button>
+          <button onClick={() => moveToWishlist(g)} className="theme-btn px-3 py-1 rounded-md" aria-label="Move to wishlist">♥</button>
         ) : (
-          <button onClick={() => moveToFavourites(g)} className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded-md" aria-label="Move to favourites">★</button>
+          <button onClick={() => moveToFavourites(g)} className="theme-btn px-3 py-1 rounded-md" aria-label="Move to favourites">★</button>
         )}
         <button
-          className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded-md"
+          className="theme-subtle border theme-border px-3 py-1 rounded-md"
           aria-label="Delete"
           onClick={() => (tab === 'favourites' ? removeFromFavourites(g.id) : removeFromWishlist(g.id))}
-        >
-          X
-        </button>
+        >X</button>
       </div>
       <div className="absolute right-3 bottom-3">
-        <Link to={`/games/${g.id}`} className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded-md text-sm">View Details</Link>
+        <Link to={`/games/${g.id}`} className="theme-btn px-3 py-1 rounded-md text-sm">View details</Link>
       </div>
     </div>
   );
 
   return (
-    <div className="bg-sky-100 min-h-screen flex justify-center py-10 lg:pb-20">
-      <div className="bg-gray-100 rounded-2xl shadow-lg p-8 w-full max-w-6xl">
-        <h1 className="text-2xl font-bold mb-6">My Favourites / Wishlist</h1>
+    <div className={`${shellTone} min-h-screen flex justify-center py-10 lg:pb-20`}>
+      <main className="page-shell w-full max-w-6xl space-y-8">
+        <section className={`${cardTone} p-6`}>
+          <h1 className="text-2xl font-bold theme-text mb-6">My favourites / wishlist</h1>
+          <div className="flex gap-2 mb-4">
+            <button onClick={() => setTab('favourites')} className={`flex-1 rounded-md px-4 py-2 text-sm font-medium ${tab === 'favourites' ? 'theme-btn' : 'theme-subtle border theme-border'}`}>Favourites</button>
+            <button onClick={() => setTab('wishlist')} className={`flex-1 rounded-md px-4 py-2 text-sm font-medium ${tab === 'wishlist' ? 'theme-btn' : 'theme-subtle border theme-border'}`}>Wishlist</button>
+          </div>
 
-        <div className="flex gap-2 mb-4">
-          <button onClick={() => setTab('favourites')} className={`flex-1 rounded-md px-4 py-2 text-sm font-medium ${tab === 'favourites' ? 'bg-white border theme-border shadow' : 'theme-subtle border theme-border'}`}> Favourites</button>
-          <button onClick={() => setTab('wishlist')} className={`flex-1 rounded-md px-4 py-2 text-sm font-medium ${tab === 'wishlist' ? 'bg-white border theme-border shadow' : 'theme-subtle border theme-border'}`}> Wishlist</button>
-        </div>
+          <div className="flex items-center gap-3 mb-4">
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="flex-1 rounded-md theme-input py-2 px-3" />
+            <button className="rounded-md theme-subtle px-3 py-2 border theme-border">Sort by</button>
+            <button className="rounded-md theme-subtle px-3 py-2 border theme-border">Filter ▾</button>
+          </div>
 
-        <div className="flex items-center gap-3 mb-4">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="flex-1 rounded-md theme-input py-2 px-3" />
-          <button className="rounded-md theme-subtle px-3 py-2 border theme-border">Sort By</button>
-          <button className="rounded-md theme-subtle px-3 py-2 border theme-border">Filter ▾</button>
-        </div>
-
-        <div className="space-y-4">
-          {(tab === 'favourites' ? filteredFav : filteredWish).map(renderCard)}
-          {(tab === 'favourites' ? filteredFav : filteredWish).length === 0 && (
-            <div className="theme-subtle border theme-border rounded-xl p-6 text-center text-sm">No games yet. Browse the <Link to="/Search" className="text-sky-600">Search</Link> page and add some!</div>
-          )}
-        </div>
-      </div>
+          <div className="space-y-4">
+            {(tab === 'favourites' ? filteredFav : filteredWish).map(renderCard)}
+            {(tab === 'favourites' ? filteredFav : filteredWish).length === 0 && (
+              <div className={`${subtleCard} p-6 text-center text-sm`}>No games yet. Browse the <Link to="/Search" className="text-sky-600">Search</Link> page and add some!</div>
+            )}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
