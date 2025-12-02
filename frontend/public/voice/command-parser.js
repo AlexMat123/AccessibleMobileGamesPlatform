@@ -147,7 +147,7 @@ const authActions = [
   // Navigation aliases
   [/^(log in|login|sign in)$/, () => ({ type: 'navigate', target: 'login' })],
   [/^(sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
-  [/^spell (e-?mail|email|password|username|user name|login|identifier)$/, (_, field) => ({
+  [/^spell (e-?mail|email|password|username|user name|login|identifier|confirm(?:ed)? password|confirm|repeat password)$/, (_, field) => ({
     type: 'spell',
     action: 'start',
     field: normaliseField(field)

@@ -96,7 +96,7 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     const wakeParts = wakeWord.split(/\s+/).filter(Boolean);
     const lower = raw.toLowerCase().replace(/e[-\s]?mail/g, 'email').trim();
     if (!lower) return null;
-    const startMatch = lower.match(/^spell\s+(email|password|username|user name|identifier|login)$/);
+    const startMatch = lower.match(/^spell\s+(email|password|username|user name|identifier|login|confirm(?:ed)? password|confirm)$/);
     if (startMatch) return { type: 'spell', action: 'start', field: parseSpellField(startMatch[1]) };
     if (/\b(stop spelling|end spelling|finish spelling|stop|done)\b/.test(lower)) return { type: 'spell', action: 'stop' };
     if (/\bclear\b/.test(lower)) return { type: 'spell', action: 'append', clear: true };
