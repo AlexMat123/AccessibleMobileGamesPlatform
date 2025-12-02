@@ -509,7 +509,7 @@ export default function Search() {
 
   return (
     <div className={`min-h-screen ${pageTone} ${textSizeClass}`}>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
+      <main className="page-shell max-w-6xl py-8 sm:py-12">
         <header className="space-y-4">
           <h1 className="text-3xl font-bold sm:text-4xl">Search</h1>
         </header>

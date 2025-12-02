@@ -52,7 +52,9 @@ function App() {
 
   return (
     <Router>
+      <a href="#page-content" className="skip-link">Skip to main content</a>
       <Navbar />
+      <div id="page-content" tabIndex="-1" />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<Search />} />
