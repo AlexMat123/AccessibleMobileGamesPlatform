@@ -22,7 +22,9 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mariadb": "^3.4.5",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "swagger-ui-express": "^5.0.1",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
