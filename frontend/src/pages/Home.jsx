@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { fetchGames } from "../api";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Home() {
   const [games, setGames] = useState([]);
@@ -25,6 +25,7 @@ export default function Home() {
   const featuredSectionRef = useRef(null);
   const homePageRef = useRef(null);
   const AUTOPLAY_MS = 5000;
+  const navigate = useNavigate();
 
   const startAutoplay = (len) => {
     if (!len || autoplayPausedRef.current) return;
@@ -95,6 +96,10 @@ export default function Home() {
     .slice()
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 3);
+  const fg = featuredGames.length > 0 ? featuredGames[featuredIndex % featuredGames.length] : null;
+  const featuredAnnouncement = fg
+    ? `Featured game ${featuredIndex + 1} of ${featuredGames.length}: ${fg.title}. Platform ${fg.platform || "unknown"}. Rating ${(fg.rating || 0).toFixed(1)}. Tags ${(fg.tags || []).join(", ")}.`
+    : "";
 
   const adventureGames = games.filter(
     (g) =>
@@ -146,6 +151,27 @@ export default function Home() {
     };
   }, [featuredGames.length]);
 
+  useEffect(() => {
+    const onVoice = (e) => {
+      const detail = e.detail || {};
+      const { type, action, title } = detail;
+      if (type === "home" && action === "open-featured" && fg?.id) {
+        e.preventDefault?.();
+        navigate(`/games/${fg.id}`);
+        return;
+      }
+      if (type === "game-card" && action === "open" && title) {
+        const match = findGameByTitle(title);
+        if (match?.id) {
+          e.preventDefault?.();
+          navigate(`/games/${match.id}`);
+        }
+      }
+    };
+    window.addEventListener("voiceCommand", onVoice);
+    return () => window.removeEventListener("voiceCommand", onVoice);
+  }, [fg, navigate, games]);
+
   const prevAdv = () =>
     setAdvIndex((i) => (adventureGames.length ? (i - 1 + adventureGames.length) % adventureGames.length : 0));
   const nextAdv = () =>
@@ -184,6 +210,15 @@ export default function Home() {
   const VISIBLE = 5;
   const getWindow = (arr, start, size) =>
     Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
+
+  const normalize = (text) => (text || "").toString().toLowerCase().trim();
+  const findGameByTitle = (title) => {
+    const needle = normalize(title);
+    return games.find((g) => {
+      const hay = normalize(g.title);
+      return hay === needle || hay.includes(needle) || needle.includes(hay);
+    });
+  };
 
   const renderStars = (rating) => {
     const active = "var(--accent)";
@@ -230,11 +265,6 @@ export default function Home() {
 
   const hasAccessibilityRecs =
     visionRecs.length > 0 || hearingRecs.length > 0 || motorRecs.length > 0 || cognitiveRecs.length > 0;
-
-  const fg = featuredGames.length > 0 ? featuredGames[featuredIndex % featuredGames.length] : null;
-  const featuredAnnouncement = fg
-    ? `Featured game ${featuredIndex + 1} of ${featuredGames.length}: ${fg.title}. Platform ${fg.platform || "unknown"}. Rating ${(fg.rating || 0).toFixed(1)}. Tags ${(fg.tags || []).join(", ")}.`
-    : "";
 
   const shellTone = "theme-page";
   const cardTone = "theme-surface border theme-border rounded-2xl shadow-lg";

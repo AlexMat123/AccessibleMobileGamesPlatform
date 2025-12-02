@@ -21,6 +21,10 @@ const searches = [
   [/^look for (.+)/, (q) => ({ type: 'search', query: q })]
 ];
 
+const home = [
+  [/^(open|view|show)( the)? (current|featured|main) game$/, () => ({ type: 'home', action: 'open-featured' })]
+];
+
 const filters = [
   [/^filter by hearing$/, () => ({ type: 'filter', tag: 'Hearing' })],
   [/^filter by motor$/, () => ({ type: 'filter', tag: 'Motor' })],
@@ -300,6 +304,7 @@ export function parseCommand(rawTranscript) {
   const result =
     match(command, navigation) ||
     match(command, searches) ||
+    match(command, home) ||
     match(command, filters) ||
     match(command, sorters) ||
     match(command, gameActions) ||
