@@ -1,47 +1,8 @@
-# This file is a template, and might need editing before it works on your project.
-# This is a sample GitLab CI/CD configuration file that should run without any modifications.
-# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
-# it uses echo commands to simulate the pipeline execution.
-#
-# A pipeline is composed of independent jobs that run scripts, grouped into stages.
-# Stages run in sequential order, but jobs within stages run in parallel.
-#
-# For more information, see: https://docs.gitlab.com/ee/ci/yaml/#stages
-#
-# You can copy and paste this template into a new `.gitlab-ci.yml` file.
-# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
-#
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/development/cicd/templates/
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
-
-stages:          # List of stages for jobs, and their order of execution
-  - build
+stages:
   - test
-  - deploy
+  - docker
 
-build-job:       # This job runs in the build stage, which runs first.
-  stage: build
-  script:
-    - echo "Compiling the code..."
-    - echo "Compile complete."
-
-unit-test-job:   # This job runs in the test stage.
-  stage: test    # It only starts when the job in the build stage completes successfully.
-  script:
-    - echo "Running unit tests... This will take about 60 seconds."
-    - sleep 60
-    - echo "Code coverage is 90%"
-
-lint-test-job:   # This job also runs in the test stage.
-  stage: test    # It can run at the same time as unit-test-job (in parallel).
-  script:
-    - echo "Linting code... This will take about 10 seconds."
-    - sleep 10
-    - echo "No lint issues found."
-
-openapi-validate:
+test:
   stage: test
   image: node:20
   cache:
@@ -55,11 +16,27 @@ openapi-validate:
     - npm ci --prefix backend
     - npm ci --prefix frontend
   script:
+    - npm test
     - npx swagger-cli validate backend/openapi.yaml
 
-deploy-job:      # This job runs in the deploy stage.
-  stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
-  environment: production
+docker-build:
+  stage: docker
+  image: docker:24.0.7
+  services:
+    - name: docker:24.0.7-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+  rules:
+    - if: $CI_COMMIT_BRANCH
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
   script:
-    - echo "Deploying application..."
-    - echo "Application successfully deployed."
+    - docker build -f backend.Dockerfile -t "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/backend:latest" .
+    - docker build -f frontend.Dockerfile --build-arg VITE_API_BASE=${FRONTEND_API_BASE:-http://backend:5000/api} -t "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/frontend:latest" .
+    - docker push "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE/backend:latest"
+    - docker push "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE/frontend:latest"
