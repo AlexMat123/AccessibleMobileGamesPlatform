@@ -2,39 +2,19 @@ image: node:20
 
 stages:
   - test
-  - build
 
 cache:
   paths:
     - node_modules/
     - frontend/node_modules/
-    # NOTE: backend/node_modules is intentionally NOT cached
-    # to avoid permission issues with cross-env
 
 before_script:
-  # Make sure backend deps are freshly installed on Linux
   - rm -rf backend/node_modules
-
-  # Install dependencies for root, backend, and frontend
   - npm ci
   - npm ci --prefix backend
   - npm ci --prefix frontend
 
-# ---- TEST JOB ----
 test_all:
   stage: test
   script:
     - npm test
-
-# ---- OPTIONAL BUILD JOBS ----
-build_backend:
-  stage: build
-  script:
-    - cd backend
-    - npm run build
-
-build_frontend:
-  stage: build
-  script:
-    - cd frontend
-    - npm run build
