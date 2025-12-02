@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames } from '../api';
 import { fetchCurrentUser } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
+import { getAccessibilityPreferences } from '../api';
+import { loadSettings } from '../settings';
 
 function RatingStars({ value }) {
     const v = Math.round(value || 0);
@@ -31,6 +33,9 @@ export default function Game() {
     const [currentUser, setCurrentUser] = useState(null);
     const [isFollowed, setIsFollowed] = useState(false);
     const [followBusy, setFollowBusy] = useState(false);
+    const [captionsEnabled, setCaptionsEnabled] = useState(false);
+    const heroVideoRef = useRef(null);
+    const heroTrackRef = useRef(null);
     const followBtnRef = useRef(null);
     const reviewBtnRef = useRef(null);
     const reviewRatingRef = useRef(null);
@@ -93,6 +98,39 @@ export default function Game() {
 
     useEffect(() => { fetchCurrentUser().then(setCurrentUser).catch(() => {}); }, []);
 
+    // initialising captions from the local Settings
+    useEffect(() => {
+        try {
+            const s = loadSettings();
+            setCaptionsEnabled(Boolean(s?.captionsAlways));
+        } catch { /* ignore */ }
+    }, []);
+
+    // loading accessibility preferences
+    useEffect(() => {
+        let cancelled = false;
+        async function loadPrefs() {
+            if (!currentUser) return;
+            try {
+                const prefs = await getAccessibilityPreferences(currentUser.id);
+                if (!cancelled) {
+                    const local = loadSettings();
+                    const fromSettings = Boolean(local?.captionsAlways);
+                    const fromBackend = !!prefs?.hearing;
+                    setCaptionsEnabled(fromSettings || fromBackend);
+                }
+            } catch (e) {
+                // in case backend fails, applying local settings
+                try {
+                    const local = loadSettings();
+                    setCaptionsEnabled(Boolean(local?.captionsAlways));
+                } catch { /* ignore */ }
+            }
+        }
+        loadPrefs();
+        return () => { cancelled = true; };
+    }, [currentUser]);
+
     // checking follow state once it has user and game
     useEffect(() => {
         let cancelled = false;
@@ -106,6 +144,136 @@ export default function Game() {
         checkFollow();
         return () => { cancelled = true; };
     }, [currentUser, game]);
+
+    // this makes sure that the captions are automatically activated when enabled in settings
+    useEffect(() => {
+        const vid = heroVideoRef.current;
+        const trackEl = heroTrackRef.current;
+        if (!vid) return;
+
+        const setTrackModes = () => {
+            try {
+                const list = vid.textTracks;
+                if (!list || list.length === 0) return;
+                let chosen = null;
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    if (!isCaptionLike) { t.mode = 'disabled'; continue; }
+                    const isEn = (t.language || '').toLowerCase() === 'en';
+                    if (!chosen && isCaptionLike) chosen = t;
+                    if (isEn) chosen = t;
+                }
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    t.mode = captionsEnabled && isCaptionLike && t === chosen ? 'showing' : 'disabled';
+                }
+            } catch { /* ignore */ }
+        };
+
+        setTrackModes();
+        const onMeta = () => setTrackModes();
+        const onData = () => setTrackModes();
+        const onAdd = () => setTimeout(setTrackModes, 0);
+        const onTrackLoad = () => setTrackModes();
+
+        vid.addEventListener('loadedmetadata', onMeta);
+        vid.addEventListener('loadeddata', onData);
+        if (vid.textTracks && typeof vid.textTracks.addEventListener === 'function') {
+            vid.textTracks.addEventListener('addtrack', onAdd);
+        }
+        if (trackEl && typeof trackEl.addEventListener === 'function') {
+            trackEl.addEventListener('load', onTrackLoad);
+        }
+
+        return () => {
+            vid.removeEventListener('loadedmetadata', onMeta);
+            vid.removeEventListener('loadeddata', onData);
+            if (vid.textTracks && typeof vid.textTracks.removeEventListener === 'function') {
+                vid.textTracks.removeEventListener('addtrack', onAdd);
+            }
+            if (trackEl && typeof trackEl.removeEventListener === 'function') {
+                trackEl.removeEventListener('load', onTrackLoad);
+            }
+        };
+    }, [captionsEnabled, heroIndex]);
+
+    useEffect(() => {
+        const onSettings = (e) => {
+            const s = (e && e.detail) || loadSettings();
+            if (typeof s?.captionsAlways === 'boolean') {
+                setCaptionsEnabled(Boolean(s.captionsAlways));
+            }
+        };
+        window.addEventListener('settings:changed', onSettings);
+        return () => window.removeEventListener('settings:changed', onSettings);
+    }, []);
+
+    // this makes sure that the captions are automatically activated when enabled in settings
+    useEffect(() => {
+        const vid = heroVideoRef.current;
+        const trackEl = heroTrackRef.current;
+        if (!vid) return;
+
+        const setTrackModes = () => {
+            try {
+                const list = vid.textTracks;
+                if (!list || list.length === 0) return;
+                let chosen = null;
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    if (!isCaptionLike) { t.mode = 'disabled'; continue; }
+                    const isEn = (t.language || '').toLowerCase() === 'en';
+                    if (!chosen && isCaptionLike) chosen = t;
+                    if (isEn) chosen = t;
+                }
+                for (let i = 0; i < list.length; i++) {
+                    const t = list[i];
+                    const isCaptionLike = t.kind === 'captions' || t.kind === 'subtitles';
+                    t.mode = captionsEnabled && isCaptionLike && t === chosen ? 'showing' : 'disabled';
+                }
+            } catch { /* ignore */ }
+        };
+
+        setTrackModes();
+        const onMeta = () => setTrackModes();
+        const onData = () => setTrackModes();
+        const onAdd = () => setTimeout(setTrackModes, 0);
+        const onTrackLoad = () => setTrackModes();
+
+        vid.addEventListener('loadedmetadata', onMeta);
+        vid.addEventListener('loadeddata', onData);
+        if (vid.textTracks && typeof vid.textTracks.addEventListener === 'function') {
+            vid.textTracks.addEventListener('addtrack', onAdd);
+        }
+        if (trackEl && typeof trackEl.addEventListener === 'function') {
+            trackEl.addEventListener('load', onTrackLoad);
+        }
+
+        return () => {
+            vid.removeEventListener('loadedmetadata', onMeta);
+            vid.removeEventListener('loadeddata', onData);
+            if (vid.textTracks && typeof vid.textTracks.removeEventListener === 'function') {
+                vid.textTracks.removeEventListener('addtrack', onAdd);
+            }
+            if (trackEl && typeof trackEl.removeEventListener === 'function') {
+                trackEl.removeEventListener('load', onTrackLoad);
+            }
+        };
+    }, [captionsEnabled, heroIndex]);
+
+    useEffect(() => {
+        const onSettings = (e) => {
+            const s = (e && e.detail) || loadSettings();
+            if (typeof s?.captionsAlways === 'boolean') {
+                setCaptionsEnabled(Boolean(s.captionsAlways));
+            }
+        };
+        window.addEventListener('settings:changed', onSettings);
+        return () => window.removeEventListener('settings:changed', onSettings);
+    }, []);
 
     useEffect(() => {
         const onVoice = (e) => {
@@ -267,18 +435,32 @@ export default function Game() {
     const images = Array.isArray(game.images) && game.images.length
         ? game.images
         : ['/placeholder1.png', '/placeholder2.png', '/placeholder3.png'];
-    const currentHero = images[heroIndex];
+    // Trailer being displayed
+    const trailerUrl = (game.name === 'Aurora Quest') ? '/AuroraQuestTrailer.mp4' : null;
+    const media = trailerUrl ? [trailerUrl, ...images] : images;
+    const currentHero = media[heroIndex];
 
-    // Additional images carousel logic (show 3)
+    // Additional images carousel logic
     const ADD_VISIBLE = 3;
-    const addWindow = images.slice(addIndex, addIndex + ADD_VISIBLE).length === ADD_VISIBLE
-        ? images.slice(addIndex, addIndex + ADD_VISIBLE)
-        : [...images.slice(addIndex), ...images.slice(0, (addIndex + ADD_VISIBLE) % images.length)];
+    const addWindow = media.slice(addIndex, addIndex + ADD_VISIBLE).length === ADD_VISIBLE
+        ? media.slice(addIndex, addIndex + ADD_VISIBLE)
+        : [...media.slice(addIndex), ...media.slice(0, (addIndex + ADD_VISIBLE) % media.length)];
 
-    const prevHero = () => setHeroIndex((i) => (i - 1 + images.length) % images.length);
-    const nextHero = () => setHeroIndex((i) => (i + 1) % images.length);
-    const prevAdditional = () => setAddIndex(i => (i - 1 + images.length) % images.length);
-    const nextAdditional = () => setAddIndex(i => (i + 1) % images.length);
+    const prevHero = () => setHeroIndex((i) => (i - 1 + media.length) % media.length);
+    const nextHero = () => setHeroIndex((i) => (i + 1) % media.length);
+    const prevAdditional = () => setAddIndex(i => (i - 1 + media.length) % media.length);
+    const nextAdditional = () => setAddIndex(i => (i + 1) % media.length);
+
+    // //Reviews
+    // const reviews = game.reviews || [];
+
+    // const ratingCounts = [0, 0, 0, 0, 0];
+    // reviews.forEach(r => {
+    //     if (r.rating >= 1 && r.rating <= 5) {
+    //         ratingCounts[r.rating - 1]++;
+    //     }
+    // });
+    // const ratingDist = ratingCounts.reverse();
 
 
     return (
@@ -290,17 +472,44 @@ export default function Game() {
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <button onClick={prevHero} style={sideBtn} aria-label="Previous image">&lt;</button>
-                            <img
-                                src={currentHero}
-                                alt={`${game.name} screenshot`}
-                                style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block' }}
-                                
+                            {String(currentHero).toLowerCase().endsWith('.mp4') ? (
+                                <video
+                                    key={currentHero}
+                                    ref={heroVideoRef}
+                                    src={currentHero}
+                                    controls
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block', background: '#000' }}
+                                >
+                                    {/* Subtitles track shown automatically when captions are enabled and track exists */}
+                                    {currentHero === '/AuroraQuestTrailer.mp4' ? (
+                                        <track
+                                            key={`captions-${captionsEnabled}`}
+                                            ref={heroTrackRef}
+                                            kind="subtitles"
+                                            src="/AuroraQuestTrailer.vtt"
+                                            srclang="en"
+                                            label="English"
+                                            default={captionsEnabled}
+                                        />
+                                    ) : null}
+                                </video>
+                            ) : (
+                                <img
+                                    src={currentHero}
+                                    alt={`${game.name} media`}
+                                    style={{ width: 320, height: 200, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                                    
                             />
+                            )}
                             <button onClick={nextHero} style={sideBtn} aria-label="Next image">&gt;</button>
                         </div>
 
                         <div style={{ textAlign: 'center', marginTop: 4 }}>
-                            {images.map((_, i) => (
+                            {media.map((_, i) => (
                                 <span
                                     key={i}
                                     onClick={() => setHeroIndex(i)}
@@ -392,15 +601,26 @@ export default function Game() {
                     <h3 style={sectionTitle}>Additional Images</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} ref={addCarouselRef}>
                         <button onClick={prevAdditional} style={secBtn} aria-label="Previous additional images">‹</button>
-                        {addWindow.map((url, i) => (
-                            <div key={i} style={{ width: 140, height: 90, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4, border: '1px solid var(--border)' }}>
-                                <img src={url} alt={`Additional ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
-                            </div>
-                        ))}
+                        {addWindow.map((url, i) => {
+                            const isVideo = String(url).toLowerCase().endsWith('.mp4');
+                            return (
+                                <div key={i} style={{ width: 140, height: 90, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 4 }}>
+                                    {isVideo ? (
+                                        <video key={url} src={url} muted loop playsInline style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }}>
+                                            {url === '/AuroraQuestTrailer.mp4' ? (
+                                                <track kind="subtitles" src="/AuroraQuestTrailer.vtt" srclang="en" label="English" default={captionsEnabled} />
+                                            ) : null}
+                                        </video>
+                                    ) : (
+                                        <img src={url} alt={`Additional ${i + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'cover', borderRadius: 4 }} />
+                                    )}
+                                </div>
+                            );
+                        })}
                         <button onClick={nextAdditional} style={secBtn} aria-label="Next additional images">›</button>
                     </div>
                     <div style={{ textAlign: 'center', marginTop: 6 }}>
-                        {images.map((_, i) => (
+                        {media.map((_, i) => (
                             <span key={i} style={{
                                 display: 'inline-block',
                                 width: 6,
