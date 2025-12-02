@@ -1,6 +1,7 @@
 import express from 'express';
-import { Review, Game, User } from '../models/index.js';
+import { Review, Game, User, Tag } from '../models/index.js';
 import authenticateToken from '../middleware/auth.js';
+import { Op, literal } from 'sequelize';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
@@ -48,6 +49,21 @@ router.get('/:id/accessibility-preferences', authenticateToken, async (req, res)
   } catch (e) {
     console.error('Load accessibility prefs error:', e);
     res.status(500).json({ message: 'Failed to load accessibility preferences' });
+  }
+});
+
+router.put('/:id/accessibility', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.accessibilityPreferences = req.body;
+    await user.save();
+
+    res.json({ message: 'Preferences updated', preferences: user.accessibilityPreferences });
+  } catch (err) {
+    console.error('Failed to update preferences', err);
+    res.status(500).json({ message: 'Unable to update preferences' });
   }
 });
 
@@ -172,5 +188,71 @@ router.patch('/:id/password', authenticateToken, async (req, res) => {
     return res.status(500).json({ error: 'Failed to change password' });
   }
 });
+
+// GET /api/users/:id/recommended-games
+router.get('/:id/recommended-games', authenticateToken, async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    if (Number.isNaN(userId)) return res.status(400).json({ message: 'Invalid user id' });
+    if (req.user?.id !== userId) return res.status(403).json({ message: 'Forbidden' });
+
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const prefs = user.accessibilityPreferences || {};
+    const interestTags = [];
+    if (prefs.visual) interestTags.push('Vision');
+    if (prefs.motor) interestTags.push('Motor');
+    if (prefs.cognitive) interestTags.push('Cognitive');
+    if (prefs.hearing) interestTags.push('Hearing');
+
+    if (interestTags.length === 0) return res.json([]);
+
+    // First, find all games that match at least one of the user's selected
+    // high-level tags.
+    const games = await Game.findAll({
+      include: [{
+        model: Tag,
+        as: 'tags',
+        where: { name: { [Op.in]: interestTags } },
+        through: { attributes: [] }
+      }],
+      group: ['Game.id'],
+      having: literal('COUNT(DISTINCT `tags`.`id`) >= 1')
+    });
+
+    if (!games.length) return res.json([]);
+
+    // Then, for that set of games, load all of their tags, but only return
+    // the high-level ones that are relevant to the user's preferences so the
+    // frontend only sees appropriate accessibility tags per user.
+    const fullGames = await Game.findAll({
+      where: { id: games.map(g => g.id) },
+      include: [{ model: Tag, as: 'tags', through: { attributes: [] } }]
+    });
+
+    const HIGH_LEVEL = new Set(['Vision', 'Hearing', 'Motor', 'Cognitive']);
+
+    const result = fullGames.map(g => {
+      const allTagNames = (g.tags || []).map(t => t.name);
+      // Keep only high-level tags that intersect with the user's interests,
+      // mirroring the earlier behaviour where tags reflected preferences.
+      const filtered = allTagNames.filter(name => HIGH_LEVEL.has(name) && interestTags.includes(name));
+      return {
+        id: g.id,
+        title: g.title,
+        platform: g.platform,
+        rating: g.rating,
+        tags: filtered
+      };
+    });
+
+    res.json(result);
+  } catch (e) {
+    console.error('Fetch recommended games error:', e);
+    res.status(500).json({ message: 'Failed to fetch recommended games' });
+  }
+});
+
 
 export default router;
