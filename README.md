@@ -31,11 +31,11 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 flowchart LR
   user([Player])
   admin([Content Admin])
-  extLLM[(Optional Ollama LLM<br/>for voice intent)]
+  extLLM([Optional Ollama LLM for voice intent])
   system[[Accessible Games Platform]]
   user --> system
   admin --> system
-  system -. optional intent ->. extLLM
+  system -. "optional intent" .-> extLLM
 ```
 
 ### Level 2 - Containers
@@ -45,34 +45,34 @@ flowchart TB
   admin([Content Admin])
 
   subgraph Platform [Accessible Games Platform]
-    web[[Frontend SPA<br/>React/Vite]]
-    voice[[Voice Client<br/>Web Speech + heuristics]]
-    api[[Backend API<br/>Node/Express]]
-    db[(Database<br/>MariaDB in prod<br/>SQLite in tests)]
+    web[[Frontend SPA\nReact/Vite]]
+    voice[[Voice Client\nWeb Speech + heuristics]]
+    api[[Backend API\nNode/Express]]
+    db[(Database\nMariaDB prod\nSQLite tests)]
   end
 
-  llm[(Optional Ollama LLM<br/>/voice/interpret fallback)]
+  llm([Optional Ollama LLM\n/voice/interpret fallback])
 
   user --> web
   admin --> web
   web --> api
   voice --> api
   api --> db
-  api -. optional .-> llm
+  api -. "optional" .-> llm
 ```
 
-### Level 3 â€“ Components (Backend API)
+### Level 3 - Components (Backend API)
 ```mermaid
 flowchart LR
   subgraph API [Backend API (Express)]
-    routerLibrary[/Routes: library.js<br/>/api/tag-groups, /api/games, /api/games/search/]
-    routerGames[/Routes: games.js<br/>/api/games/:id, reviews/]
-    routerAuth[/Routes: auth.js<br/>/api/auth/*/]
-    routerUsers[/Routes: users.js<br/>/api/users/*/]
-    routerVoice[/Routes: voice.js<br/>/api/voice/interpret/]
-    authMW[[JWT Middleware<br/>middleware/auth.js]]
-    orm[[Sequelize Models<br/>Game, Tag, Review, User, joins]]
-    seed[[Seed/Data Prep<br/>config/seedGames.js, models/tags.js]]
+    routerLibrary[/Routes: library.js\n/api/tag-groups\n/api/games\n/api/games/search/]
+    routerGames[/Routes: games.js\n/api/games/:id\nreviews/]
+    routerAuth[/Routes: auth.js\n/api/auth/*/]
+    routerUsers[/Routes: users.js\n/api/users/*/]
+    routerVoice[/Routes: voice.js\n/api/voice/interpret/]
+    authMW[[JWT Middleware\nmiddleware/auth.js]]
+    orm[[Sequelize Models\nGame, Tag, Review, User\njoin tables]]
+    seed[[Seed/Data Prep\nconfig/seedGames.js\nmodels/tags.js]]
   end
 
   db[(MariaDB/SQLite)]
@@ -141,7 +141,6 @@ classDiagram
   Game "many" -- "many" Tag : via GameTags
   Game "many" -- "many" User : via UserFollows (follows)
 ```
-
 ## Add your files
 
 - [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
@@ -332,4 +331,5 @@ For open source projects, say how it is licensed.
 If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
 
 test pipeline
+
 
