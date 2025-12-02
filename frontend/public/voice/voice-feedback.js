@@ -42,7 +42,10 @@ export function mountFeedback() {
 
 export function updateStatus(message) {
   const el = document.getElementById(STATUS_ID);
-  if (el) el.textContent = message;
+  if (!el) return;
+  // Avoid spamming the same status string, which can re-trigger screen readers.
+  if (el.textContent === message) return;
+  el.textContent = message;
 }
 
 export function flashInteraction(target) {
