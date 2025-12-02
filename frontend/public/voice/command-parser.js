@@ -3,12 +3,14 @@ import { navigationIntents, settingsIntents } from './intent-registry.js';
 const DEFAULT_WAKE_WORD = 'hey platform';
 const SETTINGS_KEY = 'appSettings';
 const ratingWords = { one: 1, two: 2, three: 3, four: 4, five: 5 };
+const normaliseTag = (text = '') => text.trim().replace(/\b\w/g, (c) => c.toUpperCase());
 
 const navigation = [
   [/^go( to)? home$/, () => ({ type: 'navigate', target: 'home' })],
   [/^(open )?(filters|filter panel)$/, () => ({ type: 'ui', target: 'filters', action: 'open' })],
   [/^(open )?favourites?$/, () => ({ type: 'navigate', target: 'favourites' })],
   [/^(go to|open) search$/, () => ({ type: 'navigate', target: 'search' })],
+  [/^(go to|open) profile$/, () => ({ type: 'navigate', target: 'profile' })],
   [/^(go to|open|show) login$/, () => ({ type: 'navigate', target: 'login' })],
   [/^(go to|open|show) (sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
   [/^next page$/, () => ({ type: 'navigate', target: 'next-page' })],
@@ -402,6 +404,25 @@ export function parseCommand(rawTranscript) {
   const fuzzyRegistry = fuzzyRegistryMatch(command, [...navigationIntents, ...settingsIntents]);
   if (fuzzyRegistry) return fuzzyRegistry;
 
+  const result =
+    match(command, navigation) ||
+    match(command, searches) ||
+    match(command, filters) ||
+    match(command, uiOpeners) ||
+    match(command, sorters) ||
+    match(command, gameActions) ||
+    match(command, gameCards) ||
+    ratingFallback(command) ||
+    basicFallback(command) ||
+    match(command, authActions) ||
+    textSizeFallback(command) ||
+    buttonSizeFallback(command) ||
+    spacingFallback(command) ||
+    wakeWordFallback(command) ||
+    forgivingFilterMatch(command);
+
+  if (result) return { ...result, utterance: command };
+
   const fuzzyIntent = fuzzyPhraseMatch(command, [
     {
       phrases: ['search for', 'search', 'find', 'look for', 'show', 'show me'],
@@ -418,7 +439,9 @@ export function parseCommand(rawTranscript) {
         const parts = remainder
           .split(/(?:\band\b|,)/i)
           .map((p) => p.trim())
-          .filter(Boolean);
+          .filter(Boolean)
+          .map(normaliseTag);
+        if (!parts.length) return { type: 'filter', tags: [] };
         if (parts.length > 1) return { type: 'filter', tags: parts };
         return { type: 'filter', tag: parts[0] };
       }
@@ -474,11 +497,17 @@ export function parseCommand(rawTranscript) {
     },
     {
       phrases: ['submit login', 'submit log in', 'submit sign in', 'send login'],
-      build: () => ({ type: 'auth', action: 'submit', form: 'login' })
+      build: (_, cmd) => {
+        if (/\breview\b/.test(cmd)) return null; // avoid hijacking game review submissions
+        return { type: 'auth', action: 'submit', form: 'login' };
+      }
     },
     {
       phrases: ['submit signup', 'submit sign up', 'submit register', 'send sign up'],
-      build: () => ({ type: 'auth', action: 'submit', form: 'signup' })
+      build: (_, cmd) => {
+        if (/\breview\b/.test(cmd)) return null;
+        return { type: 'auth', action: 'submit', form: 'signup' };
+      }
     },
     {
       phrases: [
@@ -498,26 +527,7 @@ export function parseCommand(rawTranscript) {
       }
     }
   ]);
-  if (fuzzyIntent) return { ...fuzzyIntent, utterance: command };
-
-  const result =
-    match(command, navigation) ||
-    match(command, searches) ||
-    match(command, filters) ||
-    match(command, uiOpeners) ||
-    match(command, sorters) ||
-    match(command, gameActions) ||
-    match(command, gameCards) ||
-    ratingFallback(command) ||
-    basicFallback(command) ||
-    match(command, authActions) ||
-    textSizeFallback(command) ||
-    buttonSizeFallback(command) ||
-    spacingFallback(command) ||
-    wakeWordFallback(command) ||
-    forgivingFilterMatch(command);
-
-  return result ? { ...result, utterance: command } : null;
+  return fuzzyIntent ? { ...fuzzyIntent, utterance: command } : null;
 }
 
 export { DEFAULT_WAKE_WORD, getWakeWord };
