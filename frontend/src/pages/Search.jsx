@@ -216,9 +216,11 @@ export default function Search() {
   }, [groups]);
 
   const toggleCategoryOpen = (cat) => {
+    const key = categoryKey(cat);
+    if (!key) return;
     setOpenCategories(prev => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
@@ -250,6 +252,31 @@ export default function Search() {
     const norm = normalizeText(name);
     return tagSynonyms[norm] || name;
   };
+
+  const categorySynonyms = {
+    vision: 'Vision',
+    visual: 'Vision',
+    seeing: 'Vision',
+    hearing: 'Hearing',
+    motor: 'Motor',
+    movement: 'Motor',
+    speech: 'Speech',
+    voice: 'Speech',
+    cognitive: 'Cognitive',
+    cognition: 'Cognitive'
+  };
+
+  const canonicalCategoryName = (name = '') => {
+    const needle = normalizeText(name);
+    const fromGroups = categories.find((c) => {
+      const hay = normalizeText(c);
+      return hay === needle || hay.includes(needle) || needle.includes(hay);
+    });
+    if (fromGroups) return String(fromGroups).trim();
+    return categorySynonyms[needle] || String(name).trim();
+  };
+
+  const categoryKey = (name = '') => normalizeText(canonicalCategoryName(name));
   useEffect(() => {
     const styleId = 'voice-flash-style';
     if (document.getElementById(styleId)) return;
@@ -286,6 +313,45 @@ export default function Search() {
     // Only click if we need to toggle on
     if (!isActive) btn.click();
     focusAndFlash(btn);
+    return true;
+  };
+
+  const setCategoryOpenByVoice = (name, shouldOpen = true) => {
+    const targetCat = canonicalCategoryName(String(name || ''));
+    const key = categoryKey(targetCat);
+    if (!key) return false;
+    const needle = normalizeText(targetCat);
+
+    setOpenCategories(prev => {
+      const next = new Set(prev);
+      if (shouldOpen) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+
+    // Try to click the actual accordion button so ARIA state is accurate.
+    setTimeout(() => {
+      const btnCandidates = [
+        document.querySelector(`[aria-label="${targetCat} dropdown"]`),
+        document.getElementById(`cat-btn-${slugify(targetCat)}`),
+        ...Array.from(document.querySelectorAll('button')).filter((b) => {
+          const label = normalizeText(b.getAttribute('aria-label') || '');
+          const txt = normalizeText(b.textContent || '');
+          return label.includes(needle) || txt.includes(needle);
+        })
+      ].filter(Boolean);
+
+      const btn = btnCandidates[0];
+      if (btn) {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        if (shouldOpen && !expanded) btn.click();
+        if (!shouldOpen && expanded) btn.click();
+        focusAndFlash(btn);
+      }
+    }, 80);
     return true;
   };
 
@@ -426,6 +492,30 @@ export default function Search() {
         filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
+      if (type === 'ui' && detail.target === 'category' && detail.value) {
+        e.preventDefault();
+        const shouldOpen = detail.action !== 'close';
+        setCategoryOpenByVoice(detail.value, shouldOpen);
+        filtersRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (type === 'ui' && detail.target === 'dropdown' && detail.value) {
+        e.preventDefault();
+        const target = normalizeText(detail.value);
+        const select = target.startsWith('sort') ? sortSelectRef.current : genreSelectRef.current;
+        if (select) {
+          select.scrollIntoView({ behavior: settings.reduceMotion ? 'auto' : 'smooth', block: 'center' });
+          focusAndFlash(select);
+          if (detail.action === 'close') {
+            select.blur();
+          } else {
+            select.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+          }
+        }
+        return;
+      }
+
       if (type === 'sort' && detail.value) {
         e.preventDefault();
         setSortByVoice(detail.value);
@@ -447,7 +537,7 @@ export default function Search() {
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);
-  }, [genreOptions, allTags, tagsByCategory]);
+  }, [genreOptions, allTags, tagsByCategory, categories]);
 
   const findGameCardByTitle = (title = '') => {
     const needle = normalizeText(title);
@@ -553,7 +643,7 @@ export default function Search() {
                 <h3 className={`text-sm font-semibold ${subTone}`}>Disability Categories</h3>
                 <div className={`mt-2 grid grid-cols-1 ${spacingGap}`}>
                   {categories.map(cat => {
-                    const isOpen = openCategories.has(cat);
+                    const isOpen = openCategories.has(categoryKey(cat));
                     const slug = slugify(cat);
                     const btnId = `cat-btn-${slug}`;
                     const panelId = `cat-panel-${slug}`;

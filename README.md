@@ -213,8 +213,15 @@ The project includes an accessible Search page to filter games by genre and acce
  - Tests
   - Backend: `npm --prefix backend test` (includes `/api/voice/interpret`)
   - Frontend: `npm --prefix frontend test` (parser, `voiceCommand` dispatch, Search page voice handler integration, plus page tests)
- - Optional AI/LLM
-   - Disabled by default; heuristic only. Ollama env placeholders exist in `backend/.env` (commented). Leave them commented to stay heuristic-only.
+- Optional AI/LLM
+  - Disabled by default; heuristic only. Ollama env placeholders exist in `backend/.env` (commented). Leave them commented to stay heuristic-only.
+
+### Voice command quick reference
+- Wake word: `hey platform` (spelling mode bypasses wake word once started).
+- Navigation: `go to home/search/settings/login/signup/profile`, `back`, `next page`.
+- Search/filter: `search for <text>`, `filter by <tag>`, `reset filters`, `open filters`, `sort by rating/newest/title`.
+- Auth + spelling: `spell email/password/username/login/confirm` to start spelling; say letters/digits or `dot/underscore/dash/space/backspace/clear`; `stop spelling` to exit; submit with `submit login` / `submit signup`.
+- Game actions (on Game page): `write review`, `open reviews`, `set rating <1-5>`, `focus comment`, `comment <text>`, `submit review`, `cancel review`, `follow/unfollow`, `next image/previous image`.
 
 ## Testing
 
