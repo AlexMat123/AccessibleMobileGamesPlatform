@@ -71,6 +71,14 @@ export function interpretTranscript(transcript) {
 
   const stripped = stripFiller(text);
 
+  // add current game to wishlist/favourites (handle before navigation so it doesn't get treated as navigate)
+  const addMatchEarly = stripped.match(/(?:add|save|put)\s+(?:this|the)?\s*(?:game|it)?\s*to\s+(favourites|favorites|wishlist)\b/i);
+  if (addMatchEarly) {
+    const listRaw = addMatchEarly[1].toLowerCase();
+    const action = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
+    return { type: 'game', action, utterance: stripped };
+  }
+
   if (includesAny(stripped, KEYWORDS.reset) && stripped.includes('filter')) {
     return { type: 'reset-filters', utterance: stripped };
   }
@@ -104,6 +112,15 @@ export function interpretTranscript(transcript) {
     const listRaw = removeMatch[2].toLowerCase();
     const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
     return { type: 'library', action: 'remove', list, title, utterance: stripped };
+  }
+
+  // command to move games between lists
+  const moveMatch = stripped.match(/^(?:move|transfer|shift)\s+(.+?)\s+to\s+(favourites|favorites|wishlist)\b/);
+  if (moveMatch) {
+    const title = moveMatch[1].trim();
+    const listRaw = moveMatch[2].toLowerCase();
+    const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
+    return { type: 'library', action: 'move', list, title, utterance: stripped };
   }
 
   // command to apply filters

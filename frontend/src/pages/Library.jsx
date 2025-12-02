@@ -141,6 +141,32 @@ export default function Library() {
         }
         return;
       }
+      // Library operations: move between favourites and wishlist by title
+      if (type === 'library' && detail.action === 'move' && detail.title && detail.list) {
+        const titleNeedle = normalizeText(detail.title);
+        const targetList = detail.list === 'wishlist' ? 'wishlist' : 'favourites';
+        // Try to find in either list
+        const inFav = favourites.find(g => normalizeText(g.title || g.name || '') === titleNeedle || normalizeText(g.title || g.name || '').includes(titleNeedle));
+        const inWl = wishlist.find(g => normalizeText(g.title || g.name || '') === titleNeedle || normalizeText(g.title || g.name || '').includes(titleNeedle));
+        const match = inFav || inWl;
+        if (match) {
+          e.preventDefault?.();
+          // Perform the move immediately
+          if (targetList === 'wishlist') {
+            moveToWishlist(match);
+          } else {
+            moveToFavourites(match);
+          }
+          // Visual feedback: flash if card is present
+          const card = document.querySelector(`[data-voice-title="${match.title || match.name}"]`);
+          focusAndFlash(card);
+        } else {
+          // Not found; optionally switch to likely source tab to help user
+          if (targetList === 'wishlist' && tab !== 'favourites') setTab('favourites');
+          if (targetList === 'favourites' && tab !== 'wishlist') setTab('wishlist');
+        }
+        return;
+      }
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);

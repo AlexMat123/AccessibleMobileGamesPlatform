@@ -54,6 +54,17 @@ function VoiceNavigator() {
         }
         if (target === 'wishlist' || target === 'favourites' || target === 'favorites') {
           e.preventDefault?.();
+          const utter = String(detail.utterance || '');
+          // Detect an add command and dispatch to game first, without navigation
+          const mAdd = utter.match(/^(?:add|save|put)\s+(?:this|the)?\s*(?:game|it)?\s*to\s+(favourites|favorites|wishlist)\b/i);
+          if (mAdd) {
+            const listRaw = mAdd[1].toLowerCase();
+            const action = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
+            const evtAddGame = new CustomEvent('voiceCommand', { detail: { type: 'game', action } });
+            window.dispatchEvent(evtAddGame);
+            return; // do not navigate
+          }
+          // Default behaviour: just navigate and switch tabs, with remove/move bridging
           navigate('/library');
           setTimeout(() => {
             // this prevents duplicate tab switching dispatches
@@ -63,14 +74,24 @@ function VoiceNavigator() {
             const evtTab = new CustomEvent('voiceCommand', { detail: { type: 'navigate', target } });
             window.dispatchEvent(evtTab);
             const utter = String(detail.utterance || '');
-            const m = utter.match(/(?:remove|delete)\s+(.+?)\s+from\s+(favourites|favorites|wishlist)/i);
-            if (m) {
-              const title = m[1].trim();
-              const listRaw = m[2].toLowerCase();
+            // If the original utterance asked to remove/delete, extract title and invoke remove
+            const mRemove = utter.match(/(?:remove|delete)\s+(.+?)\s+from\s+(favourites|favorites|wishlist)/i);
+            if (mRemove) {
+              const title = mRemove[1].trim();
+              const listRaw = mRemove[2].toLowerCase();
               const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
               const evtRemove = new CustomEvent('voiceCommand', { detail: { type: 'library', action: 'remove', list, title } });
               // slight delay to allow Library to render list
               setTimeout(() => window.dispatchEvent(evtRemove), 150);
+            }
+            // If the original utterance asked to move, extract title and target list and invoke move
+            const mMove = utter.match(/(?:move|transfer|shift)\s+(.+?)\s+to\s+(favourites|favorites|wishlist)/i);
+            if (mMove) {
+              const title = mMove[1].trim();
+              const listRaw = mMove[2].toLowerCase();
+              const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
+              const evtMove = new CustomEvent('voiceCommand', { detail: { type: 'library', action: 'move', list, title } });
+              setTimeout(() => window.dispatchEvent(evtMove), 180);
             }
             // clear guard after a short debounce window
             setTimeout(() => { window.__voiceTabSwitching = false; }, 500);

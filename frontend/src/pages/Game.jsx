@@ -303,7 +303,40 @@ export default function Game() {
                     pushToast('Download action not implemented yet');
                     break;
                 case 'wishlist':
-                    pushToast('Wishlist action not implemented yet');
+                    // Add current game to wishlist
+                    e.preventDefault?.();
+                    try {
+                        const me = currentUser;
+                        if (!me || !game) { pushToast('Sign in to use wishlist'); break; }
+                        const key = `wishlist:${me.id}`;
+                        const raw = localStorage.getItem(key);
+                        const ids = raw ? JSON.parse(raw) : [];
+                        const exists = ids.some((i) => (i.id ?? i) === game.id);
+                        const idItem = game.id;
+                        const next = exists ? ids : [...ids, idItem];
+                        localStorage.setItem(key, JSON.stringify(next));
+                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+                        pushToast(exists ? 'Already in wishlist' : 'Added to wishlist');
+                        focusAndFlash(document.body);
+                    } catch { /* ignore */ }
+                    break;
+                case 'favourites':
+                    // Add current game to favourites
+                    e.preventDefault?.();
+                    try {
+                        const me = currentUser;
+                        if (!me || !game) { pushToast('Sign in to use favourites'); break; }
+                        const key = `favourites:${me.id}`;
+                        const raw = localStorage.getItem(key);
+                        const ids = raw ? JSON.parse(raw) : [];
+                        const exists = ids.some((i) => (i.id ?? i) === game.id);
+                        const idItem = game.id;
+                        const next = exists ? ids : [...ids, idItem];
+                        localStorage.setItem(key, JSON.stringify(next));
+                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+                        pushToast(exists ? 'Already in favourites' : 'Added to favourites');
+                        focusAndFlash(document.body);
+                    } catch { /* ignore */ }
                     break;
                 case 'report':
                     pushToast('Report action not implemented yet');
@@ -368,7 +401,7 @@ export default function Game() {
         };
         window.addEventListener('voiceCommand', onVoice);
         return () => window.removeEventListener('voiceCommand', onVoice);
-    }, []);
+    }, [currentUser, game]);
 
     const openReviewModal = (opts = {}) => {
         const preserve = opts.preserve === true;
