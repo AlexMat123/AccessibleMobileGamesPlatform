@@ -22,24 +22,16 @@ test:
 
 docker-build:
   stage: docker
-  image: docker:24.0.7
-  services:
-    # Rootless DinD to avoid needing privileged mode on shared runners
-    - name: docker:24.0.7-dind-rootless
-      command: ["--tls=false"]
-      alias: docker
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   rules:
     - if: $CI_COMMIT_BRANCH
+  variables:
+    DOCKER_CONFIG: /kaniko/.docker
   before_script:
-    - docker version
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
   script:
-    - docker build -f backend.Dockerfile -t "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/backend:latest" .
-    - docker build -f frontend.Dockerfile --build-arg VITE_API_BASE=${FRONTEND_API_BASE:-http://backend:5000/api} -t "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA" -t "$CI_REGISTRY_IMAGE/frontend:latest" .
-    - docker push "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA"
-    - docker push "$CI_REGISTRY_IMAGE/backend:latest"
-    - docker push "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA"
-    - docker push "$CI_REGISTRY_IMAGE/frontend:latest"
+    - /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile backend.Dockerfile --destination "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHA" --destination "$CI_REGISTRY_IMAGE/backend:latest"
+    - /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile frontend.Dockerfile --build-arg VITE_API_BASE=${FRONTEND_API_BASE:-http://backend:5000/api} --destination "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHA" --destination "$CI_REGISTRY_IMAGE/frontend:latest"
