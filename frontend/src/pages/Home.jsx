@@ -409,8 +409,6 @@ export default function Home() {
               >
                 {commandsOpen ? "Hide voice commands" : "Show voice commands"}
               </button>
-              <a className={`rounded-lg px-4 py-2 text-sm font-semibold ${controlTone}`} href="/search">Search games</a>
-              <a className={`rounded-lg px-4 py-2 text-sm font-semibold ${controlTone}`} href="/settings">Settings</a>
             </div>
           </div>
           {commandsOpen && (

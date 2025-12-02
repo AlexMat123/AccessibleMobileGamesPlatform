@@ -49,6 +49,9 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     const target = normalize(wakeWord);
     if (!target) return false;
     if (norm.includes(target)) return true;
+    // Also tolerate leading "platform" without the "hey" prefix.
+    const targetTail = target.split(' ').slice(1).join(' ').trim();
+    if (targetTail && norm.startsWith(targetTail)) return true;
     const tolerance = Math.max(1, Math.ceil(target.length * WAKE_TOLERANCE_RATIO));
     const window = target.length + 2;
     for (let i = 0; i <= Math.max(0, norm.length - target.length); i++) {
