@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fireEvent } from '@testing-library/react';
 
 describe('voiceCommand event dispatch/handling', () => {
   let handler;

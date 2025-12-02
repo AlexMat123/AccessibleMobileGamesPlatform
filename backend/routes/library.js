@@ -1,5 +1,5 @@
 import express from 'express';
-import { Op, fn, col, literal } from 'sequelize';
+import { Op, literal } from 'sequelize';
 import { Game, Tag } from '../models/index.js';
 import TAG_GROUPS, { ALL_TAGS } from '../models/tags.js';
 

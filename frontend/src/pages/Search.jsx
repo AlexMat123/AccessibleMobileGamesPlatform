@@ -10,8 +10,8 @@ export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [groups, setGroups] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [, setLoading] = useState(true);
+  const [, setError] = useState('');
 
   const [games, setGames] = useState([]);
   const [gamesLoading, setGamesLoading] = useState(true);
@@ -66,8 +66,7 @@ export default function Search() {
     if (t.size) setSelectedTags(t);
     if (genre) setSelectedGenre(genre);
     if (['relevance','newest','rating','title'].includes(sort)) setSortBy(sort);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   // Load all games
   useEffect(() => {
@@ -537,7 +536,7 @@ export default function Search() {
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);
-  }, [genreOptions, allTags, tagsByCategory, categories]);
+  }, [genreOptions, allTags, tagsByCategory, categories]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const findGameCardByTitle = (title = '') => {
     const needle = normalizeText(title);

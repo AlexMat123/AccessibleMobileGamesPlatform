@@ -37,7 +37,9 @@ export function saveSettings(next = {}) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
     try {
       window.dispatchEvent(new CustomEvent('settings:changed', { detail: merged }));
-    } catch {}
+    } catch (eventErr) {
+      console.warn('[settings] settings:changed dispatch failed', eventErr);
+    }
     return merged;
   } catch (e) {
     console.warn('[settings] failed to save', e);

@@ -8,6 +8,10 @@
     "test:int": "cross-env NODE_OPTIONS=--experimental-vm-modules DB_DIALECT=sqlite DB_STORAGE=:memory: jest tests/games.integration.test.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,json,md}\" --ignore-path ../.prettierignore",
+    "format:check": "prettier --check \"**/*.{js,json,md}\" --ignore-path ../.prettierignore",
     "seed:games": "node backend/config/seedGames.js"
   },
   "keywords": [],
@@ -27,9 +31,14 @@
     "yaml": "^2.8.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.36.0",
     "cross-env": "^7.0.3",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.0.2",
+    "globals": "^16.4.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.10",
+    "prettier": "^3.4.2",
     "supertest": "^6.3.4"
   },
   "jest": {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { loginUser } from '../api';
-import { pushToast } from '../components/ToastHost.jsx';
+import { pushToast } from '../components/toastService.js';
 import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
@@ -104,7 +104,7 @@ export default function Login() {
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applySpelling = (detail) => {
     const normalizeField = (field) => {

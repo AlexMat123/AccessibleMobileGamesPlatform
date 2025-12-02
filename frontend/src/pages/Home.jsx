@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { fetchGames } from "../api";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -122,6 +122,15 @@ export default function Home() {
     (g.tags || []).some((t) => typeof t === "string" && blindTagCandidates.has(t))
   );
 
+  const normalize = (text) => (text || "").toString().toLowerCase().trim();
+  const findGameByTitle = useCallback((title) => {
+    const needle = normalize(title);
+    return games.find((g) => {
+      const hay = normalize(g.title);
+      return hay === needle || hay.includes(needle) || needle.includes(hay);
+    });
+  }, [games]);
+
   useEffect(() => {
     if (!featuredGames.length) return;
     startAutoplay(featuredGames.length);
@@ -149,7 +158,7 @@ export default function Home() {
       node.removeEventListener("focusout", onFocusOut);
       node.removeEventListener("keydown", onKeyDown);
     };
-  }, [featuredGames.length]);
+  }, [featuredGames.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onVoice = (e) => {
@@ -170,7 +179,7 @@ export default function Home() {
     };
     window.addEventListener("voiceCommand", onVoice);
     return () => window.removeEventListener("voiceCommand", onVoice);
-  }, [fg, navigate, games]);
+  }, [fg, navigate, games, findGameByTitle]);
 
   const prevAdv = () =>
     setAdvIndex((i) => (adventureGames.length ? (i - 1 + adventureGames.length) % adventureGames.length : 0));
@@ -210,15 +219,6 @@ export default function Home() {
   const VISIBLE = 5;
   const getWindow = (arr, start, size) =>
     Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
-
-  const normalize = (text) => (text || "").toString().toLowerCase().trim();
-  const findGameByTitle = (title) => {
-    const needle = normalize(title);
-    return games.find((g) => {
-      const hay = normalize(g.title);
-      return hay === needle || hay.includes(needle) || needle.includes(hay);
-    });
-  };
 
   const renderStars = (rating) => {
     const active = "var(--accent)";
@@ -269,7 +269,6 @@ export default function Home() {
   const shellTone = "theme-page";
   const cardTone = "theme-surface border theme-border rounded-2xl shadow-lg";
   const subtleCard = "theme-subtle border theme-border rounded-xl";
-  const controlTone = "theme-surface border theme-border shadow hover:opacity-80";
   const smallMeta = "text-sm theme-muted";
 
   const renderTag = (text, idxKey) => (

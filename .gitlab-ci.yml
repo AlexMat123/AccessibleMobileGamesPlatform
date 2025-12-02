@@ -34,12 +34,22 @@ unit-test-job:   # This job runs in the test stage.
     - sleep 60
     - echo "Code coverage is 90%"
 
-lint-test-job:   # This job also runs in the test stage.
-  stage: test    # It can run at the same time as unit-test-job (in parallel).
+lint:
+  stage: test
+  image: node:20
+  cache:
+    key: npm-cache
+    paths:
+      - node_modules/
+      - backend/node_modules/
+      - frontend/node_modules/
+  before_script:
+    - npm ci
+    - npm ci --prefix backend
+    - npm ci --prefix frontend
   script:
-    - echo "Linting code... This will take about 10 seconds."
-    - sleep 10
-    - echo "No lint issues found."
+    - npm run lint
+    - npm run format:check
 
 openapi-validate:
   stage: test

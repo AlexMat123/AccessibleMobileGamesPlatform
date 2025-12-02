@@ -4,7 +4,7 @@ import { loadSettings, saveSettings, defaultSettings } from '../settings';
 // Simple localStorage stub per test
 beforeEach(() => {
   const store = new Map();
-  global.localStorage = {
+  globalThis.localStorage = {
     getItem: (key) => store.has(key) ? store.get(key) : null,
     setItem: (key, value) => store.set(key, String(value)),
     removeItem: (key) => store.delete(key),

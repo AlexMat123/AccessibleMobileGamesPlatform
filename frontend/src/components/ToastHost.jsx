@@ -1,22 +1,15 @@
 import { useEffect, useState } from 'react';
-
-let pushToastExternal;
-
-export function pushToast(message) {
-  if (pushToastExternal) pushToastExternal(message);
-}
+import { registerToast, resetToast } from './toastService';
 
 export default function ToastHost() {
   const [msg, setMsg] = useState(null);
 
   useEffect(() => {
-    pushToastExternal = (m) => {
+    registerToast((m) => {
       setMsg(m);
       setTimeout(() => setMsg(null), 2000);
-    };
-    return () => {
-      pushToastExternal = undefined;
-    };
+    });
+    return resetToast;
   }, []);
 
   if (!msg) return null;

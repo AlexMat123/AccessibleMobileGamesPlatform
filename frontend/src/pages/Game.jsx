@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame } from '../api';
 import { fetchCurrentUser } from '../api';
-import { pushToast } from '../components/ToastHost.jsx';
+import { pushToast } from '../components/toastService.js';
 import { getAccessibilityPreferences } from '../api';
 import { loadSettings } from '../settings';
 
@@ -126,7 +126,7 @@ export default function Game() {
                     const fromBackend = !!prefs?.hearing;
                     setCaptionsEnabled(fromSettings || fromBackend);
                 }
-            } catch (e) {
+            } catch {
                 // in case backend fails, applying local settings
                 try {
                     const local = loadSettings();
@@ -336,7 +336,7 @@ export default function Game() {
                     setReviewComment(detail.value || '');
                     setTimeout(() => focusAndFlash(reviewCommentRef.current), 30);
                     break;
-                case 'submit-review':
+                case 'submit-review': {
                     if (!showReviewModal) openReviewModal({ preserve: true });
                     // Wait for modal to mount and refs to attach before clicking submit
                     const clickSubmit = () => {
@@ -357,6 +357,7 @@ export default function Game() {
                         }, 80);
                     }, 120);
                     break;
+                }
                 case 'cancel-review':
                     if (showReviewModal) closeReviewModal();
                     break;
@@ -380,9 +381,9 @@ export default function Game() {
                     break;
             }
         };
-        window.addEventListener('voiceCommand', onVoice);
-        return () => window.removeEventListener('voiceCommand', onVoice);
-    }, []);
+    window.addEventListener('voiceCommand', onVoice);
+    return () => window.removeEventListener('voiceCommand', onVoice);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const openReviewModal = (opts = {}) => {
         const preserve = opts.preserve === true;

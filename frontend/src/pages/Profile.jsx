@@ -1,7 +1,7 @@
 import profile from '../assets/profile.jpg';
 import { useEffect, useState } from 'react';
 import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword } from '../api';
-import { pushToast } from '../components/ToastHost.jsx';
+import { pushToast } from '../components/toastService.js';
 
 export default function Profile() {
   const [user, setUser] = useState(null);

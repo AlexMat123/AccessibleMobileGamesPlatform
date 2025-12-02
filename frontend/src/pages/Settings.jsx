@@ -84,7 +84,7 @@ const PillOption = ({ label, active, onClick, ariaLabel, styles }) => (
 export default function Settings() {
   const defaults = useMemo(() => loadSettings(), []);
   const [textSize, setTextSize] = useState(defaults.textSize);
-  const [highContrastText, setHighContrastText] = useState(defaults.highContrastText);
+  const [highContrastText] = useState(defaults.highContrastText);
   const [captionsAlways, setCaptionsAlways] = useState(defaults.captionsAlways);
   const [visualAlerts, setVisualAlerts] = useState(defaults.visualAlerts);
   const [buttonSize, setButtonSize] = useState(defaults.buttonSize);

@@ -45,7 +45,7 @@ app.use('/api/voice', voiceRouter);
 // library routes already mounted inside app.js at /api
 
 // Error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
     console.error('[Unhandled]', err);
     res.status(500).json({ error: 'Internal server error', detail: err.message });
 });

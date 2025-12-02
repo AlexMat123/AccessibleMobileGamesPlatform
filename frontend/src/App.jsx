@@ -13,6 +13,7 @@ import Settings from './pages/Settings.jsx';
 import Profile from './pages/Profile.jsx';
 import ReportsPage from './pages/Reports.jsx';
 import { loadSettings } from './settings';
+import { pushToast } from './components/toastService.js';
 
 const applyThemeFromSettings = (settings) => {
   if (typeof document === 'undefined') return;
