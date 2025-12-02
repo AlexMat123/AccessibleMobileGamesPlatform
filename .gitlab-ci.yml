@@ -24,14 +24,13 @@ docker-build:
   stage: docker
   image: docker:24.0.7
   services:
-    - name: docker:24.0.7-dind
+    # Rootless DinD to avoid needing privileged mode on shared runners
+    - name: docker:24.0.7-dind-rootless
       command: ["--tls=false"]
-      privileged: true
       alias: docker
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
   rules:
     - if: $CI_COMMIT_BRANCH
   before_script:
