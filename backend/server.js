@@ -1,5 +1,6 @@
 // backend/server.js
 import dotenv from 'dotenv';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import app from './app.js';
@@ -14,12 +15,27 @@ import { createDatabaseIfNotExists } from './config/createDatabase.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import voiceRouter from './routes/voice.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yaml';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 app.use(cors());
 app.use(express.json());
+
+// Serve OpenAPI docs
+let openapiDoc;
+try {
+    const openapiPath = path.join(__dirname, 'openapi.yaml');
+    const raw = fs.readFileSync(openapiPath, 'utf8');
+    openapiDoc = YAML.parse(raw);
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiDoc));
+    app.get('/openapi.json', (_req, res) => res.json(openapiDoc));
+    console.log('OpenAPI docs available at /api-docs');
+} catch (err) {
+    console.warn('OpenAPI spec not loaded:', err.message);
+}
 
 // Mount API routes (correct signatures)
 app.use('/api/auth', authRouter);

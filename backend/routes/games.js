@@ -1,6 +1,6 @@
 // javascript
 import express from 'express';
-import { Game, Tag, Review, User } from '../models/index.js';
+import { Game, Tag, Review, User, GameReport } from '../models/index.js';
 import authenticateToken  from '../middleware/auth.js';
 import { Op, literal } from 'sequelize';
 import sequelize from '../config/db.js';
@@ -26,41 +26,19 @@ router.get('/', async (_req, res) => {
     }
 });
 
-// GET /api/games/:id
-router.get('/:id', async (req, res) => {
-    try {
-        const id = Number(req.params.id);
-        if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid id' });
-        const game = await Game.findByPk(id, {
-            include: [
-                { model: Tag, as: 'tags', through: { attributes: [] }, attributes: ['id', 'name'] },
-                {
-                    model: Review,
-                    as: 'reviews',
-                    include: [{ model: User, as: 'user', attributes: ['id', 'username'] }]
-                }
-            ]
-        });
-        if (!game) return res.status(404).json({ error: 'Game not found' });
-        res.json(serializeGame(game));
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
-
-router.post("/:id/reviews", authenticateToken, async (req, res) => {
+router.post('/:id/reviews', authenticateToken, async (req, res) => {
     try {
         const gameId = req.params.id;
         const userId = req.user?.id;
 
         if (!userId) {
-            return res.status(401).json({ message: "Not authenticated" });
+            return res.status(401).json({ message: 'Not authenticated' });
         }
 
         const { rating, comment } = req.body;
 
         if (rating == null) {
-            return res.status(400).json({ message: "rating is required" });
+            return res.status(400).json({ message: 'rating is required' });
         }
 
         const review = await Review.create({
@@ -72,8 +50,8 @@ router.post("/:id/reviews", authenticateToken, async (req, res) => {
 
         res.status(201).json(review);
     } catch (e) {
-        console.error("Error creating review:", e);
-        res.status(500).json({ message: "Failed to create review" });
+        console.error('Error creating review:', e);
+        res.status(500).json({ message: 'Failed to create review' });
     }
 });
 
@@ -83,7 +61,6 @@ router.get('/search', async (req, res) => {
     const q = String(req.query.q || '').trim();
     if (q.length < 2) return res.json([]);
 
-    
     const escPrefix = sequelize.escape(`${q}%`);
     const escAnywhere = sequelize.escape(`%${q}%`);
 
@@ -144,26 +121,151 @@ const serializeGame = (g) => {
     };
 };
 
-// GET /api/games
-router.get('/', async (_req, res) => {
+router.get('/:id/reviews', async (req, res) => {
     try {
-        const games = await Game.findAll({
+        const gameId = req.params.id;
+        const reviews = await Review.findAll({
+            where: { gameId },
             include: [
-                { model: Tag, as: 'tags', through: { attributes: [] }, attributes: ['id', 'name'] },
                 {
-                    model: Review,
-                    as: 'reviews',
-                    include: [{ model: User, as: 'user', attributes: ['id', 'username'] }]
-                }
-            ]
+                    model: User,
+                    as: 'user',
+                    attributes: ['id', 'username', 'email'],
+                },
+            ],
+            order: [['createdAt', 'DESC']],
         });
-        res.json(games.map(serializeGame));
+
+        res.json(reviews);
     } catch (e) {
-        res.status(500).json({ error: e.message });
+        console.error('Error fetching reviews:', e);
+        res.status(500).json({ message: 'Failed to fetch reviews' });
     }
 });
 
-// GET /api/games/:id
+router.post('/:id/reports', authenticateToken, async (req, res) => {
+    try {
+        const gameId = Number(req.params.id);
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Not authenticated' });
+        }
+        if (Number.isNaN(gameId)) {
+            return res.status(400).json({ message: 'Invalid game id' });
+        }
+
+        const { message } = req.body || {};
+        if (!message || typeof message !== 'string' || !message.trim()) {
+            return res.status(400).json({ message: 'Message is required' });
+        }
+
+        const game = await Game.findByPk(gameId);
+        if (!game) {
+            return res.status(404).json({ message: 'Game not found' });
+        }
+
+        const cleanMessage = message.trim();
+
+        await GameReport.create({
+            gameId,
+            userId,
+            message: cleanMessage,
+            status: false,
+        });
+
+        // Per your request, just return the status code; no body needed
+        return res.sendStatus(201);
+    } catch (e) {
+        console.error('Error handling game report:', e);
+        return res.status(500).json({ message: 'Failed to submit report' });
+    }
+});
+
+router.get('/reports', authenticateToken, async (req, res) => {
+    try {
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ message: 'Admins only' });
+        }
+        const reports = await GameReport.findAll({
+            order: [['createdAt', 'DESC']],
+            include: [
+                { model: Game, as: 'game', attributes: ['id', 'title'] },
+                { model: User, as: 'user', attributes: ['id'] },
+            ],
+        });
+
+        const output = reports.map((r) => ({
+            id: r.id,
+            message: r.message,
+            status: r.status,
+            createdAt: r.createdAt,
+            userId: r.user ? r.user.id : null,
+            game: r.game ? { id: r.game.id, title: r.game.title } : null,
+        }));
+
+        res.json(output);
+    } catch (e) {
+        console.error('Error fetching game reports:', e);
+        res.status(500).json({ message: 'Failed to load reports' });
+    }
+});
+
+router.patch('/reports/:id', authenticateToken, async (req, res) => {
+    try {
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ message: 'Admins only' });
+        }
+        const reportId = Number(req.params.id);
+        if (Number.isNaN(reportId)) {
+            return res.status(400).json({ message: 'Invalid report id' });
+        }
+
+        const report = await GameReport.findByPk(reportId);
+        if (!report) {
+            return res.status(404).json({ message: 'Report not found' });
+        }
+
+        report.status = true;
+        await report.save();
+
+        return res.sendStatus(204);
+    } catch (e) {
+        console.error('Error updating game report status:', e);
+        return res.status(500).json({ message: 'Failed to update report status' });
+    }
+});
+
+// DELETE /api/games/:id (admin only)
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ message: 'Admins only' });
+        }
+        const id = Number(req.params.id);
+        if (Number.isNaN(id)) {
+            return res.status(400).json({ message: 'Invalid id' });
+        }
+        const game = await Game.findByPk(id);
+        if (!game) {
+            return res.status(404).json({ message: 'Game not found' });
+        }
+
+        // Mark all reports for this game as resolved before deletion
+        await GameReport.update(
+            { status: true },
+            { where: { gameId: id } }
+        );
+
+        await game.destroy();
+        return res.sendStatus(204);
+    } catch (e) {
+        console.error('Error deleting game:', e);
+        return res.status(500).json({ message: 'Failed to delete game' });
+    }
+});
+
+// GET /api/games/:id (must come after more specific routes like /search, /reports, /:id/reviews)
 router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
@@ -182,28 +284,6 @@ router.get('/:id', async (req, res) => {
         res.json(serializeGame(game));
     } catch (e) {
         res.status(500).json({ error: e.message });
-    }
-});
-
-router.get("/:id/reviews", async (req, res) => {
-    try {
-        const gameId = req.params.id;
-        const reviews = await Review.findAll({
-            where: { gameId },
-            include: [
-                {
-                    model: User,
-                    as: "user",
-                    attributes: ["id", "username", "email"],
-                },
-            ],
-            order: [["createdAt", "DESC"]],
-        });
-
-        res.json(reviews);
-    } catch (e) {
-        console.error("Error fetching reviews:", e);
-        res.status(500).json({ message: "Failed to fetch reviews" });
     }
 });
 
