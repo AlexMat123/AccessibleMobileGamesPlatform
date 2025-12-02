@@ -43,10 +43,13 @@ function App() {
     apply();
     const onSettings = (e) => apply(e.detail);
     const onStorage = () => apply();
+    // Support both legacy and current event names.
     window.addEventListener('settings-changed', onSettings);
+    window.addEventListener('settings:changed', onSettings);
     window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('settings-changed', onSettings);
+      window.removeEventListener('settings:changed', onSettings);
       window.removeEventListener('storage', onStorage);
     };
   }, []);
