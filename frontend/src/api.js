@@ -174,3 +174,46 @@ export async function changeUserPassword(userId, currentPassword, newPassword) {
   if (!res.ok) throw new Error((await res.json()).error || 'Failed to change password');
   return res.json();
 }
+
+export async function reportGame(gameId, message) {
+  const res = await fetch(`${API_URL}/games/${gameId}/reports`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ message }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to submit report');
+  }
+
+  // Backend returns only a status code (201) and a non-JSON body string ("Created").
+  // Do not attempt to parse JSON here; just return a simple success indicator.
+  return { ok: true, status: res.status };
+}
+
+export async function getGameReports() {
+  const res = await fetch(`${API_URL}/games/reports`, {
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to load reports');
+  }
+  return res.json();
+}
+
+export async function resolveGameReport(id) {
+  const res = await fetch(`${API_URL}/games/reports/${id}`, {
+    method: 'PATCH',
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to resolve report');
+  }
+  return { ok: true, status: res.status };
+}

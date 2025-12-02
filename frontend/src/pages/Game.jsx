@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames } from '../api';
+import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame } from '../api';
 import { fetchCurrentUser } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 import { getAccessibilityPreferences } from '../api';
@@ -34,6 +34,11 @@ export default function Game() {
     const [isFollowed, setIsFollowed] = useState(false);
     const [followBusy, setFollowBusy] = useState(false);
     const [captionsEnabled, setCaptionsEnabled] = useState(false);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportMessage, setReportMessage] = useState('');
+    const [submittingReport, setSubmittingReport] = useState(false);
+    const [reportError, setReportError] = useState(null);
+    const [reportSubmitError, setReportSubmitError] = useState(null);
     const heroVideoRef = useRef(null);
     const heroTrackRef = useRef(null);
     const followBtnRef = useRef(null);
@@ -41,6 +46,8 @@ export default function Game() {
     const reviewRatingRef = useRef(null);
     const reviewCommentRef = useRef(null);
     const reviewSubmitRef = useRef(null);
+    const reportTextareaRef = useRef(null);
+    const reportSubmitRef = useRef(null);
     const heroRef = useRef(null);
     const addCarouselRef = useRef(null);
 
@@ -306,7 +313,14 @@ export default function Game() {
                     pushToast('Wishlist action not implemented yet');
                     break;
                 case 'report':
-                    pushToast('Report action not implemented yet');
+                    if (!currentUser) {
+                        pushToast('Please log in to report this game');
+                        break;
+                    }
+                    if (!showReportModal) openReportModal();
+                    setTimeout(() => {
+                        focusAndFlash(reportTextareaRef.current || document.querySelector('[data-voice-report-textarea]'));
+                    }, 50);
                     break;
                 case 'set-review-rating':
                     if (!showReviewModal) openReviewModal();
@@ -415,6 +429,56 @@ export default function Game() {
             setSubmittingReview(false);
         }
     }
+
+    const openReportModal = (opts = {}) => {
+        const preserve = opts.preserve === true;
+        if (!currentUser) {
+            pushToast('Please log in to report this game');
+            return;
+        }
+        if (!preserve) {
+            setReportMessage('');
+            setReportError(null);
+            setReportSubmitError(null);
+        }
+        setShowReportModal(true);
+        setTimeout(() => {
+            if (reportTextareaRef.current) {
+                reportTextareaRef.current.focus({ preventScroll: true });
+            }
+        }, 0);
+    };
+
+    const closeReportModal = () => {
+        if (submittingReport) return;
+        setShowReportModal(false);
+    };
+
+    const handleSubmitReport = async (e) => {
+        e.preventDefault();
+        const msg = (reportMessage || '').trim();
+        if (!msg) {
+            setReportError('Please describe why you are reporting this game');
+            if (reportTextareaRef.current) {
+                focusAndFlash(reportTextareaRef.current);
+            }
+            return;
+        }
+        try {
+            setSubmittingReport(true);
+            setReportError(null);
+            setReportSubmitError(null);
+            await reportGame(id, msg);
+            pushToast('Report submitted. Thank you for your feedback.');
+            setShowReportModal(false);
+            setReportMessage('');
+        } catch (err) {
+            console.error(err);
+            setReportSubmitError(err.message || 'Failed to submit report');
+        } finally {
+            setSubmittingReport(false);
+        }
+    };
 
     //Reviews
     const reviews = game?.reviews || [];
@@ -582,7 +646,13 @@ export default function Game() {
                             }}>{followBusy ? (isFollowed ? 'Unfollowing…' : 'Following…') : (isFollowed ? 'Unfollow Game' : 'Follow Game')}</button>
                             <button style={secBtn}>Add to Wishlist</button>
                             {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
-                            <button style={dangerBtn}>Report Game</button>
+                            <button style={dangerBtn} onClick={() => {
+                                if (!currentUser) {
+                                    pushToast('Please log in to report this game');
+                                    return;
+                                }
+                                openReportModal();
+                            }}>Report Game</button>
                         </div>
                         <div style={{ fontSize: 10, marginTop: 12, color: 'var(--text-muted)' }}>Release Date: {date}</div>
                     </div>
@@ -758,6 +828,65 @@ export default function Game() {
                     <Link to="/" style={{ fontSize: 12 }}>← Back to Home</Link>
                 </div>
             </div>
+
+            {/* Report modal */}
+            {showReportModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true">
+                    <div className="theme-surface border theme-border rounded-lg shadow-lg w-full max-w-md mx-4">
+                        <div className="flex justify-between items-center border-b theme-border px-4 py-3">
+                            <h3 className="text-lg font-semibold">Report this game</h3>
+                            <button
+                                onClick={closeReportModal}
+                                className="theme-muted hover:opacity-80"
+                                disabled={submittingReport}
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmitReport} className="px-4 py-4 space-y-4">
+                            {reportSubmitError && (
+                                <p className="text-red-600 text-sm">{reportSubmitError}</p>
+                            )}
+                            <div>
+                                <label className="block text-sm font-medium mb-1" htmlFor="report-message">
+                                    Why are you reporting this game?
+                                </label>
+                                <textarea
+                                    id="report-message"
+                                    ref={reportTextareaRef}
+                                    className="theme-input rounded px-2 py-1 w-full min-h-[100px]"
+                                    value={reportMessage}
+                                    onChange={(e) => setReportMessage(e.target.value)}
+                                    aria-invalid={!!reportError}
+                                    data-voice-report-textarea
+                                />
+                                {reportError && (
+                                    <p className="text-red-600 text-xs mt-1">{reportError}</p>
+                                )}
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    className="px-3 py-1 rounded border theme-border theme-subtle"
+                                    onClick={closeReportModal}
+                                    disabled={submittingReport}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    ref={reportSubmitRef}
+                                    data-voice-report-submit
+                                    className="px-4 py-1 rounded theme-btn-strong hover:opacity-90 disabled:opacity-50"
+                                    disabled={submittingReport}
+                                >
+                                    {submittingReport ? 'Submitting...' : 'Submit report'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -811,7 +940,4 @@ const sectionTitle = {
     margin: '0 0 6px',
     fontSize: 14
 };
-
-
-
 
