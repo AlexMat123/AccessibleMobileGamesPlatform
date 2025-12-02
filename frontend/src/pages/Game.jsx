@@ -580,8 +580,16 @@ export default function Game() {
                                     setFollowBusy(false);
                                 }
                             }}>{followBusy ? (isFollowed ? 'Unfollowing…' : 'Following…') : (isFollowed ? 'Unfollow Game' : 'Follow Game')}</button>
-                            <button style={secBtn}>Add to Wishlist</button>
-                            {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
+                            <button style={secBtn} onClick={() => {
+                                const event = new CustomEvent('wishlist:add', { detail: { gameId: game.id } });
+                                window.dispatchEvent(event);
+                                pushToast('Game added to wishlist');
+                            }}>Add to Wishlist</button>
+                            <button style={secBtn} aria-label="Favourite" onClick={() => {
+                                const event = new CustomEvent('favourite:add', { detail: { gameId: game.id } });
+                                window.dispatchEvent(event);
+                                pushToast('Game added to favourites');
+                            }}>❤</button>
                             <button style={dangerBtn}>Report Game</button>
                         </div>
                         <div style={{ fontSize: 10, marginTop: 12, color: 'var(--text-muted)' }}>Release Date: {date}</div>

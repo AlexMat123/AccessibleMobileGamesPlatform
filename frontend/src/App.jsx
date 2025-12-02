@@ -12,6 +12,7 @@ import ToastHost from './components/ToastHost.jsx';
 import Settings from './pages/Settings.jsx';
 import Profile from './pages/Profile.jsx';
 import { loadSettings } from './settings';
+import Library from './pages/Library.jsx';
 
 const applyThemeFromSettings = (settings) => {
   if (typeof document === 'undefined') return;
@@ -63,6 +64,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/library" element={<Library />} />
       </Routes>
       <ToastHost />
     </Router>
