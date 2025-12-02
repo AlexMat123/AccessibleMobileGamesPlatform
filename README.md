@@ -21,9 +21,11 @@
 - Start both servers together: `npm run dev` (frontend on http://localhost:5173, backend API on http://localhost:5000/api).
 - Or run individually: `npm run dev --prefix backend` and `npm run dev --prefix frontend`.
 - Frontend uses `VITE_API_BASE` to point at the API (defaults to `http://localhost:5000/api`).
+- API docs: start the backend then open http://localhost:5000/api-docs (Swagger UI) or fetch http://localhost:5000/openapi.json. Keep `backend/openapi.yaml` in sync when endpoints change.
 
 ## Test
 
+- OpenAPI spec: `npx swagger-cli validate backend/openapi.yaml` (also runs in CI).
 - Run everything the CI does: `npm test` (backend integration on SQLite + frontend tests).
 - Backend (MariaDB, uses your `.env`): `npm run test:backend`.
 - Backend hermetic/in-memory (SQLite, recommended locally): `npm run test:backend:int`.
@@ -67,6 +69,7 @@
 - [cors](https://github.com/expressjs/cors) + [dotenv](https://github.com/motdotla/dotenv): cross-origin API access from the frontend and environment-based config.
 - [nodemon](https://nodemon.io/) + [concurrently](https://github.com/open-cli-tools/concurrently): faster backend reloads and running frontend/backend dev servers together.
 - [sqlite3](https://www.npmjs.com/package/sqlite3) (dev only): lightweight DB driver for fast, hermetic backend integration tests.
+- [swagger-ui-express](https://www.npmjs.com/package/swagger-ui-express) + [swagger-cli](https://www.npmjs.com/package/swagger-cli): serve `/api-docs` and validate `backend/openapi.yaml` so the documented contract stays in sync with the API.
 
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 

@@ -271,7 +271,7 @@ export default function Settings() {
 
   return (
     <div className={`min-h-screen ${pageTone}`}>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
+      <main className="page-shell max-w-6xl py-8 sm:py-12">
         <header className="space-y-3">
           <p className={`text-sm font-semibold uppercase tracking-wide ${accentTone}`}>Settings</p>
           <h1 className={`text-3xl font-bold sm:text-4xl ${headingTone}`}>Accessibility first</h1>

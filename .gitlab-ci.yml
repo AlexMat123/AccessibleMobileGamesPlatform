@@ -41,6 +41,22 @@ lint-test-job:   # This job also runs in the test stage.
     - sleep 10
     - echo "No lint issues found."
 
+openapi-validate:
+  stage: test
+  image: node:20
+  cache:
+    key: npm-cache
+    paths:
+      - node_modules/
+      - backend/node_modules/
+      - frontend/node_modules/
+  before_script:
+    - npm ci
+    - npm ci --prefix backend
+    - npm ci --prefix frontend
+  script:
+    - npx swagger-cli validate backend/openapi.yaml
+
 deploy-job:      # This job runs in the deploy stage.
   stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
   environment: production

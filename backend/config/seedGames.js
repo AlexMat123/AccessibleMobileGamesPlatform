@@ -70,7 +70,7 @@ const sample = [
     { title: 'Speechless Shores', tags: ['Adventure', 'Speech', 'No Voice Required', 'Hearing', 'No Audio Needed'], platform: 'PC', releaseDate: new Date('2022-12-13'), rating: 4.1, thumbImages: ['/SpeechlessShores1.jpeg', '/SpeechlessShores2.jpeg', '/SpeechlessShores3.jpeg'] },
     { title: 'Hint Harbor', tags: ['Simulation', 'General UI/Gameplay', 'Hints Available', 'Cognitive', 'Clear Instructions'], platform: 'PC & Web', releaseDate: new Date('2023-09-09'), rating: 4.0, thumbImages: ['/HintHarbor1.jpeg', '/HintHarbor2.jpeg', '/HintHarbor3.jpeg'] },
     { title: 'Retro Runner', tags: ['Action', 'Platformer', 'Motor', 'Simple Controls', 'No Precision Needed'], platform: 'Console', releaseDate: new Date('2020-03-03'), rating: 3.6, thumbImages: ['/RetroRunner1.jpeg', '/RetroRunner2.jpeg', '/RetroRunner3.jpeg'] },
-    { title: 'Coach Kids', tags: ['Kids', 'Cognitive', 'Tutorial Mode', 'Clear Instructions', 'General UI/Gameplay', 'Tap Only'], platform: 'Tablet', releaseDate: new Date('2021-08-08'), rating: 4.6, thumbImages: ['/CoachKids1.jpeg', '/CoachKids2.jpeg', '/CoachKids3.jpeg'] },
+    { title: 'Navigator Buddies', tags: ['Kids', 'Cognitive', 'Tutorial Mode', 'Clear Instructions', 'General UI/Gameplay', 'Tap Only'], platform: 'Tablet', releaseDate: new Date('2022-01-15'), rating: 4.6, thumbImages: ['/CoachKids1.jpeg', '/CoachKids2.jpeg', '/CoachKids3.jpeg'] },
     { title: 'Logic Lagoon', tags: ['Puzzle', 'Cognitive', 'Adjustable Difficulty', 'General UI/Gameplay', 'Low Cognitive Load'], platform: 'Web', releaseDate: new Date('2022-02-14'), rating: 4.2, thumbImages: ['/LogicLagoon1.jpeg', '/LogicLagoon2.jpeg', '/LogicLagoon3.jpeg'] }
 
 ];
