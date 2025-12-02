@@ -580,16 +580,38 @@ export default function Game() {
                                     setFollowBusy(false);
                                 }
                             }}>{followBusy ? (isFollowed ? 'Unfollowing…' : 'Following…') : (isFollowed ? 'Unfollow Game' : 'Follow Game')}</button>
-                            <button style={secBtn} onClick={() => {
-                                const event = new CustomEvent('wishlist:add', { detail: { gameId: game.id } });
-                                window.dispatchEvent(event);
-                                pushToast('Game added to wishlist');
-                            }}>Add to Wishlist</button>
-                            <button style={secBtn} aria-label="Favourite" onClick={() => {
-                                const event = new CustomEvent('favourite:add', { detail: { gameId: game.id } });
-                                window.dispatchEvent(event);
-                                pushToast('Game added to favourites');
-                            }}>❤</button>
+                            <button style={secBtn} onClick={async () => {
+                                try {
+                                    if (!currentUser) { pushToast('Log in to add to wishlist'); return; }
+                                    const key = `wishlist:${currentUser.id}`;
+                                    const raw = localStorage.getItem(key);
+                                    const list = raw ? JSON.parse(raw) : [];
+                                    const item = { id: game.id, title: game.name, imageUrl: (Array.isArray(game.images)&&game.images[0])||'/placeholder1.png', rating: game.rating, tags: (game.tags||[]).map(t=>t.name) };
+                                    if (!list.find(g => g.id === item.id)) {
+                                        localStorage.setItem(key, JSON.stringify([...list, item]));
+                                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+                                        pushToast('Added to wishlist');
+                                    } else {
+                                        pushToast('Already in wishlist');
+                                    }
+                                } catch (e) { pushToast('Wishlist error'); }
+                            }}>❤ Wishlist</button>
+                            <button style={secBtn} onClick={async () => {
+                                try {
+                                    if (!currentUser) { pushToast('Log in to add favourites'); return; }
+                                    const key = `favourites:${currentUser.id}`;
+                                    const raw = localStorage.getItem(key);
+                                    const list = raw ? JSON.parse(raw) : [];
+                                    const item = { id: game.id, title: game.name, imageUrl: (Array.isArray(game.images)&&game.images[0])||'/placeholder1.png', rating: game.rating, tags: (game.tags||[]).map(t=>t.name) };
+                                    if (!list.find(g => g.id === item.id)) {
+                                        localStorage.setItem(key, JSON.stringify([...list, item]));
+                                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+                                        pushToast('Added to favourites');
+                                    } else {
+                                        pushToast('Already a favourite');
+                                    }
+                                } catch (e) { pushToast('Favourites error'); }
+                            }}>★ Favourites</button>
                             <button style={dangerBtn}>Report Game</button>
                         </div>
                         <div style={{ fontSize: 10, marginTop: 12, color: 'var(--text-muted)' }}>Release Date: {date}</div>

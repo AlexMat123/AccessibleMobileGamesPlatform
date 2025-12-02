@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { fetchGames } from "../api";
+import { fetchGames, fetchCurrentUser, followGame } from "../api";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Home() {
@@ -376,6 +376,35 @@ export default function Home() {
     </section>
   );
 
+  const addToWishlist = async (game) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { alert('Please log in to use wishlist'); return; }
+      const me = await fetchCurrentUser();
+      const key = `wishlist:${me.id}`;
+      const raw = localStorage.getItem(key);
+      const list = raw ? JSON.parse(raw) : [];
+      if (!list.find((g) => g.id === game.id)) {
+        const item = { id: game.id, title: game.title || game.name, imageUrl: getImageUrl(game), rating: game.rating, tags: game.tags };
+        const next = [...list, item];
+        localStorage.setItem(key, JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+        console.log('Added to wishlist');
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const addToFavourites = async (game) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { alert('Please log in to use favourites'); return; }
+      const me = await fetchCurrentUser();
+      await followGame(me.id, game.id);
+      window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+      console.log('Added to favourites');
+    } catch (e) { console.error(e); }
+  };
+
   return (
     <div className={`home-page ${shellTone} min-h-screen`} ref={homePageRef}>
       <main className="page-shell max-w-6xl space-y-12 pb-16" id="page-content" role="main">
@@ -493,12 +522,14 @@ export default function Home() {
                   <button
                     className="theme-btn rounded-lg px-5 py-2 text-sm sm:text-base font-semibold inline-flex items-center justify-center hover:opacity-90"
                     type="button"
+                    onClick={() => addToWishlist(fg)}
                   >
                     Add to wishlist
                   </button>
                   <button
                     className="theme-subtle border theme-border rounded-lg px-5 py-2 text-sm sm:text-base font-semibold inline-flex items-center justify-center hover:opacity-90"
                     type="button"
+                    onClick={() => addToFavourites(fg)}
                   >
                     Add to favourites
                   </button>

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchCurrentUser, getFollowedGames } from '../api.js';
+import { fetchCurrentUser } from '../api.js';
 
 export default function Library() {
   const [user, setUser] = useState(null);
@@ -24,8 +24,11 @@ export default function Library() {
         }
         const me = await fetchCurrentUser();
         setUser(me);
-        const followed = await getFollowedGames(me.id);
-        setFavourites(followed);
+        // loads both lists from localStorage
+        const favRaw = localStorage.getItem(`favourites:${me.id}`);
+        const wlRaw = localStorage.getItem(`wishlist:${me.id}`);
+        setFavourites(favRaw ? JSON.parse(favRaw) : []);
+        setWishlist(wlRaw ? JSON.parse(wlRaw) : []);
       } catch (e) {
         setError(e.message || 'Failed to load library');
       } finally {
@@ -33,6 +36,72 @@ export default function Library() {
       }
     })();
   }, [navigate]);
+
+  // Refresh when other pages dispatch 
+  useEffect(() => {
+    const handler = (e) => {
+      if (!user) return;
+      const favRaw = localStorage.getItem(`favourites:${user.id}`);
+      const wlRaw = localStorage.getItem(`wishlist:${user.id}`);
+      setFavourites(favRaw ? JSON.parse(favRaw) : []);
+      setWishlist(wlRaw ? JSON.parse(wlRaw) : []);
+    };
+    window.addEventListener('library:updated', handler);
+    return () => window.removeEventListener('library:updated', handler);
+  }, [user]);
+
+  const persist = (key, items) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(items));
+    } catch {
+      /* ignore */
+    }
+  };
+  const saveFavourites = (items) => {
+    if (!user) return;
+    setFavourites(items);
+    persist(`favourites:${user.id}`, items);
+  };
+  const saveWishlist = (items) => {
+    if (!user) return;
+    setWishlist(items);
+    persist(`wishlist:${user.id}`, items);
+  };
+
+  const removeFromWishlist = (gameId) => saveWishlist(wishlist.filter(g => g.id !== gameId));
+  const removeFromFavourites = (gameId) => saveFavourites(favourites.filter(g => g.id !== gameId));
+
+  const moveToWishlist = (game) => {
+    if (!user) return;
+    // removing game from favourites
+    const favNext = favourites.filter(g => g.id !== game.id);
+    // adding to wishlist if not present
+    const wlExists = wishlist.some(g => g.id === game.id);
+    const wlNext = wlExists ? wishlist : [...wishlist, game];
+    saveFavourites(favNext);
+    saveWishlist(wlNext);
+    window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+  };
+
+  const moveToFavourites = (game) => {
+    if (!user) return;
+    // removing from wishlist
+    const wlNext = wishlist.filter(g => g.id !== game.id);
+    // adding to favourites if not present
+    const favExists = favourites.some(g => g.id === game.id);
+    const favNext = favExists ? favourites : [...favourites, game];
+    saveWishlist(wlNext);
+    saveFavourites(favNext);
+    window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+  };
+
+  const getImageUrl = (game) => {
+    if (!game) return '/placeholder1.png';
+    if (game.imageUrl) return game.imageUrl;
+    if (Array.isArray(game.images) && game.images.length) return game.images[0];
+    if (Array.isArray(game.thumbImages) && game.thumbImages.length) return game.thumbImages[0];
+    return '/placeholder1.png';
+  };
 
   const filteredFav = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,11 +121,11 @@ export default function Library() {
 
   const renderCard = (g) => (
     <div key={g.id} className="relative flex items-start gap-4 theme-surface border theme-border rounded-xl p-4">
-      <img src={(Array.isArray(g.images) && g.images[0]) || '/placeholder1.png'} alt={g.title} className="w-28 h-20 object-cover rounded-md" />
+      <img src={getImageUrl(g)} alt={g.title} className="w-28 h-20 object-cover rounded-md" />
       <div className="flex-1">
-        <h3 className="text-lg font-semibold">{g.title}</h3>
-        <p className="text-xs theme-muted">Developer • Category</p>
-        <div className="mt-1 text-yellow-500 text-sm">★★★★★ <span className="theme-muted text-xs">4.5 (1000)</span></div>
+        <h3 className="text-lg font-semibold">{g.title || g.name}</h3>
+        <p className="text-xs theme-muted">{g.developer || 'Developer'} • {g.category || 'Category'}</p>
+        <div className="mt-1 text-yellow-500 text-sm">★★★★★ <span className="theme-muted text-xs">{g.rating?.toFixed?.(1) || '—'} ({g.reviews?.length || 0})</span></div>
         <div className="mt-2 flex gap-2">
           {(g.tags || []).slice(0,3).map((t, i) => (
             <span key={i} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{typeof t === 'string' ? t : t?.name || ''}</span>
@@ -65,11 +134,17 @@ export default function Library() {
       </div>
       <div className="absolute right-3 top-3 flex gap-2">
         {tab === 'favourites' ? (
-          <button className="bg-pink-500 hover:bg-pink-600 text-white px-3 py-1 rounded-md">♥</button>
+          <button onClick={() => moveToWishlist(g)} className="bg-pink-500 hover:bg-pink-600 text-white px-3 py-1 rounded-md" aria-label="Move to wishlist">♥</button>
         ) : (
-          <button className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded-md">✚</button>
+          <button onClick={() => moveToFavourites(g)} className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded-md" aria-label="Move to favourites">★</button>
         )}
-        <button className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded-md">X</button>
+        <button
+          className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded-md"
+          aria-label="Delete"
+          onClick={() => (tab === 'favourites' ? removeFromFavourites(g.id) : removeFromWishlist(g.id))}
+        >
+          X
+        </button>
       </div>
       <div className="absolute right-3 bottom-3">
         <Link to={`/games/${g.id}`} className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded-md text-sm">View Details</Link>
@@ -96,7 +171,7 @@ export default function Library() {
         <div className="space-y-4">
           {(tab === 'favourites' ? filteredFav : filteredWish).map(renderCard)}
           {(tab === 'favourites' ? filteredFav : filteredWish).length === 0 && (
-            <div className="theme-subtle border theme-border rounded-xl p-6 text-center text-sm">No games yet. Browse the <Link to="/" className="text-sky-600">Home</Link> page and add some!</div>
+            <div className="theme-subtle border theme-border rounded-xl p-6 text-center text-sm">No games yet. Browse the <Link to="/Search" className="text-sky-600">Search</Link> page and add some!</div>
           )}
         </div>
       </div>
