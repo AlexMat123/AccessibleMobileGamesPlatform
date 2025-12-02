@@ -50,8 +50,10 @@ export function createVoiceListener({ onTranscript, onStatus }) {
   };
 
   recognition.onresult = (event) => {
-    const transcript = Array.from(event.results)
-      .map((r) => r[0]?.transcript || '')
+    // Only take the most recent phrase, not the entire session backlog.
+    const last = event.results[event.results.length - 1];
+    const transcript = Array.from(last || [])
+      .map((r) => r?.transcript || '')
       .join(' ')
       .trim();
     if (transcript) {

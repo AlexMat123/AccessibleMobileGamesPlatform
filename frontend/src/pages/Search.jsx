@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchGames, fetchTagGroups, searchGames } from '../api';
 import { loadSettings } from '../settings';
 
@@ -431,10 +431,33 @@ export default function Search() {
         setSortByVoice(detail.value);
         return;
       }
+
+      if (type === 'game-card' && detail.title) {
+        e.preventDefault();
+        const card = findGameCardByTitle(detail.title);
+        if (card) {
+          card.scrollIntoView({ behavior: settings.reduceMotion ? 'auto' : 'smooth', block: 'center' });
+          focusAndFlash(card);
+          if (detail.action === 'open') {
+            setTimeout(() => card.click(), 120);
+          }
+        }
+        return;
+      }
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);
   }, [genreOptions, allTags, tagsByCategory]);
+
+  const findGameCardByTitle = (title = '') => {
+    const needle = normalizeText(title);
+    const cards = Array.from(document.querySelectorAll('[data-voice-title]'));
+    return cards.find(card => {
+      const attr = normalizeText(card.getAttribute('data-voice-title') || '');
+      const text = normalizeText(card.textContent || '');
+      return attr === needle || text.includes(needle) || needle.includes(attr);
+    });
+  };
 
   const pageTone = settings.highContrastMode
     ? 'bg-slate-900 text-lime-50'
@@ -475,6 +498,14 @@ export default function Search() {
   const reduceMotion = settings.reduceMotion ? 'motion-reduce:transition-none motion-reduce:animate-none' : '';
   const headingTone = settings.highContrastMode ? 'text-lime-50' : settings.theme === 'dark' ? 'text-slate-100' : 'text-slate-900';
   const subTone = settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-200' : 'text-slate-700';
+  const labelTone = settings.highContrastMode ? 'text-lime-100' : settings.theme === 'dark' ? 'text-slate-100' : 'text-slate-700';
+  const platformTone = settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-lime-300' : 'text-lime-700';
+  const ratingMetaTone = settings.highContrastMode ? 'text-lime-200' : settings.theme === 'dark' ? 'text-slate-300' : 'text-slate-500';
+  const inputTextTone = settings.highContrastMode
+    ? 'text-lime-50 placeholder-lime-200'
+    : settings.theme === 'dark'
+      ? 'text-slate-100 placeholder-slate-300'
+      : 'text-slate-900 placeholder-slate-500';
 
   return (
     <div className={`min-h-screen ${pageTone} ${textSizeClass}`}>
@@ -494,18 +525,11 @@ export default function Search() {
             ref={searchInputRef}
             type="search"
             placeholder="Search games, genres, or accessibility tags..."
-            className={`w-full bg-transparent px-2 py-2 ${textSizeClass} ${pageTone.includes('text-lime') ? 'text-lime-50 placeholder-lime-200' : 'text-slate-900 placeholder-slate-500'} focus:outline-none`}
+            className={`w-full bg-transparent px-2 py-2 ${textSizeClass} ${inputTextTone} focus:outline-none`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search games"
           />
-          <button type="button" aria-label="Voice search" className={`rounded-md p-2 text-slate-500 hover:text-slate-700 ${reduceMotion}`}>
-            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"></path>
-              <path d="M19 11a7 7 0 0 1-14 0"></path>
-              <path d="M12 19v3"></path>
-            </svg>
-          </button>
         </div>
 
         <div className="mt-8 grid grid-cols-12 gap-6">
@@ -547,6 +571,7 @@ export default function Search() {
                           }`}
                           aria-expanded={isOpen}
                           aria-controls={panelId}
+                          aria-label={`${cat} dropdown`}
                           onClick={() => toggleCategoryOpen(cat)}
                         >
                           <span>{cat}</span>
@@ -593,10 +618,11 @@ export default function Search() {
 
               {/* Genre dropdown */}
               <div className={`mt-5 rounded-xl p-3 ${sectionTone}`}>
-                <label htmlFor="genre" className="block text-sm font-semibold text-slate-700">Genre</label>
+                <label htmlFor="genre" className={`block text-sm font-semibold ${labelTone}`}>Genre</label>
                 <select
                   id="genre"
                   ref={genreSelectRef}
+                  aria-label="Genre dropdown"
                   className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
@@ -610,10 +636,11 @@ export default function Search() {
 
               {/* Sort dropdown */}
               <div className={`mt-4 rounded-xl p-3 ${sectionTone}`}>
-                <label htmlFor="sort-by" className="block text-sm font-semibold text-slate-700">Sort By</label>
+                <label htmlFor="sort-by" className={`block text-sm font-semibold ${labelTone}`}>Sort By</label>
                 <select
                   id="sort-by"
                   ref={sortSelectRef}
+                  aria-label="Sort by dropdown"
                   className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -626,7 +653,18 @@ export default function Search() {
               </div>
 
               <div className="mt-6 flex gap-3">
-                <button type="button" className={`flex-1 rounded-lg border border-lime-500 bg-lime-500/10 px-4 py-2 text-sm font-semibold text-lime-800 hover:bg-lime-500/20 ${focusVisible} ${reduceMotion}`}>Apply</button>
+                <button
+                  type="button"
+                  className={`flex-1 rounded-lg border px-4 py-2 text-sm font-semibold ${focusVisible} ${reduceMotion} ${
+                    settings.highContrastMode
+                      ? 'border-lime-400 bg-lime-500/20 text-lime-100 hover:bg-lime-500/30'
+                      : settings.theme === 'dark'
+                        ? 'border-lime-400 bg-lime-400/15 text-lime-100 hover:bg-lime-400/25'
+                        : 'border-lime-500 bg-lime-500/10 text-lime-800 hover:bg-lime-500/20'
+                  }`}
+                >
+                  Apply
+                </button>
                 <button
                   type="button"
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-semibold ${focusVisible} ${settings.highContrastMode ? 'border-lime-400 bg-slate-900 text-lime-100 hover:bg-slate-800' : settings.theme === 'dark' ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'}`}
@@ -662,45 +700,85 @@ export default function Search() {
               <p className="text-slate-700">No games found.</p>
             ) : (
               <ul role="list" aria-live="polite" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {sortedResults.map(g => (
-                  <li key={g.id}>
-                    <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
-                      <div className={`${settings.highContrastMode ? 'bg-slate-800' : 'bg-slate-200'} h-32 w-full`} aria-hidden></div>
-                      <div className="p-4">
-                        <header className="flex items-baseline justify-between gap-3">
-                          <h3 className="text-lg font-bold">{g.title}</h3>
-                          <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
-                        </header>
-                        {Array.isArray(g.tags) && g.tags.length > 0 && (
-                          <div className={`mt-3 flex flex-wrap ${spacingGap}`} aria-label="Accessibility tags">
-                            {g.tags.map(t => {
-                              const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
-                              const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
-                              const activeClasses = settings.highContrastMode
-                                ? 'border border-lime-500 bg-lime-900 text-lime-100'
-                                : settings.theme === 'dark'
-                                  ? 'border border-lime-500 bg-slate-800 text-lime-100'
-                                  : 'border border-lime-600 bg-lime-50 text-lime-900';
-                              const inactiveClasses = settings.highContrastMode
-                                ? 'border border-lime-300 bg-slate-900 text-lime-50'
-                                : settings.theme === 'dark'
-                                  ? 'border border-slate-700 bg-slate-800 text-slate-100'
-                                  : 'border border-slate-300 bg-slate-50 text-slate-700';
-                              return (
-                                <span
-                                  key={`${g.id}-${t}`}
-                                  className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-                                >
-                                  {t}
-                                </span>
-                              );
-                            })}
+                {sortedResults.map(g => {
+                  const tagCount = Array.isArray(g.tags) ? g.tags.length : 0;
+                  const tagNames = tagCount ? g.tags.join(', ') : '';
+                  const tagListId = tagCount ? `game-tags-${g.id}` : undefined;
+                  const accessibleLabel = [
+                    g.title || 'Game',
+                    g.platform || '',
+                    g.rating != null ? `rating ${Number(g.rating).toFixed(1)}` : 'not rated',
+                    tagCount ? `${tagCount} tag${tagCount === 1 ? '' : 's'}` : 'no tags',
+                    tagNames ? `tags: ${tagNames}` : ''
+                  ].filter(Boolean).join(', ');
+                  return (
+                    <li key={g.id}>
+                    <Link
+                      to={`/games/${g.id}`}
+                      data-voice-title={g.title || ''}
+                      className={`block h-full ${focusVisible}`}
+                      aria-label={accessibleLabel}
+                      aria-describedby={tagListId}
+                    >
+                        <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
+                          {g.imageUrl ? (
+                            <img
+                              src={g.imageUrl}
+                              alt={`${g.title} cover`}
+                              className="h-32 w-full object-cover"
+                            />
+                          ) : (
+                            <div className={`${settings.highContrastMode ? 'bg-slate-800' : 'bg-slate-200'} h-32 w-full`} aria-hidden></div>
+                          )}
+                          <div className="p-4 space-y-3">
+                            <header className="flex items-baseline justify-between gap-3">
+                              <h3 className="text-lg font-bold">{g.title}</h3>
+                              {g.platform && (
+                                <span className={`text-xs font-semibold uppercase tracking-wide ${platformTone}`}>{g.platform}</span>
+                              )}
+                            </header>
+                            {g.rating != null && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span aria-hidden className="text-amber-500">&#9733;</span>
+                                <span className="font-semibold">{Number(g.rating).toFixed(1)}</span>
+                                <span className={`text-xs ${ratingMetaTone}`}>(rating)</span>
+                              </div>
+                            )}
+                            {Array.isArray(g.tags) && g.tags.length > 0 && (
+                              <div className={`flex flex-wrap ${spacingGap}`} aria-label="Accessibility tags">
+                                {g.tags.map(t => {
+                                  const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
+                                  const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
+                                  const activeClasses = settings.highContrastMode
+                                    ? 'border border-lime-500 bg-lime-900 text-lime-100'
+                                    : settings.theme === 'dark'
+                                      ? 'border border-lime-500 bg-slate-800 text-lime-100'
+                                      : 'border border-lime-600 bg-lime-50 text-lime-900';
+                                  const inactiveClasses = settings.highContrastMode
+                                    ? 'border border-lime-300 bg-slate-900 text-lime-50'
+                                    : settings.theme === 'dark'
+                                      ? 'border border-slate-700 bg-slate-800 text-slate-100'
+                                      : 'border border-slate-300 bg-slate-50 text-slate-700';
+                                  return (
+                                    <span
+                                      key={`${g.id}-${t}`}
+                                      className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
+                                    >
+                                      {t}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {tagListId && (
+                              <p id={tagListId} className="sr-only">Tags: {tagNames}</p>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </article>
-                  </li>
-                ))}
+                        </article>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>
