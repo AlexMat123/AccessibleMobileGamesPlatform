@@ -3,6 +3,15 @@ import { navigationIntents, settingsIntents } from './intent-registry.js';
 const DEFAULT_WAKE_WORD = 'hey platform';
 const SETTINGS_KEY = 'appSettings';
 const ratingWords = { one: 1, two: 2, three: 3, four: 4, five: 5 };
+const normaliseTag = (text = '') => text.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+const normaliseField = (text = '') => {
+  const f = String(text || '').toLowerCase().replace(/e[-\s]?mail/g, 'email');
+  if (f.includes('user')) return 'username';
+  if (f.includes('identifier') || f.includes('login')) return 'identifier';
+  if (f.includes('email')) return 'email';
+  if (f.includes('confirm')) return 'confirm';
+  return 'password';
+};
 
 const navigation = [
   [/^go( to)? home$/, () => ({ type: 'navigate', target: 'home' })],
@@ -10,6 +19,8 @@ const navigation = [
   [/^(open )?favourites?$/, () => ({ type: 'navigate', target: 'favourites' })],
   [/^(go to|open) search$/, () => ({ type: 'navigate', target: 'search' })],
   [/^(go to|open) profile$/, () => ({ type: 'navigate', target: 'profile' })],
+  [/^(go to|open|show) login$/, () => ({ type: 'navigate', target: 'login' })],
+  [/^(go to|open|show) (sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
   [/^next page$/, () => ({ type: 'navigate', target: 'next-page' })],
   [/^back$/, () => ({ type: 'navigate', target: 'back' })],
   [/^open settings$/, () => ({ type: 'navigate', target: 'settings' })]
@@ -41,6 +52,31 @@ const filters = [
     if (parts.length > 1) return { type: 'filter', tags: parts };
     return { type: 'filter', tag: parts[0] };
   }]
+];
+
+const uiOpeners = [
+  [
+    /^(open|expand)\s+(?:the\s+)?(vision|hearing|motor|speech|cognitive)(?:\s+(?:category|filter|filters|dropdown|panel))?$/i,
+    (cat) => ({
+      type: 'ui',
+      target: 'category',
+      action: 'open',
+      value: String(cat || '').trim()
+    })
+  ],
+  [
+    /^(close|collapse)\s+(?:the\s+)?(vision|hearing|motor|speech|cognitive)(?:\s+(?:category|filter|filters|dropdown|panel))?$/i,
+    (cat) => ({
+      type: 'ui',
+      target: 'category',
+      action: 'close',
+      value: String(cat || '').trim()
+    })
+  ],
+  [/^(open|show)\s+(?:the\s+)?(genre)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'open', value: 'genre' })],
+  [/^(open|show)\s+(?:the\s+)?(sort|sort by)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'open', value: 'sort' })],
+  [/^(close|hide)\s+(?:the\s+)?(genre)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'close', value: 'genre' })],
+  [/^(close|hide)\s+(?:the\s+)?(sort|sort by)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'close', value: 'sort' })]
 ];
 
 const sorters = [
@@ -101,6 +137,53 @@ const gameActions = [
   [/^(previous|prev|back) (image|screenshot|slide)$/, () => ({ type: 'game', action: 'prev-image' })],
   [/^(next|forward) (gallery|carousel)$/, () => ({ type: 'game', action: 'next-additional' })],
   [/^(previous|prev|back) (gallery|carousel)$/, () => ({ type: 'game', action: 'prev-additional' })]
+];
+
+const authActions = [
+  // Navigation aliases
+  [/^(log in|login|sign in)$/, () => ({ type: 'navigate', target: 'login' })],
+  [/^(sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
+  [/^spell (e-?mail|email|password|username|user name|login|identifier)$/, (_, field) => ({
+    type: 'spell',
+    action: 'start',
+    field: normaliseField(field)
+  })],
+  [/^(stop|end|finish) spelling$/, () => ({ type: 'spell', action: 'stop' })],
+  // Focus a specific field before dictation
+  [/^(focus|select|go to)\s+(username|user name)$/, () => ({ type: 'auth', action: 'focus', field: 'username', form: 'signup' })],
+  [/^(focus|select|go to)\s+(email|email address)$/, () => ({ type: 'auth', action: 'focus', field: 'email' })],
+  [/^(focus|select|go to)\s+(identifier|login|login field)$/, () => ({ type: 'auth', action: 'focus', field: 'identifier', form: 'login' })],
+  [/^(focus|select|go to)\s+(password)$/, () => ({ type: 'auth', action: 'focus', field: 'password' })],
+  [/^(focus|select|go to)\s+(confirm|confirm password|repeat password)$/, () => ({
+    type: 'auth',
+    action: 'focus',
+    field: 'confirm',
+    form: 'signup'
+  })],
+  // Dictate into the last focused field
+  [/^(type|enter|dictate|write|fill in)\s+(.+)/, (_, value) => ({ type: 'auth', action: 'type', value: value.trim() })],
+  // Field setting
+  [/^(set|fill|enter|type)\s+(email address|email|username|user name|identifier)\s+(.+)/, (_, field, value) => {
+    const normField = field.includes('user') || field === 'username' ? 'username' : field.includes('identifier') ? 'identifier' : 'email';
+    const form = normField === 'username' ? 'signup' : undefined;
+    return { type: 'auth', action: 'set-field', field: normField === 'email' ? 'email' : normField, value: value.trim(), form };
+  }],
+  [/^(set|fill|enter|type)\s+password\s+(.+)/, (_, value) => ({ type: 'auth', action: 'set-field', field: 'password', value: value.trim() })],
+  [/^(set|fill|enter|type)\s+(confirm|confirm password|repeat password)\s+(.+)/, (_, __, value) => ({
+    type: 'auth',
+    action: 'set-field',
+    field: 'confirm',
+    value: value.trim(),
+    form: 'signup'
+  })],
+  // Submit / clear
+  [/^(submit|send|confirm)\s+(login|log in|sign in)$/, () => ({ type: 'auth', action: 'submit', form: 'login' })],
+  [/^(submit|send|confirm)\s+(sign up|signup|register|registration)$/, () => ({ type: 'auth', action: 'submit', form: 'signup' })],
+  [/^(clear|reset)\s+(form|login|sign up|signup|register)$/, (_, target) => ({
+    type: 'auth',
+    action: 'clear',
+    form: target.includes('login') ? 'login' : target.includes('sign') || target.includes('register') ? 'signup' : undefined
+  })]
 ];
 
 // Forgiving keyword map to recover a filter intent from noisy phrases
@@ -230,6 +313,28 @@ function fuzzyRegistryMatch(command, registry) {
   return best ? best.intent : null;
 }
 
+function fuzzyPhraseMatch(command, entries) {
+  const normalized = command.toLowerCase().trim();
+  let best = null;
+
+  for (const entry of entries) {
+    for (const phrase of entry.phrases) {
+      const target = phrase.toLowerCase().trim();
+      const slice = normalized.slice(0, target.length);
+      const dist = levenshtein(slice, target);
+      const tolerance = Math.max(1, Math.ceil(target.length * (entry.tolerance || 0.25)));
+      if (dist <= tolerance) {
+        if (!best || dist < best.dist) {
+          best = { dist, phrase: target, entry };
+        }
+      }
+    }
+  }
+
+  if (!best) return null;
+  return best.entry.build(best.phrase, command);
+}
+
 function ratingFallback(command) {
   const lowered = command.toLowerCase();
   if (!/\brating\b|\bscore\b/.test(lowered)) return null;
@@ -240,6 +345,18 @@ function ratingFallback(command) {
     const val = ratingWords[word[1]];
     if (val) return { type: 'game', action: 'set-review-rating', value: val };
   }
+  return null;
+}
+
+function basicFallback(command) {
+  const c = command.toLowerCase().trim();
+  if (c === 'next') return { type: 'basic', action: 'next' };
+  if (c === 'previous' || c === 'prev') return { type: 'basic', action: 'previous' };
+  if (c === 'scroll down' || c === 'down') return { type: 'scroll', direction: 'down' };
+  if (c === 'scroll up' || c === 'up') return { type: 'scroll', direction: 'up' };
+  if (c === 'go back') return { type: 'navigate', target: 'back' };
+  if (c === 'open') return { type: 'basic', action: 'open' };
+  if (c === 'select') return { type: 'basic', action: 'select' };
   return null;
 }
 
@@ -291,6 +408,10 @@ export function parseCommand(rawTranscript) {
   if (!command) command = stripWakeWordLoose(rawTranscript);
   if (!command) return null;
 
+  // Handle UI openers early and prefer ones that explicitly mention dropdown/panel/filter.
+  const uiMatchEarly = match(command, uiOpeners);
+  if (uiMatchEarly) return { ...uiMatchEarly, utterance: command };
+
   const registryMatch = matchRegisteredIntents(command, [...navigationIntents, ...settingsIntents]);
   if (registryMatch) return registryMatch;
 
@@ -301,17 +422,126 @@ export function parseCommand(rawTranscript) {
     match(command, navigation) ||
     match(command, searches) ||
     match(command, filters) ||
+    match(command, uiOpeners) ||
     match(command, sorters) ||
     match(command, gameActions) ||
     match(command, gameCards) ||
     ratingFallback(command) ||
+    basicFallback(command) ||
+    match(command, authActions) ||
     textSizeFallback(command) ||
     buttonSizeFallback(command) ||
     spacingFallback(command) ||
     wakeWordFallback(command) ||
     forgivingFilterMatch(command);
 
-  return result ? { ...result, utterance: command } : null;
+  if (result) return { ...result, utterance: command };
+
+  const fuzzyIntent = fuzzyPhraseMatch(command, [
+    {
+      phrases: ['search for', 'search', 'find', 'look for', 'show', 'show me'],
+      build: (phrase, cmd) => {
+        const remainder = cmd.replace(new RegExp(`^${phrase}\\s*`, 'i'), '').trim();
+        return { type: 'search', query: remainder || cmd };
+      }
+    },
+    {
+      phrases: ['filter by', 'apply filter', 'apply filters', 'filter'],
+      build: (phrase, cmd) => {
+        const remainder = cmd.replace(new RegExp(`^${phrase}\\s*`, 'i'), '').trim();
+        if (!remainder) return { type: 'filter', tags: [] };
+        const parts = remainder
+          .split(/(?:\band\b|,)/i)
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .map(normaliseTag);
+        if (!parts.length) return { type: 'filter', tags: [] };
+        if (parts.length > 1) return { type: 'filter', tags: parts };
+        return { type: 'filter', tag: parts[0] };
+      }
+    },
+    {
+      phrases: ['reset filters', 'clear filters', 'reset filter', 'clear filter'],
+      build: () => ({ type: 'reset-filters' })
+    },
+    {
+      phrases: ['scroll down', 'scroll up', 'page down', 'page up'],
+      build: (phrase) => ({ type: 'scroll', direction: phrase.includes('up') ? 'up' : 'down' })
+    },
+    {
+      phrases: ['open filters', 'filter panel', 'filters panel'],
+      build: () => ({ type: 'ui', target: 'filters', action: 'open' })
+    },
+    {
+      phrases: ['focus username', 'focus user name'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'username', form: 'signup' })
+    },
+    {
+      phrases: ['focus email', 'focus email address'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'email' })
+    },
+    {
+      phrases: ['focus login', 'focus identifier'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'identifier', form: 'login' })
+    },
+    {
+      phrases: ['focus password'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'password' })
+    },
+    {
+      phrases: ['focus confirm', 'focus confirm password', 'focus repeat password'],
+      build: () => ({ type: 'auth', action: 'focus', field: 'confirm', form: 'signup' })
+    },
+    {
+      phrases: ['type', 'enter', 'dictate', 'write'],
+      tolerance: 0.3,
+      build: (phrase, cmd) => {
+        const remainder = cmd.replace(new RegExp(`^${phrase}\\s*`, 'i'), '').trim();
+        if (!remainder) return null;
+        return { type: 'auth', action: 'type', value: remainder };
+      }
+    },
+    {
+      phrases: ['log in', 'login', 'sign in'],
+      build: () => ({ type: 'navigate', target: 'login' })
+    },
+    {
+      phrases: ['sign up', 'signup', 'register'],
+      build: () => ({ type: 'navigate', target: 'signup' })
+    },
+    {
+      phrases: ['submit login', 'submit log in', 'submit sign in', 'send login'],
+      build: (_, cmd) => {
+        if (/\breview\b/.test(cmd)) return null; // avoid hijacking game review submissions
+        return { type: 'auth', action: 'submit', form: 'login' };
+      }
+    },
+    {
+      phrases: ['submit signup', 'submit sign up', 'submit register', 'send sign up'],
+      build: (_, cmd) => {
+        if (/\breview\b/.test(cmd)) return null;
+        return { type: 'auth', action: 'submit', form: 'signup' };
+      }
+    },
+    {
+      phrases: [
+        'sort by relevance',
+        'sort by newest',
+        'sort by latest',
+        'sort by rating',
+        'sort by title',
+        'sort by name',
+        'sort by a to z'
+      ],
+      build: (phrase) => {
+        if (phrase.includes('relevance')) return { type: 'sort', value: 'relevance' };
+        if (phrase.includes('newest') || phrase.includes('latest')) return { type: 'sort', value: 'newest' };
+        if (phrase.includes('rating')) return { type: 'sort', value: 'rating' };
+        return { type: 'sort', value: 'title' };
+      }
+    }
+  ]);
+  return fuzzyIntent ? { ...fuzzyIntent, utterance: command } : null;
 }
 
 export { DEFAULT_WAKE_WORD, getWakeWord };
