@@ -16,25 +16,35 @@ before_script:
   - npm install --prefix backend
   - npm install --prefix frontend
 
-## test:
-##   stage: test
-#  tags:
-#    - comsc-ci
-##   tags:
-#     - comsc-ci
-#   script:
-##     # Run backend integration tests (SQLite) and frontend tests
-##     - npm test
+# ---- TEST JOBS ----
+
+test_root:
+  stage: test
+  script:
+    - npm test
+
+test_backend:
+  stage: test
+  script:
+    - cd backend
+    - npm test
+
+test_frontend:
+  stage: test
+  script:
+    - cd frontend
+    - npm test
+
+# ---- OPTIONAL BUILD JOBS (REMOVE IF YOU DON'T NEED THEM YET) ----
+
+build_backend:
+  stage: build
+  script:
+    - cd backend
+    - npm run build
 
 build_frontend:
   stage: build
-  tags:
-    - comsc-ci
   script:
-    # Build the frontend app
-    - npm --prefix frontend run build
-  artifacts:
-    paths:
-      - frontend/dist
-    expire_in: 1 week
-
+    - cd frontend
+    - npm run build
