@@ -721,9 +721,9 @@ export default function Search() {
                       aria-describedby={tagListId}
                     >
                         <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
-                          {g.imageUrl ? (
+                          {Array.isArray(g.images) && g.images.length > 0 ? (
                             <img
-                              src={g.imageUrl}
+                              src={g.images[0]}
                               alt={`${g.title} cover`}
                               className="h-32 w-full object-cover"
                             />

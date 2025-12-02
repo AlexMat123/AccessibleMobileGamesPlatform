@@ -1,278 +1,631 @@
 import React, { useState, useEffect, useRef } from "react";
-import adventure1 from "../assets/adventure1.jpg";
-import adventure2 from "../assets/adventure2.jpg";
-import adventure3 from "../assets/adventure3.jpg";
-import adventure4 from "../assets/adventure4.jpg";
-import adventure5 from "../assets/adventure5.jpg";
-import tetris from "../assets/tetris.jpg";
-import pacman from "../assets/pacman.jpg";
-import sudoku from "../assets/sudoku.jpg";
+import { fetchGames } from "../api";
+import { Link } from "react-router-dom";
+
 
 export default function Home() {
-  // Carousel data
-  const adventureGames = [
-    { id: 1, title: "Adventure 1", developer: "Dev A", category: "Action", rating: 4.3, ratingCount: 210, tags: ["Action","Exploration"], img: adventure1 },
-    { id: 2, title: "Adventure 2", developer: "Dev B", category: "RPG", rating: 4.7, ratingCount: 980, tags: ["RPG","Story"], img: adventure2 },
-    { id: 3, title: "Adventure 3", developer: "Dev C", category: "Puzzle", rating: 3.9, ratingCount: 150, tags: ["Puzzle","Indie"], img: adventure3 },
-    { id: 4, title: "Adventure 4", developer: "Dev D", category: "Survival", rating: 4.1, ratingCount: 340, tags: ["Survival","Craft"], img: adventure4 },
-    { id: 5, title: "Adventure 5", developer: "Dev E", category: "Platformer", rating: 4.5, ratingCount: 605, tags: ["Platform","Retro"], img: adventure5 },
-  ];
+  // [1] State from backend
+  const [games, setGames] = useState([]);
 
-  const blindGames = [
-    { id: 1, title: "Blind 1", developer: "Access Dev", category: "Audio", rating: 4.6, ratingCount: 430, tags: ["Audio","Accessible"], img: adventure1 },
-    { id: 2, title: "Blind 2", developer: "Access Dev", category: "Narrative", rating: 4.2, ratingCount: 210, tags: ["Story","Accessible"], img: adventure2 },
-    { id: 3, title: "Blind 3", developer: "Access Dev", category: "Puzzle", rating: 4.0, ratingCount: 120, tags: ["Puzzle","Audio"], img: adventure3 },
-    { id: 4, title: "Blind 4", developer: "Access Dev", category: "Adventure", rating: 4.4, ratingCount: 300, tags: ["Exploration","Accessible"], img: adventure4 },
-    { id: 5, title: "Blind 5", developer: "Access Dev", category: "Learning", rating: 3.8, ratingCount: 90, tags: ["Education","Audio"], img: adventure5 },
-  ];
-
-  // New featured games carousel data
-  const featuredGames = [
-    {
-      id: 1,
-      title: "Tetris",
-      releaseDate: "06/06/1984",
-      developer: "Alexey Pajitnov",
-      category: "Puzzle",
-      rating: 4.5,
-      ratingCount: 1000,
-      tags: ["Classic", "Puzzle", "Retro"],
-      img: tetris,
-    },
-    {
-      id: 2,
-      title: "Pac-Man",
-      releaseDate: "05/22/1980",
-      developer: "Namco",
-      category: "Arcade",
-      rating: 4.7,
-      ratingCount: 2500,
-      tags: ["Arcade", "Maze", "Classic"],
-      img: pacman,
-    },
-    {
-      id: 3,
-      title: "Sudoku Master",
-      releaseDate: "01/10/2005",
-      developer: "NumberWorks",
-      category: "Logic",
-      rating: 4.2,
-      ratingCount: 540,
-      tags: ["Brain", "Logic", "Numbers"],
-      img: sudoku,
-    },
-  ];
-
-  // Carousel state
+  // [2] Carousel state
   const [advIndex, setAdvIndex] = useState(0);
   const [blindIndex, setBlindIndex] = useState(0);
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [hoveredAdv, setHoveredAdv] = useState(null);
   const [hoveredBlind, setHoveredBlind] = useState(null);
+  const [hoveredVision, setHoveredVision] = useState(null);
+  const [hoveredHearing, setHoveredHearing] = useState(null);
+  const [hoveredMotor, setHoveredMotor] = useState(null);
+  const [hoveredCognitive, setHoveredCognitive] = useState(null);
+
+  // [2b] Accessibility‑matched carousel state
+  const [accessibilityGames, setAccessibilityGames] = useState([]);
+  const [visionIndex, setVisionIndex] = useState(0);
+  const [hearingIndex, setHearingIndex] = useState(0);
+  const [motorIndex, setMotorIndex] = useState(0);
+  const [cognitiveIndex, setCognitiveIndex] = useState(0);
+
+  // [3] Autoplay for featured
   const autoplayRef = useRef(null);
   const AUTOPLAY_MS = 5000;
 
-  const startAutoplay = () => {
+  const startAutoplay = (len) => {
+    if (!len) return;
     if (autoplayRef.current) clearInterval(autoplayRef.current);
     autoplayRef.current = setInterval(() => {
-      setFeaturedIndex(i => (i + 1) % featuredGames.length);
+      setFeaturedIndex((i) => (i + 1) % len);
     }, AUTOPLAY_MS);
   };
 
+  // [4] Load games from backend once
   useEffect(() => {
-    startAutoplay();
-    return () => autoplayRef.current && clearInterval(autoplayRef.current);
+    let alive = true;
+    (async () => {
+      try {
+        const data = await fetchGames();
+        if (!alive) return;
+        setGames(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (!alive) return;
+        // optionally log error; no state to satisfy eslint
+        console.error('Failed to load games', e);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // [4b] Fetch accessibility‑matched recommendations for the current user (if any)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return; // Not logged in; skip fetching recommendations
+
+    // We don't know the user id here, but the backend can infer it from the token via /auth/me
+    (async () => {
+      try {
+        const meRes = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!meRes.ok) return;
+        const me = await meRes.json();
+        if (!me?.id) return;
+
+        const recRes = await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}/users/${me.id}/recommended-games`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!recRes.ok) return;
+        const data = await recRes.json();
+        if (Array.isArray(data)) setAccessibilityGames(data);
+      } catch (err) {
+        console.error('Failed to fetch accessibility games', err);
+      }
+    })();
+  }, []);
+
+  // [5] Derive sections from the loaded games
+
+  // Always make Tetris the first featured game if it exists
+  const tetris = games.find(
+      (g) => g.title && g.title.toLowerCase() === "tetris"
+  );
+
+  const rest = games.filter((g) => g !== tetris);
+
+  // Example: top 3 featured games with Tetris first
+  const featuredGames = [
+    ...(tetris ? [tetris] : []),
+    ...rest
+  ]
+      .slice()
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, 3);
+
+  // Adventure games - by tag or category
+  const adventureGames = games.filter((g) =>
+      (g.category || "").toLowerCase().includes("adventure") ||
+      (g.tags || []).some((t) => typeof t === 'string' && t.toLowerCase() === "adventure")
+  );
+
+  // Blind-friendly: any of these accessibility tags
+  const blindTagCandidates = new Set([
+    "Vision",
+    "Screen Reader Friendly",
+    "High Contrast",
+    "Large Text",
+    "Colourblind Mode",
+    "No Audio Needed",
+    "Captions",
+    "Visual Alerts",
+  ]);
+
+  const blindGames = games.filter((g) =>
+      (g.tags || []).some((t) => typeof t === 'string' && blindTagCandidates.has(t))
+  );
+
+  // [6] Start / restart autoplay when featured set changes
+  useEffect(() => {
+    if (!featuredGames.length) return;
+    startAutoplay(featuredGames.length);
+    return () => {
+      if (autoplayRef.current) clearInterval(autoplayRef.current);
+    };
   }, [featuredGames.length]);
 
-  const prevAdv = () => setAdvIndex((i) => (i - 1 + adventureGames.length) % adventureGames.length);
-  const nextAdv = () => setAdvIndex((i) => (i + 1) % adventureGames.length);
-  const prevBlind = () => setBlindIndex((i) => (i - 1 + blindGames.length) % blindGames.length);
-  const nextBlind = () => setBlindIndex((i) => (i + 1) % blindGames.length);
+  // [7] Carousel helpers
+  const prevAdv = () =>
+      setAdvIndex((i) =>
+          adventureGames.length
+              ? (i - 1 + adventureGames.length) % adventureGames.length
+              : 0
+      );
+  const nextAdv = () =>
+      setAdvIndex((i) =>
+          adventureGames.length ? (i + 1) % adventureGames.length : 0
+      );
+
+  const prevBlind = () =>
+      setBlindIndex((i) =>
+          blindGames.length ? (i - 1 + blindGames.length) % blindGames.length : 0
+      );
+  const nextBlind = () =>
+      setBlindIndex((i) =>
+          blindGames.length ? (i + 1) % blindGames.length : 0
+      );
+
   const prevFeatured = () => {
-    setFeaturedIndex((i) => (i - 1 + featuredGames.length) % featuredGames.length);
-    startAutoplay();
+    if (!featuredGames.length) return;
+    setFeaturedIndex(
+        (i) => (i - 1 + featuredGames.length) % featuredGames.length
+    );
+    startAutoplay(featuredGames.length);
   };
   const nextFeatured = () => {
+    if (!featuredGames.length) return;
     setFeaturedIndex((i) => (i + 1) % featuredGames.length);
-    startAutoplay();
+    startAutoplay(featuredGames.length);
   };
   const goToFeatured = (i) => {
+    if (!featuredGames.length) return;
     setFeaturedIndex(i);
-    startAutoplay();
+    startAutoplay(featuredGames.length);
   };
 
   const VISIBLE = 5;
   const getWindow = (arr, start, size) =>
-    Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
+      Array.from(
+          { length: Math.min(size, arr.length) },
+          (_, k) => arr[(start + k) % arr.length]
+      );
 
-  const fg = featuredGames[featuredIndex];
-  const totalFeatured = featuredGames.length;
+  const renderStars = (rating) =>
+      Array.from({ length: 5 }, (_, i) => (
+          <span
+              key={`star-${i}`}
+              className={i < Math.round(rating) ? "text-yellow-500" : "text-gray-300"}
+          >
+        ★
+      </span>
+      ));
 
-  const renderStars = (rating) => Array.from({ length: 5 }, (_, i) => (
-    <span key={i} className={i < Math.round(rating) ? "text-amber-400" : "theme-muted"}>★</span>
-  ));
+  const getImageUrl = (game) => {
+    if (game && Array.isArray(game.images) && game.images.length > 0) {
+      return game.images[0];
+    }
+    return null; // Return null to show placeholder div instead
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Helper to check if a game has a given high-level accessibility tag,
+  // supporting both string tags and { name } tag objects.
+  const hasTag = (game, tagName) =>
+    (game.tags || []).some((t) => (typeof t === 'string' ? t : t.name) === tagName);
+
+  // Accessibility carousel helpers (per category)
+  const visionRecs = accessibilityGames.filter((g) => hasTag(g, 'Vision'));
+  const hearingRecs = accessibilityGames.filter((g) => hasTag(g, 'Hearing'));
+  const motorRecs = accessibilityGames.filter((g) => hasTag(g, 'Motor'));
+  const cognitiveRecs = accessibilityGames.filter((g) => hasTag(g, 'Cognitive'));
+
+  const prevVision = () => setVisionIndex(i => (i > 0 ? i - 1 : Math.max(0, visionRecs.length - VISIBLE)));
+  const nextVision = () => setVisionIndex(i => (i < Math.max(0, visionRecs.length - VISIBLE) ? i + 1 : 0));
+  const prevHearing = () => setHearingIndex(i => (i > 0 ? i - 1 : Math.max(0, hearingRecs.length - VISIBLE)));
+  const nextHearing = () => setHearingIndex(i => (i < Math.max(0, hearingRecs.length - VISIBLE) ? i + 1 : 0));
+  const prevMotor = () => setMotorIndex(i => (i > 0 ? i - 1 : Math.max(0, motorRecs.length - VISIBLE)));
+  const nextMotor = () => setMotorIndex(i => (i < Math.max(0, motorRecs.length - VISIBLE) ? i + 1 : 0));
+  const prevCognitive = () => setCognitiveIndex(i => (i > 0 ? i - 1 : Math.max(0, cognitiveRecs.length - VISIBLE)));
+  const nextCognitive = () => setCognitiveIndex(i => (i < Math.max(0, cognitiveRecs.length - VISIBLE) ? i + 1 : 0));
+
+  const hasAccessibilityRecs =
+    visionRecs.length > 0 ||
+    hearingRecs.length > 0 ||
+    motorRecs.length > 0 ||
+    cognitiveRecs.length > 0;
+
+  const fg =
+    featuredGames.length > 0
+      ? featuredGames[featuredIndex % featuredGames.length]
+      : null;
+
+  // Temporary debug logging to help inspect recommendation grouping in the browser
+  if (typeof window !== 'undefined') {
+    window.__accessibilityGames = accessibilityGames;
+    window.__visionRecs = visionRecs;
+    window.__cognitiveRecs = cognitiveRecs;
+    // eslint-disable-next-line no-console
+    console.log('DBG accessibilityGames', accessibilityGames);
+    // eslint-disable-next-line no-console
+    console.log('DBG visionRecs', visionRecs.map(g => g.title));
+    // eslint-disable-next-line no-console
+    console.log('DBG cognitiveRecs', cognitiveRecs.map(g => g.title));
+  }
 
   return (
-    <div className="theme-page min-h-screen flex justify-center py-10 lg:pb-20">
-      {/* Main container */}
-      <div className="theme-surface border theme-border rounded-2xl shadow-lg p-8 w-full max-w-6xl">
-        {/* Featured / Newest Games (carousel) */}
-        <section className="mb-10">
-          <h2 className="text-2xl font-bold theme-text mb-6 border-b pb-2 theme-border">Featured / Newest Games</h2>
-          <div className="flex flex-col md:flex-row theme-surface rounded-xl shadow p-6 gap-6 border theme-border">
-            {/* Image + arrows */}
-            <div className="flex flex-col items-center md:w-1/2 gap-4">
-              <div className="flex items-center justify-center gap-4 w-full">
-                <button
-                  aria-label="Previous featured game"
-                  onClick={prevFeatured}
-                  className="w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center"
-                >
-                  ←
-                </button>
-                <img
-                  src={fg.img}
-                  alt={fg.title}
-                  className="rounded-lg shadow-md w-full max-w-md object-cover"
-                />
-                <button
-                  aria-label="Next featured game"
-                  onClick={nextFeatured}
-                  className="w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center"
-                >
-                  →
-                </button>
-              </div>
-              {/* Position indicator */}
-              <div className="w-full space-y-2" aria-live="polite">
-                {/* Dots */}
-                <div className="flex justify-center gap-2 mt-1">
-                  {featuredGames.map((g, i) => (
+      <div className="bg-sky-100 min-h-screen flex justify-center py-10 lg:pb-20">
+        <div className="bg-gray-100 rounded-2xl shadow-lg p-8 w-full max-w-6xl">
+          {/* Featured / Newest Games (carousel) */}
+          {fg && (
+            <section className="mb-10">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Featured / Newest Games</h2>
+              <div className="flex flex-col md:flex-row bg-white rounded-xl shadow p-6 gap-6">
+                {/* Image + arrows */}
+                <div className="flex flex-col items-center md:w-1/2 gap-4">
+                  <div className="flex items-center justify-center gap-4 w-full">
+                    <button aria-label="Previous featured game" onClick={prevFeatured}
+                        className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">
+                      ←
+                    </button>
+                    {getImageUrl(fg) ? (
+                      <img
+                        src={getImageUrl(fg)}
+                        alt={fg.title}
+                        className="rounded-lg shadow-md w-full max-w-md object-cover"
+                      />
+                    ) : (
+                      <div className="bg-slate-200 rounded-lg shadow-md w-full max-w-md h-64 flex items-center justify-center text-slate-400" aria-hidden>
+                        No Image
+                      </div>
+                    )}
                     <button
-                      key={g.id}
-                      aria-label={`Go to ${g.title}`}
-                      onClick={() => goToFeatured(i)}
-                      className="w-3 h-3 rounded-full transition-colors"
-                      style={{ backgroundColor: i === featuredIndex ? 'var(--accent)' : 'var(--border)' }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Dynamic details */}
-            <div className="md:w-1/2 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start flex-wrap gap-2">
-                  <h3 className="text-2xl font-semibold">{fg.title}</h3>
-                  <p className="text-sm theme-muted">Release Date: <span className="font-semibold theme-text">{fg.releaseDate}</span></p>
-                </div>
-                <p className="theme-text mt-2">
-                  <span className="font-semibold">Developer:</span> {fg.developer} • {fg.category}
-                </p>
-                {/* Rating */}
-                <div className="flex items-center mt-3">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <span key={i} className={i < Math.round(fg.rating) ? "text-amber-400" : "text-gray-400"}>★</span>
-                  ))}
-                  <span className="ml-2 theme-muted">{fg.rating.toFixed(1)} ({fg.ratingCount})</span>
-                </div>
-                {/* Tags */}
-                <div className="flex gap-2 mt-4 flex-wrap">
-                  {fg.tags.map((tag) => (
-                    <span key={tag} className="theme-subtle border theme-border px-3 py-1 rounded-full text-sm theme-text">{tag}</span>
-                  ))}
-                </div>
-              </div>
-              {/* Buttons */}
-              <div className="flex gap-3 mt-6">
-                <button className="theme-btn-strong px-5 py-2 rounded-lg font-medium transition hover:opacity-90">View More</button>
-                <button className="theme-btn px-5 py-2 rounded-lg font-medium transition hover:opacity-90">Add to Wishlist</button>
-                <button className="theme-subtle border theme-border px-5 py-2 rounded-lg font-medium transition hover:opacity-90">Add to Favourites</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Adventure Games */}
-        <section className="mb-10">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold theme-text">Adventure Games</h2>
-          </div>
-          <div className="flex items-center justify-center gap-4">
-            <button aria-label="Previous adventure game" onClick={prevAdv} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">←</button>
-            <div className="flex gap-4">
-              {getWindow(adventureGames, advIndex, VISIBLE).map((g) => (
-                <div
-                  key={g.id}
-                  className="relative flex-none w-48 rounded-md shadow-md theme-surface border theme-border overflow-visible hover:shadow-lg transition"
-                  onMouseEnter={() => setHoveredAdv(g.id)}
-                  onMouseLeave={() => setHoveredAdv(null)}
-                >
-                  <div className="overflow-hidden rounded-t-md">
-                    <img
-                      src={g.img}
-                      alt={g.title}
-                      className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                    />
+                        aria-label="Next featured game"
+                        onClick={nextFeatured}
+                        className="w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center"
+                    >
+                      →
+                    </button>
                   </div>
-                  {hoveredAdv === g.id && (
-                    <div className="absolute left-0 top-full mt-1 w-full theme-surface border theme-border shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
-                      <h4 className="text-sm font-semibold theme-text truncate" title={g.title}>{g.title}</h4>
-                      <p className="theme-muted truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
-                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 theme-text text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 theme-muted">({g.ratingCount})</span></div>
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {g.tags.slice(0,3).map(t => (
-                          <span key={t} className="theme-subtle border theme-border px-2 py-[2px] rounded-full text-[10px] leading-none theme-text">{t}</span>
-                        ))}
-                      </div>
+                  {/* Position indicator */}
+                  <div className="w-full space-y-2" aria-live="polite">
+                    {/* Dots */}
+                    <div className="flex justify-center gap-2 mt-1">
+                      {featuredGames.map((g, i) => (
+                        <button
+                          key={g.id}
+                          aria-label={`Go to ${g.title}`}
+                          onClick={() => goToFeatured(i)}
+                          className={`w-3 h-3 rounded-full transition-colors ${i === featuredIndex ? 'bg-sky-600' : 'bg-gray-300 hover:bg-gray-400'}`}
+                        />
+                      ))}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <button aria-label="Next adventure game" onClick={nextAdv} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">→</button>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold theme-text mb-4">Blind-friendly Games</h2>
-          <div className="flex items-center justify-center gap-4">
-            <button aria-label="Previous blind-friendly game" onClick={prevBlind} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">←</button>
-            <div className="flex gap-4">
-              {getWindow(blindGames, blindIndex, VISIBLE).map((g) => (
-                <div
-                  key={g.id}
-                  className="relative flex-none w-48 rounded-md shadow-md theme-surface border theme-border overflow-visible hover:shadow-lg transition"
-                  onMouseEnter={() => setHoveredBlind(g.id)}
-                  onMouseLeave={() => setHoveredBlind(null)}
-                >
-                  <div className="overflow-hidden rounded-t-md">
-                    <img
-                      src={g.img}
-                      alt={g.title}
-                      className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
-                    />
                   </div>
-                  {hoveredBlind === g.id && (
-                    <div className="absolute left-0 top-full mt-1 w-full theme-surface border theme-border shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
-                      <h4 className="text-sm font-semibold theme-text truncate" title={g.title}>{g.title}</h4>
-                      <p className="theme-muted truncate" title={`${g.developer} • ${g.category}`}>{g.developer} • {g.category}</p>
-                      <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 theme-text text-[11px]">{g.rating.toFixed(1)}</span><span className="ml-1 theme-muted">({g.ratingCount})</span></div>
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {g.tags.slice(0,3).map(t => (
-                          <span key={t} className="theme-subtle border theme-border px-2 py-[2px] rounded-full text-[10px] leading-none theme-text">{t}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
-              ))}
-            </div>
-            <button aria-label="Next blind-friendly game" onClick={nextBlind} className="shrink-0 w-10 h-10 rounded-full theme-surface border theme-border shadow hover:opacity-80 flex items-center justify-center">→</button>
-          </div>
-        </section>
+
+                {/* Dynamic details */}
+                <div className="md:w-1/2 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start flex-wrap gap-2">
+                      <h3 className="text-2xl font-semibold">{fg.title}</h3>
+                      <p className="text-sm text-gray-600">Release Date: <span className="font-semibold">{formatDate(fg.releaseDate)}</span></p>
+                    </div>
+                    <p className="text-gray-700 mt-2">
+                      <span className="font-semibold">Developer:</span> {fg.developer || 'N/A'} • {fg.category || 'N/A'}
+                    </p>
+                    {/* Rating */}
+                    <div className="flex items-center mt-3">
+                      {Array.from({ length: 5 }, (_, i) => (
+                          <span key={`featured-star-${i}`} className={i < Math.round(fg.rating) ? "text-yellow-500" : "text-gray-300"}>★</span>
+                      ))}
+                      <span className="ml-2 text-gray-700">{fg.rating?.toFixed(1) || '0.0'} ({fg.reviews?.length || 0})</span>
+                    </div>
+                    {/* Tags */}
+                    <div className="flex gap-2 mt-4 flex-wrap">
+                      {(fg.tags || []).map((tag, idx) => (
+                          <span key={`${fg.id}-tag-${idx}`} className="bg-gray-200 px-3 py-1 rounded-full text-sm text-gray-700">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Buttons */}
+                  <div className="flex gap-3 mt-6">
+                    <Link to={`/games/${fg.id}`} className="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2 rounded-lg font-medium transition">View More</Link>
+                    <button className="bg-orange-400 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-medium transition"> Add to Wishlist</button>
+                    <button className="bg-pink-400 hover:bg-pink-600 text-white px-5 py-2 rounded-lg font-medium transition"> Add to Favourites</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Accessibility-Matched Games by category - replaces default sections when available */}
+          {hasAccessibilityRecs && (
+            <>
+              {visionRecs.length > 0 && (
+                <section className="mb-10">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Recommended: Vision Support</h2>
+                  </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <button aria-label="Previous vision recommendation" onClick={prevVision} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+                    <div className="flex gap-4">
+                      {getWindow(visionRecs, visionIndex, VISIBLE).map((g) => (
+                        <Link
+                          key={g.id}
+                          to={`/games/${g.id}`}
+                          className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                          onMouseEnter={() => setHoveredVision(g.id)}
+                          onMouseLeave={() => setHoveredVision(null)}
+                        >
+                          <div className="overflow-hidden rounded-t-md">
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
+                          </div>
+                          {hoveredVision === g.id && (
+                            <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                              <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                              <p className="text-gray-600 truncate" title={`${g.developer || 'N/A'} • ${g.category || 'N/A'}`}>{g.developer || 'N/A'} • {g.category || 'N/A'}</p>
+                              <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating?.toFixed(1) || '0.0'}</span><span className="ml-1 text-gray-500">({g.reviews?.length || 0})</span></div>
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {(g.tags || []).slice(0,3).map((t, idx) => (
+                                  <span key={`${g.id}-vision-tag-${idx}`} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{typeof t === 'string' ? t : t.name || ''}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                    <button aria-label="Next vision recommendation" onClick={nextVision} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+                  </div>
+                </section>
+              )}
+
+              {hearingRecs.length > 0 && (
+                <section className="mb-10">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Recommended: Hearing Support</h2>
+                  </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <button aria-label="Previous hearing recommendation" onClick={prevHearing} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+                    <div className="flex gap-4">
+                      {getWindow(hearingRecs, hearingIndex, VISIBLE).map((g) => (
+                        <Link
+                          key={g.id}
+                          to={`/games/${g.id}`}
+                          className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                          onMouseEnter={() => setHoveredHearing(g.id)}
+                          onMouseLeave={() => setHoveredHearing(null)}
+                        >
+                          <div className="overflow-hidden rounded-t-md">
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
+                          </div>
+                          {hoveredHearing === g.id && (
+                            <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                              <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                              <p className="text-gray-600 truncate" title={`${g.developer || 'N/A'} • ${g.category || 'N/A'}`}>{g.developer || 'N/A'} • {g.category || 'N/A'}</p>
+                              <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating?.toFixed(1) || '0.0'}</span><span className="ml-1 text-gray-500">({g.reviews?.length || 0})</span></div>
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {(g.tags || []).slice(0,3).map((t, idx) => (
+                                  <span key={`${g.id}-hearing-tag-${idx}`} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{typeof t === 'string' ? t : t.name || ''}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                    <button aria-label="Next hearing recommendation" onClick={nextHearing} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+                  </div>
+                </section>
+              )}
+
+              {motorRecs.length > 0 && (
+                <section className="mb-10">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Recommended: Motor Support</h2>
+                  </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <button aria-label="Previous motor recommendation" onClick={prevMotor} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+                    <div className="flex gap-4">
+                      {getWindow(motorRecs, motorIndex, VISIBLE).map((g) => (
+                        <Link
+                          key={g.id}
+                          to={`/games/${g.id}`}
+                          className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                          onMouseEnter={() => setHoveredMotor(g.id)}
+                          onMouseLeave={() => setHoveredMotor(null)}
+                        >
+                          <div className="overflow-hidden rounded-t-md">
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
+                          </div>
+                          {hoveredMotor === g.id && (
+                            <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                              <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                              <p className="text-gray-600 truncate" title={`${g.developer || 'N/A'} • ${g.category || 'N/A'}`}>{g.developer || 'N/A'} • {g.category || 'N/A'}</p>
+                              <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating?.toFixed(1) || '0.0'}</span><span className="ml-1 text-gray-500">({g.reviews?.length || 0})</span></div>
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {(g.tags || []).slice(0,3).map((t, idx) => (
+                                  <span key={`${g.id}-motor-tag-${idx}`} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{typeof t === 'string' ? t : t.name || ''}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                    <button aria-label="Next motor recommendation" onClick={nextMotor} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+                  </div>
+                </section>
+              )}
+
+              {cognitiveRecs.length > 0 && (
+                <section className="mb-10">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Recommended: Cognitive Support</h2>
+                  </div>
+                  <div className="flex items-center justify-center gap-4">
+                    <button aria-label="Previous cognitive recommendation" onClick={prevCognitive} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+                    <div className="flex gap-4">
+                      {getWindow(cognitiveRecs, cognitiveIndex, VISIBLE).map((g) => (
+                        <Link
+                          key={g.id}
+                          to={`/games/${g.id}`}
+                          className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                          onMouseEnter={() => setHoveredCognitive(g.id)}
+                          onMouseLeave={() => setHoveredCognitive(null)}
+                        >
+                          <div className="overflow-hidden rounded-t-md">
+                            {getImageUrl(g) ? (
+                              <img
+                                src={getImageUrl(g)}
+                                alt={g.title}
+                                className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                              />
+                            ) : (
+                              <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                                No Image
+                              </div>
+                            )}
+                          </div>
+                          {hoveredCognitive === g.id && (
+                            <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                              <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                              <p className="text-gray-600 truncate" title={`${g.developer || 'N/A'} • ${g.category || 'N/A'}`}>{g.developer || 'N/A'} • {g.category || 'N/A'}</p>
+                              <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating?.toFixed(1) || '0.0'}</span><span className="ml-1 text-gray-500">({g.reviews?.length || 0})</span></div>
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {(g.tags || []).slice(0,3).map((t, idx) => (
+                                  <span key={`${g.id}-cognitive-tag-${idx}`} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{typeof t === 'string' ? t : t.name || ''}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                    <button aria-label="Next cognitive recommendation" onClick={nextCognitive} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+
+          {/* Adventure Games - shown only when no accessibility recommendations */}
+          {!hasAccessibilityRecs && (
+            <section className="mb-10">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Adventure Games</h2>
+              </div>
+              <div className="flex items-center justify-center gap-4">
+                <button aria-label="Previous adventure game" onClick={prevAdv} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+                <div className="flex gap-4">
+                  {getWindow(adventureGames, advIndex, VISIBLE).map((g) => (
+                      <Link
+                          key={g.id}
+                          to={`/games/${g.id}`}
+                          className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                          onMouseEnter={() => setHoveredAdv(g.id)}
+                          onMouseLeave={() => setHoveredAdv(null)}
+                      >
+                        <div className="overflow-hidden rounded-t-md">
+                          {getImageUrl(g) ? (
+                            <img
+                              src={getImageUrl(g)}
+                              alt={g.title}
+                              className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                            />
+                          ) : (
+                            <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                              No Image
+                            </div>
+                          )}
+                        </div>
+                        {hoveredAdv === g.id && (
+                            <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                              <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                              <p className="text-gray-600 truncate" title={`${g.developer || 'N/A'} • ${g.category || 'N/A'}`}>{g.developer || 'N/A'} • {g.category || 'N/A'}</p>
+                              <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating?.toFixed(1) || '0.0'}</span><span className="ml-1 text-gray-500">({g.reviews?.length || 0})</span></div>
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {(g.tags || []).slice(0,3).map((t, idx) => (
+                                    <span key={`${g.id}-adv-tag-${idx}`} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{t}</span>
+                                ))}
+                              </div>
+                            </div>
+                        )}
+                      </Link>
+                  ))}
+                </div>
+                <button aria-label="Next adventure game" onClick={nextAdv} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+              </div>
+            </section>
+          )}
+
+          {/* Blind-friendly Games - shown only when no accessibility recommendations */}
+          {!hasAccessibilityRecs && (
+            <section>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Blind-friendly Games</h2>
+              <div className="flex items-center justify-center gap-4">
+                <button aria-label="Previous blind-friendly game" onClick={prevBlind} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">←</button>
+                <div className="flex gap-4">
+                  {getWindow(blindGames, blindIndex, VISIBLE).map((g) => (
+                      <Link
+                          key={g.id}
+                          to={`/games/${g.id}`}
+                          className="relative flex-none w-48 rounded-md shadow-md bg-white overflow-visible hover:shadow-lg transition"
+                          onMouseEnter={() => setHoveredBlind(g.id)}
+                          onMouseLeave={() => setHoveredBlind(null)}
+                      >
+                        <div className="overflow-hidden rounded-t-md">
+                          {getImageUrl(g) ? (
+                            <img
+                              src={getImageUrl(g)}
+                              alt={g.title}
+                              className="w-full h-32 object-cover transition-transform duration-300 hover:scale-110"
+                            />
+                          ) : (
+                            <div className="bg-slate-200 w-full h-32 flex items-center justify-center text-slate-400" aria-hidden>
+                              No Image
+                            </div>
+                          )}
+                        </div>
+                        {hoveredBlind === g.id && (
+                            <div className="absolute left-0 top-full mt-1 w-full bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 space-y-1 text-xs z-20 pointer-events-none">
+                              <h4 className="text-sm font-semibold text-gray-800 truncate" title={g.title}>{g.title}</h4>
+                              <p className="text-gray-600 truncate" title={`${g.developer || 'N/A'} • ${g.category || 'N/A'}`}>{g.developer || 'N/A'} • {g.category || 'N/A'}</p>
+                              <div className="flex items-center text-[10px]">{renderStars(g.rating)}<span className="ml-1 text-gray-700 text-[11px]">{g.rating?.toFixed(1) || '0.0'}</span><span className="ml-1 text-gray-500">({g.reviews?.length || 0})</span></div>
+                              <div className="flex flex-wrap gap-1 pt-1">
+                                {(g.tags || []).slice(0,3).map((t, idx) => (
+                                    <span key={`${g.id}-blind-tag-${idx}`} className="bg-gray-200 text-gray-700 px-2 py-[2px] rounded-full text-[10px] leading-none">{t}</span>
+                                ))}
+                              </div>
+                            </div>
+                        )}
+                      </Link>
+                  ))}
+                </div>
+                <button aria-label="Next blind-friendly game" onClick={nextBlind} className="shrink-0 w-10 h-10 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-50 flex items-center justify-center">→</button>
+              </div>
+            </section>
+          )}
+        </div>
       </div>
-    </div>
   );
 }
