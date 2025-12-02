@@ -18,6 +18,12 @@ To make it easy for you to get started:
 
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
+## Features (quick links)
+
+- [Search Page](#search-page-tags--accessibility): genre/accessibility filters, voice filters.
+- [Voice Control](#voice-control-no-ai-required): wake word + intents.
+- [Settings Page](#settings-page-accessibility--personalization): text size, captions/alerts, buttons/spacing, theme/high-contrast, wake word, reduce motion; voice-driven toggles.
+
 ## Add your files
 
 - [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
@@ -120,6 +126,22 @@ The project includes an accessible Search page to filter games by genre and acce
 - Seeding
   - Seeds are idempotent and cover all tags for realistic testing (`backend/config/seedGames.js`).
 
+## Settings Page (accessibility + personalization)
+
+- Route: `/settings` (frontend). Settings are stored in `localStorage` under `appSettings` (see `frontend/src/settings.js`).
+- Controls: text size (small/medium/large) with live preview; captions always on; visual alerts; button size (normal/large/xlarge); spacing (snug/roomy/airy); wake word toggle + custom word; theme (light/dark); high contrast mode; reduce animation.
+- Accessibility: focus-visible outlines on controls, role="switch" for toggles, labelled inputs, high-contrast friendly tones.
+- Voice intents handled here: set-high-contrast-mode, set-wake-word-enabled, set-wake-word, set-text-size, set-reduce-motion, set-captions, set-visual-alerts, set-button-size, set-spacing. A `voiceCommand` event with one of these actions updates UI and persists the setting.
+- Key files: `frontend/src/pages/Settings.jsx` (UI/logic) and `frontend/src/settings.js` (load/save defaults).
+
+## Settings Page (accessibility + personalization)
+
+- Route: `/settings` (frontend). Settings are stored in `localStorage` under `appSettings` (see `frontend/src/settings.js`).
+- Controls: text size (small/medium/large) with live preview; captions always on; visual alerts; button size (normal/large/xlarge); spacing (snug/roomy/airy); wake word toggle + custom word; theme (light/dark); high contrast mode; reduce animation.
+- Accessibility: focus-visible outlines on controls, role="switch" for toggles, labelled inputs, high-contrast friendly tones.
+- Voice intents handled here: set-high-contrast-mode, set-wake-word-enabled, set-wake-word, set-text-size, set-reduce-motion, set-captions, set-visual-alerts, set-button-size, set-spacing. A `voiceCommand` event with one of these actions updates UI and persists the setting.
+- Key files: `frontend/src/pages/Settings.jsx` (UI/logic) and `frontend/src/settings.js` (load/save defaults).
+
 ## Voice Control (no AI required)
 
 - Wake word & intents
@@ -136,7 +158,7 @@ The project includes an accessible Search page to filter games by genre and acce
   - Console: `interpretTranscriptRemote('hey platform filter by motor').then(console.log);`
   - Dispatch event: `window.dispatchEvent(new CustomEvent('voiceCommand', { detail: { type:'filter', tag:'Puzzle' } }));`
   - Voice: say “Hey Platform, filter by colourblind mode” and watch filters update.
-- Tests
+ - Tests
   - Backend: `npm --prefix backend test` (includes `/api/voice/interpret`)
   - Frontend: `npm --prefix frontend test` (parser, `voiceCommand` dispatch, Search page voice handler integration, plus page tests)
  - Optional AI/LLM

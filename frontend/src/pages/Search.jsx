@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchGames, fetchTagGroups, searchGames } from '../api';
 import { loadSettings } from '../settings';
 
@@ -216,9 +216,11 @@ export default function Search() {
   }, [groups]);
 
   const toggleCategoryOpen = (cat) => {
+    const key = categoryKey(cat);
+    if (!key) return;
     setOpenCategories(prev => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
@@ -250,6 +252,31 @@ export default function Search() {
     const norm = normalizeText(name);
     return tagSynonyms[norm] || name;
   };
+
+  const categorySynonyms = {
+    vision: 'Vision',
+    visual: 'Vision',
+    seeing: 'Vision',
+    hearing: 'Hearing',
+    motor: 'Motor',
+    movement: 'Motor',
+    speech: 'Speech',
+    voice: 'Speech',
+    cognitive: 'Cognitive',
+    cognition: 'Cognitive'
+  };
+
+  const canonicalCategoryName = (name = '') => {
+    const needle = normalizeText(name);
+    const fromGroups = categories.find((c) => {
+      const hay = normalizeText(c);
+      return hay === needle || hay.includes(needle) || needle.includes(hay);
+    });
+    if (fromGroups) return String(fromGroups).trim();
+    return categorySynonyms[needle] || String(name).trim();
+  };
+
+  const categoryKey = (name = '') => normalizeText(canonicalCategoryName(name));
   useEffect(() => {
     const styleId = 'voice-flash-style';
     if (document.getElementById(styleId)) return;
@@ -286,6 +313,45 @@ export default function Search() {
     // Only click if we need to toggle on
     if (!isActive) btn.click();
     focusAndFlash(btn);
+    return true;
+  };
+
+  const setCategoryOpenByVoice = (name, shouldOpen = true) => {
+    const targetCat = canonicalCategoryName(String(name || ''));
+    const key = categoryKey(targetCat);
+    if (!key) return false;
+    const needle = normalizeText(targetCat);
+
+    setOpenCategories(prev => {
+      const next = new Set(prev);
+      if (shouldOpen) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+
+    // Try to click the actual accordion button so ARIA state is accurate.
+    setTimeout(() => {
+      const btnCandidates = [
+        document.querySelector(`[aria-label="${targetCat} dropdown"]`),
+        document.getElementById(`cat-btn-${slugify(targetCat)}`),
+        ...Array.from(document.querySelectorAll('button')).filter((b) => {
+          const label = normalizeText(b.getAttribute('aria-label') || '');
+          const txt = normalizeText(b.textContent || '');
+          return label.includes(needle) || txt.includes(needle);
+        })
+      ].filter(Boolean);
+
+      const btn = btnCandidates[0];
+      if (btn) {
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        if (shouldOpen && !expanded) btn.click();
+        if (!shouldOpen && expanded) btn.click();
+        focusAndFlash(btn);
+      }
+    }, 80);
     return true;
   };
 
@@ -426,15 +492,62 @@ export default function Search() {
         filtersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
 
+      if (type === 'ui' && detail.target === 'category' && detail.value) {
+        e.preventDefault();
+        const shouldOpen = detail.action !== 'close';
+        setCategoryOpenByVoice(detail.value, shouldOpen);
+        filtersRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+
+      if (type === 'ui' && detail.target === 'dropdown' && detail.value) {
+        e.preventDefault();
+        const target = normalizeText(detail.value);
+        const select = target.startsWith('sort') ? sortSelectRef.current : genreSelectRef.current;
+        if (select) {
+          select.scrollIntoView({ behavior: settings.reduceMotion ? 'auto' : 'smooth', block: 'center' });
+          focusAndFlash(select);
+          if (detail.action === 'close') {
+            select.blur();
+          } else {
+            select.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+          }
+        }
+        return;
+      }
+
       if (type === 'sort' && detail.value) {
         e.preventDefault();
         setSortByVoice(detail.value);
         return;
       }
+
+      if (type === 'game-card' && detail.title) {
+        e.preventDefault();
+        const card = findGameCardByTitle(detail.title);
+        if (card) {
+          card.scrollIntoView({ behavior: settings.reduceMotion ? 'auto' : 'smooth', block: 'center' });
+          focusAndFlash(card);
+          if (detail.action === 'open') {
+            setTimeout(() => card.click(), 120);
+          }
+        }
+        return;
+      }
     };
     window.addEventListener('voiceCommand', onVoice);
     return () => window.removeEventListener('voiceCommand', onVoice);
-  }, [genreOptions, allTags, tagsByCategory]);
+  }, [genreOptions, allTags, tagsByCategory, categories]);
+
+  const findGameCardByTitle = (title = '') => {
+    const needle = normalizeText(title);
+    const cards = Array.from(document.querySelectorAll('[data-voice-title]'));
+    return cards.find(card => {
+      const attr = normalizeText(card.getAttribute('data-voice-title') || '');
+      const text = normalizeText(card.textContent || '');
+      return attr === needle || text.includes(needle) || needle.includes(attr);
+    });
+  };
 
   const pageTone = settings.highContrastMode
     ? 'bg-slate-900 text-lime-50'
@@ -529,7 +642,7 @@ export default function Search() {
                 <h3 className={`text-sm font-semibold ${subTone}`}>Disability Categories</h3>
                 <div className={`mt-2 grid grid-cols-1 ${spacingGap}`}>
                   {categories.map(cat => {
-                    const isOpen = openCategories.has(cat);
+                    const isOpen = openCategories.has(categoryKey(cat));
                     const slug = slugify(cat);
                     const btnId = `cat-btn-${slug}`;
                     const panelId = `cat-panel-${slug}`;
@@ -547,6 +660,7 @@ export default function Search() {
                           }`}
                           aria-expanded={isOpen}
                           aria-controls={panelId}
+                          aria-label={`${cat} dropdown`}
                           onClick={() => toggleCategoryOpen(cat)}
                         >
                           <span>{cat}</span>
@@ -597,6 +711,7 @@ export default function Search() {
                 <select
                   id="genre"
                   ref={genreSelectRef}
+                  aria-label="Genre dropdown"
                   className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   value={selectedGenre}
                   onChange={(e) => setSelectedGenre(e.target.value)}
@@ -614,6 +729,7 @@ export default function Search() {
                 <select
                   id="sort-by"
                   ref={sortSelectRef}
+                  aria-label="Sort by dropdown"
                   className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -662,45 +778,72 @@ export default function Search() {
               <p className="text-slate-700">No games found.</p>
             ) : (
               <ul role="list" aria-live="polite" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {sortedResults.map(g => (
-                  <li key={g.id}>
-                    <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
-                      <div className={`${settings.highContrastMode ? 'bg-slate-800' : 'bg-slate-200'} h-32 w-full`} aria-hidden></div>
-                      <div className="p-4">
-                        <header className="flex items-baseline justify-between gap-3">
-                          <h3 className="text-lg font-bold">{g.title}</h3>
-                          <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
-                        </header>
-                        {Array.isArray(g.tags) && g.tags.length > 0 && (
-                          <div className={`mt-3 flex flex-wrap ${spacingGap}`} aria-label="Accessibility tags">
-                            {g.tags.map(t => {
-                              const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
-                              const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
-                              const activeClasses = settings.highContrastMode
-                                ? 'border border-lime-500 bg-lime-900 text-lime-100'
-                                : settings.theme === 'dark'
-                                  ? 'border border-lime-500 bg-slate-800 text-lime-100'
-                                  : 'border border-lime-600 bg-lime-50 text-lime-900';
-                              const inactiveClasses = settings.highContrastMode
-                                ? 'border border-lime-300 bg-slate-900 text-lime-50'
-                                : settings.theme === 'dark'
-                                  ? 'border border-slate-700 bg-slate-800 text-slate-100'
-                                  : 'border border-slate-300 bg-slate-50 text-slate-700';
-                              return (
-                                <span
-                                  key={`${g.id}-${t}`}
-                                  className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-                                >
-                                  {t}
-                                </span>
-                              );
-                            })}
+                {sortedResults.map(g => {
+                  const tagCount = Array.isArray(g.tags) ? g.tags.length : 0;
+                  return (
+                    <li key={g.id}>
+                    <Link
+                      to={`/games/${g.id}`}
+                      data-voice-title={g.title || ''}
+                      className={`block h-full ${focusVisible}`}
+                      aria-label={`${g.title}, rating ${g.rating != null ? Number(g.rating).toFixed(1) : 'not rated'}, ${tagCount} tag${tagCount === 1 ? '' : 's'} available`}
+                    >
+                        <article className={`h-full overflow-hidden rounded-2xl border shadow-sm ${panelTone}`}>
+                          {g.imageUrl ? (
+                            <img
+                              src={g.imageUrl}
+                              alt={`${g.title} cover`}
+                              className="h-32 w-full object-cover"
+                            />
+                          ) : (
+                            <div className={`${settings.highContrastMode ? 'bg-slate-800' : 'bg-slate-200'} h-32 w-full`} aria-hidden></div>
+                          )}
+                          <div className="p-4 space-y-3">
+                            <header className="flex items-baseline justify-between gap-3">
+                              <h3 className="text-lg font-bold">{g.title}</h3>
+                              {g.platform && (
+                                <span className="text-xs font-semibold uppercase tracking-wide text-lime-700">{g.platform}</span>
+                              )}
+                            </header>
+                            {g.rating != null && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span aria-hidden className="text-amber-500">&#9733;</span>
+                                <span className="font-semibold">{Number(g.rating).toFixed(1)}</span>
+                                <span className="text-xs text-slate-500">(rating)</span>
+                              </div>
+                            )}
+                            {Array.isArray(g.tags) && g.tags.length > 0 && (
+                              <div className={`flex flex-wrap ${spacingGap}`} aria-label="Accessibility tags">
+                                {g.tags.map(t => {
+                                  const isActive = selectedTags.has(t) || (!!selectedGenre && selectedGenre === t);
+                                  const baseClasses = 'rounded-full px-3 py-1 text-xs font-semibold';
+                                  const activeClasses = settings.highContrastMode
+                                    ? 'border border-lime-500 bg-lime-900 text-lime-100'
+                                    : settings.theme === 'dark'
+                                      ? 'border border-lime-500 bg-slate-800 text-lime-100'
+                                      : 'border border-lime-600 bg-lime-50 text-lime-900';
+                                  const inactiveClasses = settings.highContrastMode
+                                    ? 'border border-lime-300 bg-slate-900 text-lime-50'
+                                    : settings.theme === 'dark'
+                                      ? 'border border-slate-700 bg-slate-800 text-slate-100'
+                                      : 'border border-slate-300 bg-slate-50 text-slate-700';
+                                  return (
+                                    <span
+                                      key={`${g.id}-${t}`}
+                                      className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
+                                    >
+                                      {t}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </article>
-                  </li>
-                ))}
+                        </article>
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

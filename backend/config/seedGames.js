@@ -121,6 +121,8 @@ export async function seedGames({ reset = false } = {}) {
 
         // Seed games
         for (const g of sample) {
+            const slug = encodeURIComponent(String(g.title || '').toLowerCase().replace(/\\s+/g, '-'));
+            const thumbImages = g.thumbImages ?? [`https://picsum.photos/seed/${slug || 'game'}/640/360`];
             const [game, created] = await Game.findOrCreate({
                 where: { title: g.title },
                 defaults: {
@@ -130,7 +132,7 @@ export async function seedGames({ reset = false } = {}) {
                     releaseDate: g.releaseDate ?? null,
                     rating: g.rating ?? null,
                     description: g.description ?? null,
-                    thumbImages: g.thumbImages ?? []
+                    thumbImages
                 },
                 transaction: t
             });
@@ -139,7 +141,8 @@ export async function seedGames({ reset = false } = {}) {
                 {
                     platform: g.platform,
                     releaseDate: g.releaseDate,
-                    rating: g.rating
+                    rating: g.rating,
+                    thumbImages
                 },
                 { transaction: t }
             );
@@ -148,8 +151,9 @@ export async function seedGames({ reset = false } = {}) {
                 const patch = {};
                 for (const k of ['platform','developer','category','releaseDate','rating','description','thumbImages']) {
                     const incoming = g[k];
-                    if (incoming != null && JSON.stringify(game[k]) !== JSON.stringify(incoming)) {
-                        patch[k] = incoming;
+                    const value = k === 'thumbImages' ? thumbImages : incoming;
+                    if (value != null && JSON.stringify(game[k]) !== JSON.stringify(value)) {
+                        patch[k] = value;
                     }
                 }
                 if (Object.keys(patch).length) {

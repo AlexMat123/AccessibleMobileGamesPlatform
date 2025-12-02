@@ -2,6 +2,7 @@ import { navigationIntents, settingsIntents } from './intent-registry.js';
 
 const DEFAULT_WAKE_WORD = 'hey platform';
 const SETTINGS_KEY = 'appSettings';
+const ratingWords = { one: 1, two: 2, three: 3, four: 4, five: 5 };
 
 const navigation = [
   [/^go( to)? home$/, () => ({ type: 'navigate', target: 'home' })],
@@ -43,6 +44,31 @@ const filters = [
   }]
 ];
 
+const uiOpeners = [
+  [
+    /^(open|expand)\s+(?:the\s+)?(vision|hearing|motor|speech|cognitive)(?:\s+(?:category|filter|filters|dropdown|panel))?$/i,
+    (cat) => ({
+      type: 'ui',
+      target: 'category',
+      action: 'open',
+      value: String(cat || '').trim()
+    })
+  ],
+  [
+    /^(close|collapse)\s+(?:the\s+)?(vision|hearing|motor|speech|cognitive)(?:\s+(?:category|filter|filters|dropdown|panel))?$/i,
+    (cat) => ({
+      type: 'ui',
+      target: 'category',
+      action: 'close',
+      value: String(cat || '').trim()
+    })
+  ],
+  [/^(open|show)\s+(?:the\s+)?(genre)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'open', value: 'genre' })],
+  [/^(open|show)\s+(?:the\s+)?(sort|sort by)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'open', value: 'sort' })],
+  [/^(close|hide)\s+(?:the\s+)?(genre)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'close', value: 'genre' })],
+  [/^(close|hide)\s+(?:the\s+)?(sort|sort by)(?:\s+(?:dropdown|menu|selector))?$/i, () => ({ type: 'ui', target: 'dropdown', action: 'close', value: 'sort' })]
+];
+
 const sorters = [
   [/^sort by (relevance|relevant)$/, () => ({ type: 'sort', value: 'relevance' })],
   [/^sort by (newest|latest)$/, () => ({ type: 'sort', value: 'newest' })],
@@ -50,11 +76,57 @@ const sorters = [
   [/^sort by (title|name|a to z|a-z|alphabetical)$/, () => ({ type: 'sort', value: 'title' })]
 ];
 
+const gameCards = [
+  // e.g., "select game aurora quest", "focus aurora quest"
+  [/^(select|focus) (?:the )?(?:game|title|card )?(.*)/, (title) => {
+    const cleaned = (title || '').trim();
+    if (!cleaned) return null;
+    return { type: 'game-card', action: 'focus', title: cleaned };
+  }],
+  [/^(open|launch|show) (?:the )?(?:game|title|card )?(.*)/, (title) => {
+    const cleaned = (title || '').trim();
+    if (!cleaned) return null;
+    return { type: 'game-card', action: 'open', title: cleaned };
+  }]
+];
+
 const gameActions = [
   [/^add to watchlist$/, () => ({ type: 'game', action: 'add-to-watchlist' })],
   [/^(open )?reviews$/, () => ({ type: 'game', action: 'open-reviews' })],
+  [/^(open|show) (a )?review$/, () => ({ type: 'game', action: 'write-review' })],
   [/^scroll down$/, () => ({ type: 'scroll', direction: 'down' })],
-  [/^scroll up$/, () => ({ type: 'scroll', direction: 'up' })]
+  [/^scroll up$/, () => ({ type: 'scroll', direction: 'up' })],
+  [/^follow( game)?$/, () => ({ type: 'game', action: 'follow' })],
+  [/^unfollow( game)?$/, () => ({ type: 'game', action: 'unfollow' })],
+  [/^(write|add|leave|start) (a )?review$/, () => ({ type: 'game', action: 'write-review' })],
+  [/^(open|show) review$/, () => ({ type: 'game', action: 'write-review' })],
+  [/^(set|change) (a|the )?(rating|score)( to)? ([1-5])(?:\\b.*)?$/, (value) => ({ type: 'game', action: 'set-review-rating', value: Number(value) })],
+  [/^(rating|score) ([1-5])$/, (value) => ({ type: 'game', action: 'set-review-rating', value: Number(value) })],
+  [/^(set|change) (a|the )?(rating|score)( to)? (one|two|three|four|five)(?:\\b.*)?$/, (word) => {
+    const w = (word || '').toLowerCase();
+    const val = ratingWords[w];
+    return val ? { type: 'game', action: 'set-review-rating', value: val } : null;
+  }],
+  [/^(comment|write|type)[, ]+(?:this )?(.+)$/, (text) => {
+    const body = (text || '').trim();
+    if (!body) return null;
+    return { type: 'game', action: 'set-review-comment', value: body };
+  }],
+  [/^(right|write|type) comment[, ]+(?:this )?(.+)$/, (text) => {
+    const body = (text || '').trim();
+    if (!body) return null;
+    return { type: 'game', action: 'set-review-comment', value: body };
+  }],
+  [/^focus (the )?(comment|textarea)$/, () => ({ type: 'game', action: 'focus-review-comment' })],
+  [/^(submit|post) review$/, () => ({ type: 'game', action: 'submit-review' })],
+  [/^(cancel|close) review$/, () => ({ type: 'game', action: 'cancel-review' })],
+  [/^download( game)?$/, () => ({ type: 'game', action: 'download' })],
+  [/^(add to )?wishlist$/, () => ({ type: 'game', action: 'wishlist' })],
+  [/^report( game)?$/, () => ({ type: 'game', action: 'report' })],
+  [/^(next|forward) (image|screenshot|slide)$/, () => ({ type: 'game', action: 'next-image' })],
+  [/^(previous|prev|back) (image|screenshot|slide)$/, () => ({ type: 'game', action: 'prev-image' })],
+  [/^(next|forward) (gallery|carousel)$/, () => ({ type: 'game', action: 'next-additional' })],
+  [/^(previous|prev|back) (gallery|carousel)$/, () => ({ type: 'game', action: 'prev-additional' })]
 ];
 
 const authActions = [
@@ -247,6 +319,31 @@ function fuzzyPhraseMatch(command, entries) {
   return best.entry.build(best.phrase, command);
 }
 
+function ratingFallback(command) {
+  const lowered = command.toLowerCase();
+  if (!/\brating\b|\bscore\b/.test(lowered)) return null;
+  const digit = lowered.match(/\b([1-5])\b/);
+  if (digit) return { type: 'game', action: 'set-review-rating', value: Number(digit[1]) };
+  const word = lowered.match(/\b(one|two|three|four|five)\b/);
+  if (word) {
+    const val = ratingWords[word[1]];
+    if (val) return { type: 'game', action: 'set-review-rating', value: val };
+  }
+  return null;
+}
+
+function basicFallback(command) {
+  const c = command.toLowerCase().trim();
+  if (c === 'next') return { type: 'basic', action: 'next' };
+  if (c === 'previous' || c === 'prev') return { type: 'basic', action: 'previous' };
+  if (c === 'scroll down' || c === 'down') return { type: 'scroll', direction: 'down' };
+  if (c === 'scroll up' || c === 'up') return { type: 'scroll', direction: 'up' };
+  if (c === 'go back') return { type: 'navigate', target: 'back' };
+  if (c === 'open') return { type: 'basic', action: 'open' };
+  if (c === 'select') return { type: 'basic', action: 'select' };
+  return null;
+}
+
 function textSizeFallback(command) {
   // Catch noisy phrases like "can you set text size maybe medium"
   const sizeHit = command.match(/\b(text size|font size).*\b(small|medium|large)\b/);
@@ -294,6 +391,10 @@ export function parseCommand(rawTranscript) {
   let command = stripWakeWord(rawTranscript);
   if (!command) command = stripWakeWordLoose(rawTranscript);
   if (!command) return null;
+
+  // Handle UI openers early and prefer ones that explicitly mention dropdown/panel/filter.
+  const uiMatchEarly = match(command, uiOpeners);
+  if (uiMatchEarly) return { ...uiMatchEarly, utterance: command };
 
   const registryMatch = matchRegisteredIntents(command, [...navigationIntents, ...settingsIntents]);
   if (registryMatch) return registryMatch;
@@ -403,8 +504,12 @@ export function parseCommand(rawTranscript) {
     match(command, navigation) ||
     match(command, searches) ||
     match(command, filters) ||
+    match(command, uiOpeners) ||
     match(command, sorters) ||
     match(command, gameActions) ||
+    match(command, gameCards) ||
+    ratingFallback(command) ||
+    basicFallback(command) ||
     match(command, authActions) ||
     textSizeFallback(command) ||
     buttonSizeFallback(command) ||
