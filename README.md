@@ -2,19 +2,51 @@
 
 
 
-## Getting started
+## Prerequisites
 
-To make it easy for you to get started:
+- Node.js 20+ and npm.
+- MariaDB running locally with a user that can create databases (defaults in `backend/.env`: host 127.0.0.1, port 3306, user `root`, password `comsc`, database `accessible-games`).
+- PowerShell or Cmd on Windows for the helper scripts.
 
-1. (First time) Run one of the helper scripts from the project root:
-   - PowerShell: `./start.ps1`
-   - Cmd: `start.bat`
-   These install root, backend and frontend dependencies and start both servers.
-2. Or manually:
-   - `npm install --prefix backend`
-   - `npm install --prefix frontend`
-   - `npm run start` (runs setup + dev concurrently) or `npm run dev`
-3. Frontend accessible at http://localhost:5173 (default Vite port). Backend runs on its configured port (check `backend/server.js`).
+## Install
+
+1. Install root tooling (concurrently, sqlite for tests): `npm install`
+2. Install backend dependencies: `npm install --prefix backend`
+3. Install frontend dependencies: `npm install --prefix frontend`
+4. One-shot on Windows: run `./start.ps1` (PowerShell) or `start.bat` (Cmd) from the project root to install everything and launch dev servers.
+
+## Run
+
+- Ensure MariaDB is running and credentials in `backend/.env` are correct. The server will create the database if needed and seed sample data on startup.
+- Start both servers together: `npm run dev` (frontend on http://localhost:5173, backend API on http://localhost:5000/api).
+- Or run individually: `npm run dev --prefix backend` and `npm run dev --prefix frontend`.
+- Frontend uses `VITE_API_BASE` to point at the API (defaults to `http://localhost:5000/api`).
+
+## Test
+
+- Run everything the CI does: `npm test` (backend integration on SQLite + frontend tests).
+- Backend (MariaDB, uses your `.env`): `npm run test:backend`.
+- Backend hermetic/in-memory (SQLite, recommended locally): `npm run test:backend:int`.
+- Frontend: `npm run test:frontend` or watch mode with `npm run test:frontend:watch`.
+
+## Architecture assumptions
+
+- Monorepo with an Express 5 API (`backend/`) and a Vite/React client (`frontend/`). Client calls the API via `frontend/src/api.js` and expects the base URL at `VITE_API_BASE` (defaults to `http://localhost:5000/api`).
+- Data layer uses Sequelize 6 with MariaDB in development/production. `createDatabaseIfNotExists` assumes the DB user can create the database. `seedGames` runs at boot to ensure games/tags/users/reviews exist for search and testing.
+- Authentication is stateless JWT; tokens are stored in `localStorage` on the client and sent as `Authorization: Bearer <token>`. HTTPS is expected in production to protect tokens.
+- Tests can run without MariaDB by setting `DB_DIALECT=sqlite` (the `test:backend:int` script does this and seeds data automatically). MariaDB remains the runtime database.
+- Voice intents are heuristic-only; optional LLM env vars in `backend/.env` are disabled by default.
+
+## Frameworks and libraries (ILO3 rationale)
+
+- [React](https://react.dev/) + [React Router](https://reactrouter.com/): component model and routing for accessible, stateful UI; mature ecosystem for keyboard/screen-reader patterns.
+- [Vite](https://vitejs.dev/): fast dev server and HMR to shorten feedback loops and keep bundle config minimal.
+- [Tailwind CSS](https://tailwindcss.com/): utility-first styling for consistent spacing/contrast tokens, reducing custom CSS and improving accessibility discipline.
+- [Express](https://expressjs.com/): lightweight HTTP server with familiar middleware, good fit for a small JSON API.
+- [Sequelize](https://sequelize.org/) on [MariaDB](https://mariadb.org/): ORM keeps queries portable and enables SQLite-backed tests while targeting MariaDB in production.
+- [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) + [bcrypt](https://github.com/kelektiv/node.bcrypt.js/): widely used auth primitives for stateless JWT flows and password hashing.
+- [Jest](https://jestjs.io/) + [Supertest](https://github.com/visionmedia/supertest): backend unit/integration tests that exercise the API surface.
+- [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) + [jsdom](https://github.com/jsdom/jsdom): frontend tests focused on user-observable behavior and accessibility.
 
 Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
 
