@@ -613,7 +613,7 @@ export default function Game() {
               type="button"
               ref={commandsBtnRef}
               onClick={() => setCommandsOpen(v => !v)}
-              className={`${actionBtnBase} ${quietBtnTone}`}
+              className="inline-flex items-center gap-2 rounded-md border theme-border theme-surface px-4 py-2 text-sm font-semibold theme-text shadow-sm transition hover:-translate-y-[1px] hover:shadow focus-visible:translate-y-0"
               aria-expanded={commandsOpen}
               aria-controls="voice-commands-panel"
             >
