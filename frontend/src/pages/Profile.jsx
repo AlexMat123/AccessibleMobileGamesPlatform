@@ -1,5 +1,5 @@
 import profile from '../assets/profile.jpg';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword, getHelpfulVotes } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 
@@ -19,6 +19,7 @@ export default function Profile() {
   const [helpfulVotes, setHelpfulVotes] = useState(0);
   const [favCount, setFavCount] = useState(0);
   const [wlCount, setWlCount] = useState(0);
+  const [commandsOpen, setCommandsOpen] = useState(false);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({ username: '', email: '' });
@@ -33,6 +34,172 @@ export default function Profile() {
   // for carousel display
   const VISIBLE = 5;
   const getWindow = (arr, start, size) => Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
+
+  // voice feedback style and helper
+  const flashClass = 'voice-flash';
+  useEffect(() => {
+    const styleId = 'voice-flash-style-profile';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `.${flashClass}{outline:3px solid #a5f3fc;outline-offset:3px;transition: outline-color .4s ease}`;
+    document.head.appendChild(style);
+  }, []);
+  const focusAndFlash = (el) => { if (!el) return; try { el.focus?.({ preventScroll: true }); } catch {} el.classList.add(flashClass); setTimeout(()=>el.classList.remove(flashClass), 1000); };
+  const norm = (s='') => String(s).toLowerCase().replace(/[.,!?]/g,'').trim();
+  const voiceCommands = useMemo(() => [
+    { phrase: 'Show commands', description: 'Open this voice help panel' },
+    { phrase: 'Edit profile', description: 'Open the edit profile form' },
+    { phrase: 'Change password', description: 'Open the change password form' },
+    { phrase: 'Save preferences', description: 'Save accessibility preferences' },
+    { phrase: 'Set password field to ...', description: 'Dictate current or new password' },
+    { phrase: 'Set username/email to ...', description: 'Fill profile fields before saving' },
+    { phrase: 'Focus reviews / Focus stats', description: 'Scroll to a section' },
+    { phrase: 'Scroll up / Scroll down', description: 'Move the page' }
+  ], []);
+
+  // Voice commands for the Profile page
+  useEffect(() => {
+    const onVoice = (e) => {
+      const d = e.detail || {};
+      const type = d.type;
+      if (!type) return;
+
+      // Open edit profile modal
+      if (type === 'profile' && d.action === 'edit-profile') {
+        e.preventDefault?.();
+        setShowEdit(true);
+        setTimeout(() => focusAndFlash(document.querySelector('input[type="text"]')), 50);
+        return;
+      }
+      // Open change password modal
+      if (type === 'profile' && d.action === 'change-password') {
+        e.preventDefault?.();
+        setShowPwd(true);
+        setTimeout(() => focusAndFlash(document.querySelector('input[type="password"]')), 50);
+        return;
+      }
+      // Set password fields via voice
+      if (type === 'profile' && d.action === 'set-password-field' && d.field && typeof d.value === 'string') {
+        e.preventDefault?.();
+        if (!showPwd) setShowPwd(true);
+        const field = d.field;
+        if (field === 'currentPassword' || field === 'newPassword') {
+          setPwdForm(p => ({ ...p, [field]: d.value }));
+          setTimeout(() => {
+            const selector = field === 'currentPassword' ? 'input[type="password"]' : 'input[type="password"]:nth-of-type(2)';
+            const el = document.querySelector(selector);
+            if (el) { try { el.value = d.value; } catch {} focusAndFlash(el); }
+          }, 60);
+        }
+        return;
+      }
+      // Submit change password
+      if (type === 'profile' && d.action === 'submit-password') {
+        e.preventDefault?.();
+        if (!showPwd) setShowPwd(true);
+        setTimeout(() => {
+          // Prefer submitting the form element
+          const modal = document.querySelector('.fixed.inset-0');
+          const form = modal ? modal.querySelector('form') : document.querySelector('form');
+          if (form && typeof form.requestSubmit === 'function') {
+            focusAndFlash(form.querySelector('button[type="submit"]'));
+            form.requestSubmit();
+            return;
+          }
+          // Fallback: click the submit button
+          const btn = Array.from(document.querySelectorAll('button')).find(b => /change password|update|submit/i.test(b.textContent || ''))
+            || document.querySelector('button[type="submit"]');
+          if (btn) { focusAndFlash(btn); btn.click(); }
+        }, 80);
+        return;
+      }
+      // Cancel change password
+      if (type === 'profile' && d.action === 'cancel-password') {
+        e.preventDefault?.();
+        setShowPwd(false);
+        return;
+      }
+      // Save accessibility preferences
+      if (type === 'profile' && d.action === 'save-preferences') {
+        e.preventDefault?.();
+        const btn = document.querySelector('button[type="submit"]');
+        focusAndFlash(btn);
+        btn?.click();
+        return;
+      }
+      // Toggle a specific accessibility pref: { area: 'visual'|'motor'|'cognitive'|'hearing', value?: boolean }
+      if (type === 'profile' && d.action === 'set-pref' && d.area) {
+        const area = norm(d.area);
+        const val = d.value;
+        if (['visual','motor','cognitive','hearing'].includes(area)) {
+          e.preventDefault?.();
+          if (typeof val === 'boolean') {
+            setPrefs(p => ({ ...p, [area]: val }));
+          } else {
+            // toggle if value not provided
+            setPrefs(p => ({ ...p, [area]: !p[area] }));
+          }
+          const chk = document.getElementById(`pref-${area}`);
+          focusAndFlash(chk);
+        }
+        return;
+      }
+      // Set profile fields (username/email) and open edit modal if needed
+      if (type === 'profile' && d.action === 'set-field' && d.field && typeof d.value === 'string') {
+        e.preventDefault?.();
+        const field = d.field === 'user name' ? 'username' : d.field;
+        if (field === 'username' || field === 'email') {
+          if (!showEdit) setShowEdit(true);
+          setEditForm(f => ({ ...f, [field]: d.value }));
+          setTimeout(() => {
+            const selector = field === 'username' ? 'input[type="text"]' : 'input[type="email"]';
+            const el = document.querySelector(selector);
+            if (el) {
+              try { el.value = d.value; } catch {}
+              focusAndFlash(el);
+            }
+          }, 60);
+        }
+        return;
+      }
+      // Update profile (submit edit form)
+      if (type === 'profile' && d.action === 'update-profile') {
+        e.preventDefault?.();
+        if (!showEdit) setShowEdit(true);
+        setTimeout(() => {
+          const btn = Array.from(document.querySelectorAll('button')).find(b => /update profile/i.test(b.textContent || ''));
+          if (btn) { focusAndFlash(btn); btn.click(); }
+        }, 80);
+        return;
+      }
+      // Cancel edit profile
+      if (type === 'profile' && d.action === 'cancel-edit') {
+        e.preventDefault?.();
+        if (showEdit) setShowEdit(false);
+        return;
+      }
+      // Focus sections
+      if (type === 'profile' && d.action === 'focus' && d.target) {
+        const t = norm(d.target);
+        const sel = t.includes('reviews') ? '[aria-label="User reviews list"]' : t.includes('followed') ? 'h3:text("Followed Games")' : t.includes('stats') ? '[aria-label="User statistics"]' : null;
+        if (sel) {
+          const el = document.querySelector('[aria-label="User reviews list"]') || document.querySelector('[aria-label="User statistics"]');
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          focusAndFlash(el);
+        }
+        return;
+      }
+      // Page scroll
+      if (type === 'scroll') {
+        const dir = d.direction;
+        window.scrollBy({ top: dir === 'up' ? -400 : 400, behavior: 'smooth' });
+        return;
+      }
+    };
+    window.addEventListener('voiceCommand', onVoice);
+    return () => window.removeEventListener('voiceCommand', onVoice);
+  }, [setShowEdit, setShowPwd, setPrefs, showEdit, editForm, showPwd]);
 
   useEffect(() => {
     let mounted = true;
@@ -176,6 +343,49 @@ export default function Profile() {
         {!loading && error && <p className="text-red-600 text-sm mb-4">{error}</p>}
         {!loading && !error && user && (
           <div className="theme-text">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+              <div>
+                <h1 className="text-2xl font-bold leading-tight">Profile</h1>
+                <p className="text-xs theme-muted">Use voice to update your details and preferences.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCommandsOpen(v => !v)}
+                aria-expanded={commandsOpen}
+                aria-controls="profile-voice-commands"
+                className="inline-flex items-center gap-2 rounded-md border theme-border theme-surface px-4 py-2 text-sm font-semibold theme-text shadow-sm transition hover:-translate-y-[1px] hover:shadow focus-visible:translate-y-0"
+              >
+                {commandsOpen ? 'Hide voice commands' : 'Show voice commands'}
+              </button>
+            </div>
+
+            {commandsOpen && (
+              <section
+                id="profile-voice-commands"
+                className="rounded-xl border theme-border theme-surface shadow-sm p-4 mb-6"
+                aria-live="polite"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Voice commands for this page</p>
+                  <button
+                    type="button"
+                    onClick={() => setCommandsOpen(false)}
+                    className="text-xs font-semibold underline theme-muted"
+                  >
+                    Close
+                  </button>
+                </div>
+                <ul className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+                  {voiceCommands.map((cmd) => (
+                    <li key={cmd.phrase} className="flex flex-col">
+                      <span className="font-semibold text-lime-600 dark:text-lime-300">{cmd.phrase}</span>
+                      <span className="text-xs theme-muted">{cmd.description}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {/* Top row containing user information */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               {/* Avatar + main user info */}
