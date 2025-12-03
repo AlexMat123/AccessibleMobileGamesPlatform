@@ -30,4 +30,9 @@ describe('voice command parser (wake-word gated)', () => {
     const intent = parseCommand('hey platform spell e-mail');
     expect(intent).toEqual({ type: 'spell', action: 'start', field: 'email', utterance: 'spell e-mail' });
   });
+
+  it('starts spelling mode for confirm password', () => {
+    const intent = parseCommand('hey platform spell confirmed password');
+    expect(intent).toEqual({ type: 'spell', action: 'start', field: 'confirm', utterance: 'spell confirmed password' });
+  });
 });

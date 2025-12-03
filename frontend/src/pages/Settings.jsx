@@ -91,15 +91,40 @@ export default function Settings() {
   const [spacing, setSpacing] = useState(defaults.spacing);
   const [wakeWordEnabled, setWakeWordEnabled] = useState(defaults.wakeWordEnabled);
   const [wakeWord, setWakeWord] = useState(defaults.wakeWord);
-  const [theme, setTheme] = useState(defaults.theme);
-  const [highContrastMode, setHighContrastMode] = useState(defaults.highContrastMode);
+  const [theme, setTheme] = useState(defaults.theme === 'high-contrast' ? 'high-contrast' : defaults.theme);
+  const [highContrastMode, setHighContrastMode] = useState(defaults.highContrastMode || defaults.theme === 'high-contrast');
   const [reduceMotion, setReduceMotion] = useState(defaults.reduceMotion);
+  const [commandsOpen, setCommandsOpen] = useState(false);
+
+  useEffect(() => {
+    setHighContrastMode(theme === 'high-contrast');
+  }, [theme]);
 
   const applyVoiceSettings = (detail) => {
     switch (detail.action) {
       case 'set-high-contrast-mode':
-        setHighContrastMode(Boolean(detail.value));
+        if (detail.value) {
+          setTheme('high-contrast');
+          setHighContrastMode(true);
+        } else {
+          setTheme('light');
+          setHighContrastMode(false);
+        }
         break;
+      case 'set-theme': {
+        const val = String(detail.value || '').toLowerCase();
+        if (val === 'light') {
+          setTheme('light');
+          setHighContrastMode(false);
+        } else if (val === 'dark') {
+          setTheme('dark');
+          setHighContrastMode(false);
+        } else if (val === 'high-contrast' || val === 'high contrast') {
+          setTheme('high-contrast');
+          setHighContrastMode(true);
+        }
+        break;
+      }
       case 'set-wake-word-enabled':
         if (detail.value === false) {
           setWakeWordEnabled(false);
@@ -146,7 +171,7 @@ export default function Settings() {
       wakeWordEnabled,
       wakeWord,
       theme,
-      highContrastMode,
+      highContrastMode: theme === 'high-contrast' ? true : highContrastMode,
       reduceMotion
     });
   }, [
@@ -166,6 +191,12 @@ export default function Settings() {
   useEffect(() => {
     const onVoice = (e) => {
       const detail = e.detail || {};
+      if (detail.type === 'commands') {
+        e.preventDefault();
+        if (detail.action === 'open') setCommandsOpen(true);
+        if (detail.action === 'close') setCommandsOpen(false);
+        return;
+      }
       if (detail.type !== 'settings') return;
       e.preventDefault();
       applyVoiceSettings(detail);
@@ -269,12 +300,72 @@ export default function Settings() {
 
   const accentTone = highContrastMode ? 'text-lime-200' : (theme === 'dark' ? 'text-lime-300' : 'text-lime-700');
 
+  const voiceCommands = useMemo(() => [
+    { phrase: 'Open settings', description: 'Navigate to this page.' },
+    { phrase: 'Enable high contrast mode', description: 'Switch to the high-contrast theme.' },
+    { phrase: 'Set theme light / dark', description: 'Switch between light and dark themes.' },
+    { phrase: 'Enable/disable wake word', description: 'Toggle the wake word listener.' },
+    { phrase: 'Set wake word to <word>', description: 'Change the wake word text.' },
+    { phrase: 'Increase/decrease text size', description: 'Set text size to small/medium/large.' },
+    { phrase: 'Enable captions / visual alerts', description: 'Toggle hearing-friendly defaults.' },
+    { phrase: 'Set button size large', description: 'Adjust control sizing.' },
+    { phrase: 'Set spacing airy', description: 'Adjust spacing between elements.' },
+    { phrase: 'Enable reduce animation', description: 'Reduce motion across the UI.' },
+    { phrase: 'Open commands', description: 'Show this command list.' },
+    { phrase: 'Close commands', description: 'Hide the command list.' }
+  ], []);
+
   return (
     <div className={`min-h-screen ${pageTone}`}>
       <main className="page-shell max-w-6xl py-8 sm:py-12">
         <header className="space-y-3">
-          <p className={`text-sm font-semibold uppercase tracking-wide ${accentTone}`}>Settings</p>
-          <h1 className={`text-3xl font-bold sm:text-4xl ${headingTone}`}>Accessibility first</h1>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className={`text-sm font-semibold uppercase tracking-wide ${accentTone}`}>Settings</p>
+              <h1 className={`text-3xl font-bold sm:text-4xl ${headingTone}`}>Accessibility first</h1>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCommandsOpen((v) => !v)}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${focusRing} ${
+                highContrastMode
+                  ? 'border-lime-400 bg-slate-900 text-lime-100 hover:bg-slate-800'
+                  : theme === 'dark'
+                    ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700'
+                    : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+              }`}
+              aria-expanded={commandsOpen}
+              aria-controls="settings-voice-commands"
+            >
+              {commandsOpen ? 'Hide voice commands' : 'Show voice commands'}
+            </button>
+          </div>
+          {commandsOpen && (
+            <section
+              id="settings-voice-commands"
+              className={`rounded-xl border px-4 py-3 ${softCardTone}`}
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className={`text-sm font-semibold ${headingTone}`}>Voice commands for Settings</p>
+                <button
+                  type="button"
+                  className={`text-xs font-semibold underline ${subTone} ${focusRing}`}
+                  onClick={() => setCommandsOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <ul className="mt-2 space-y-1 text-sm">
+                {voiceCommands.map((cmd) => (
+                  <li key={cmd.phrase} className={subTone}>
+                    <span className="font-semibold text-lime-700 dark:text-lime-300">{cmd.phrase}</span>
+                    <span className="ml-2 text-xs opacity-80">{cmd.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </header>
 
         <div className="mt-10">
@@ -424,22 +515,20 @@ export default function Settings() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {[
                     { id: 'light', label: 'Light' },
-                    { id: 'dark', label: 'Dark' }
+                    { id: 'dark', label: 'Dark' },
+                    { id: 'high-contrast', label: 'High contrast' }
                   ].map(opt => (
                     <PillOption
                       key={opt.id}
                       label={opt.label}
                       active={theme === opt.id}
-                      onClick={() => setTheme(opt.id)}
+                      onClick={() => {
+                        setTheme(opt.id);
+                        setHighContrastMode(opt.id === 'high-contrast');
+                      }}
                       styles={pillStyles}
                     />
                   ))}
-                  <PillOption
-                    label="High contrast mode"
-                    active={highContrastMode}
-                    onClick={() => setHighContrastMode(v => !v)}
-                    styles={pillStyles}
-                  />
                 </div>
               </div>
 

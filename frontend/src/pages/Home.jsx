@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { fetchGames } from "../api.js";
+import { fetchGames, fetchCurrentUser, followGame } from "../api";
 import { Link, useNavigate } from "react-router-dom";
+import { pushToast } from "../components/ToastHost.jsx";
 
 export default function Home() {
   const [games, setGames] = useState([]);
@@ -19,6 +20,7 @@ export default function Home() {
   const [hearingIndex, setHearingIndex] = useState(0);
   const [motorIndex, setMotorIndex] = useState(0);
   const [cognitiveIndex, setCognitiveIndex] = useState(0);
+  const [commandsOpen, setCommandsOpen] = useState(false);
 
   const autoplayRef = useRef(null);
   const autoplayPausedRef = useRef(false);
@@ -155,6 +157,12 @@ export default function Home() {
     const onVoice = (e) => {
       const detail = e.detail || {};
       const { type, action, title } = detail;
+      if (type === "commands") {
+        e.preventDefault();
+        if (action === "open") setCommandsOpen(true);
+        if (action === "close") setCommandsOpen(false);
+        return;
+      }
       if (type === "home" && action === "open-featured" && fg?.id) {
         e.preventDefault?.();
         navigate(`/games/${fg.id}`);
@@ -236,10 +244,11 @@ export default function Home() {
   };
 
   const getImageUrl = (game) => {
-    if (game && Array.isArray(game.images) && game.images.length > 0) {
-      return game.images[0];
-    }
-    return null;
+    if (!game) return '/placeholder1.png';
+    if (game.imageUrl) return game.imageUrl;
+    if (Array.isArray(game.images) && game.images.length > 0) return game.images[0];
+    if (Array.isArray(game.thumbImages) && game.thumbImages.length > 0) return game.thumbImages[0];
+    return '/placeholder1.png';
   };
 
   const formatDate = (dateString) => {
@@ -271,6 +280,13 @@ export default function Home() {
   const subtleCard = "theme-subtle border theme-border rounded-xl";
   const controlTone = "theme-surface border theme-border shadow hover:opacity-80";
   const smallMeta = "text-sm theme-muted";
+  const voiceCommands = [
+    { phrase: "Open commands", description: "Show this command list." },
+    { phrase: "Close commands", description: "Hide this command list." },
+    { phrase: "Open featured game", description: "Open the current featured card." },
+    { phrase: "Open <game name>", description: "Open a specific game card by title." },
+    { phrase: "Scroll down/up", description: "Scroll the page." },
+  ];
 
   const renderTag = (text, idxKey) => (
     <span key={idxKey} className="theme-subtle border theme-border rounded-full px-3 py-1 text-xs font-semibold theme-text">
@@ -292,9 +308,9 @@ export default function Home() {
 
   const CardHoverDetails = ({ game, tagsKey, tagsSlice }) => (
     <div className={`absolute left-0 top-full mt-1 w-full ${cardTone} p-3 space-y-1 text-xs z-20 pointer-events-none`}>
-      <h4 className="text-sm font-semibold theme-text truncate" title={game.title}>
+      <p className="text-sm font-semibold theme-text truncate" title={game.title}>
         {game.title}
-      </h4>
+      </p>
       <p className={smallMeta} title={`${game.developer || "N/A"} • ${game.category || "N/A"}`}>
         {game.developer || "N/A"} • {game.category || "N/A"}
       </p>
@@ -376,12 +392,96 @@ export default function Home() {
     </section>
   );
 
+  const addToWishlist = async (game) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { pushToast('Please log in to use wishlist'); return; }
+      const me = await fetchCurrentUser();
+      const key = `wishlist:${me.id}`;
+      const raw = localStorage.getItem(key);
+      const list = raw ? JSON.parse(raw) : [];
+      const item = { id: game.id, title: game.title || game.name, imageUrl: getImageUrl(game), rating: game.rating, tags: game.tags };
+      if (list.find((g) => g.id === item.id)) {
+        pushToast('Already in wishlist');
+        return;
+      }
+      const next = [...list, item];
+      localStorage.setItem(key, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+      pushToast('Added to wishlist');
+    } catch (e) {
+      pushToast('Wishlist error');
+      console.error(e);
+    }
+  };
+
+  const addToFavourites = async (game) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { pushToast('Please log in to use favourites'); return; }
+      const me = await fetchCurrentUser();
+      const key = `favourites:${me.id}`;
+      const raw = localStorage.getItem(key);
+      const list = raw ? JSON.parse(raw) : [];
+      const item = { id: game.id, title: game.title || game.name, imageUrl: getImageUrl(game), rating: game.rating, tags: game.tags };
+      if (list.find((g) => g.id === item.id)) { pushToast('Already a favourite'); return; }
+      const next = [...list, item];
+      localStorage.setItem(key, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+      pushToast('Added to favourites');
+    } catch (e) {
+      pushToast('Favourites error');
+      console.error(e);
+    }
+  };
+
   return (
     <div className={`home-page ${shellTone} min-h-screen`} ref={homePageRef}>
       <main className="page-shell max-w-6xl space-y-12 pb-16" id="page-content" role="main">
         <header className="space-y-3 pb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide theme-accent">Welcome</p>
-          <h1 className="text-3xl font-bold sm:text-4xl theme-text">Discover accessible games</h1>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide theme-accent">Welcome</p>
+              <h1 className="text-3xl font-bold sm:text-4xl theme-text">Discover accessible games</h1>
+            </div>
+            <div className="flex items-start gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCommandsOpen((v) => !v)}
+                className="inline-flex items-center gap-2 rounded-md border theme-border theme-surface px-4 py-2 text-sm font-semibold theme-text shadow-sm transition hover:-translate-y-[1px] hover:shadow focus-visible:translate-y-0"
+                aria-expanded={commandsOpen}
+                aria-controls="home-voice-commands"
+              >
+                {commandsOpen ? "Hide voice commands" : "Show voice commands"}
+              </button>
+            </div>
+          </div>
+          {commandsOpen && (
+            <section
+              id="home-voice-commands"
+              className="rounded-xl border theme-border theme-surface px-4 py-3 text-sm theme-text"
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold theme-text">Voice commands for Home</p>
+                <button
+                  type="button"
+                  className="text-xs font-semibold underline theme-muted"
+                  onClick={() => setCommandsOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {voiceCommands.map((cmd) => (
+                  <li key={cmd.phrase}>
+                    <span className="font-semibold">{cmd.phrase}</span>
+                    <span className="ml-2 text-xs theme-muted">{cmd.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </header>
 
         {fg && (
@@ -493,12 +593,14 @@ export default function Home() {
                   <button
                     className="theme-btn rounded-lg px-5 py-2 text-sm sm:text-base font-semibold inline-flex items-center justify-center hover:opacity-90"
                     type="button"
+                    onClick={() => addToWishlist(fg)}
                   >
                     Add to wishlist
                   </button>
                   <button
                     className="theme-subtle border theme-border rounded-lg px-5 py-2 text-sm sm:text-base font-semibold inline-flex items-center justify-center hover:opacity-90"
                     type="button"
+                    onClick={() => addToFavourites(fg)}
                   >
                     Add to favourites
                   </button>

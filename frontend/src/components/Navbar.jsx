@@ -7,7 +7,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const navigation = [
   { name: 'Home', href: '/', current: true },
   { name: 'Search', href: '/search', current: false },
-  { name: 'Discover', href: '/discover', current: false },
   { name: 'Settings', href: '/settings', current: false },
 ]
 
@@ -166,7 +165,7 @@ export default function Navbar() {
 
           {/* Notification and profile icons */}
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-            {/* Discover & Settings on desktop */}
+            {/* Settings on desktop */}
             <div className="hidden sm:flex items-center space-x-4 mr-2">
               {isAuthenticated && (
                 <a

@@ -10,6 +10,7 @@ export default function Signup() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [commandsOpen, setCommandsOpen] = useState(false);
   const navigate = useNavigate();
   const formRef = useRef(null);
   const usernameRef = useRef(null);
@@ -44,6 +45,12 @@ export default function Signup() {
   useEffect(() => {
     const onVoice = (e) => {
       const detail = e.detail || {};
+      if (detail.type === 'commands') {
+        e.preventDefault();
+        if (detail.action === 'open') setCommandsOpen(true);
+        if (detail.action === 'close') setCommandsOpen(false);
+        return;
+      }
       if (detail.type !== 'auth') return;
       if (detail.form && detail.form !== 'signup') return;
 
@@ -184,6 +191,17 @@ export default function Signup() {
     focusMap[target]?.current?.focus({ preventScroll: true });
   };
 
+  const voiceCommands = [
+    { phrase: 'Focus username/email/password/confirm', description: 'Moves focus to a specific field.' },
+    { phrase: 'Type <text>', description: 'Dictate into the last focused field.' },
+    { phrase: 'Spell username/email/password/confirm', description: 'Start spelling; say letters, “capital A”, “dot”, “backspace”, “stop spelling”.' },
+    { phrase: 'Stop spelling', description: 'Exit spelling mode.' },
+    { phrase: 'Submit sign up', description: 'Submit the signup form.' },
+    { phrase: 'Clear sign up form', description: 'Reset all fields.' },
+    { phrase: 'Open commands', description: 'Show this command list.' },
+    { phrase: 'Close commands', description: 'Hide the command list.' }
+  ];
+
   useEffect(() => {
     const onSpell = (e) => {
       const detail = e.detail || {};
@@ -230,7 +248,34 @@ export default function Signup() {
         onSubmit={onSubmit}
         className="w-full max-w-sm theme-surface border theme-border rounded-xl shadow p-6 space-y-4"
       >
-        <h1 className="text-xl font-semibold theme-text">Sign up</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-xl font-semibold theme-text">Sign up</h1>
+          <button
+            type="button"
+            onClick={() => setCommandsOpen((v) => !v)}
+            className="text-xs font-semibold theme-text underline"
+            aria-expanded={commandsOpen}
+            aria-controls="signup-voice-commands"
+          >
+            {commandsOpen ? 'Hide voice commands' : 'Show voice commands'}
+          </button>
+        </div>
+        {commandsOpen && (
+          <section
+            id="signup-voice-commands"
+            className="rounded-md border theme-border bg-slate-50/60 dark:bg-slate-900/40 px-3 py-2 text-sm theme-text"
+            aria-live="polite"
+          >
+            <ul className="space-y-1">
+              {voiceCommands.map((cmd) => (
+                <li key={cmd.phrase}>
+                  <span className="font-semibold">{cmd.phrase}</span>
+                  <span className="ml-2 text-xs theme-muted">{cmd.description}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {error && <div className="text-sm text-red-600">{error}</div>}
         <div>
           <label className="block text-sm theme-text mb-1">Username</label>
