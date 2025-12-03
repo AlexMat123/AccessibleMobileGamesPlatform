@@ -70,5 +70,12 @@ describe('App Component', () => {
     const navbars = getAllByTestId('navbar');
     expect(navbars.length).toBeGreaterThan(0);
   });
+
+  it('renders skip link for accessibility', () => {
+    const { getAllByText } = render(<App />);
+    const skipLinks = getAllByText(/skip to main content/i);
+    expect(skipLinks.length).toBeGreaterThan(0);
+    expect(skipLinks[0]).toHaveAttribute('href', '#page-content');
+  });
 });
 

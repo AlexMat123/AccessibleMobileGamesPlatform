@@ -51,10 +51,19 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = Number(process.env.PORT) || 5000;
+const IS_SQLITE = (process.env.DB_DIALECT || '').toLowerCase() === 'sqlite';
 
+/**
+ * Bootstraps the database (MariaDB or SQLite), seeds data, and starts the HTTP server.
+ * Skips MariaDB bootstrap when running in SQLite mode (used by integration/Postman runs).
+ */
 async function start() {
     try {
-        await createDatabaseIfNotExists();
+        // When running against SQLite (e.g., integration tests / Postman smoke),
+        // skip the MariaDB bootstrap so we don't require a running database server.
+        if (!IS_SQLITE) {
+            await createDatabaseIfNotExists();
+        }
         await sequelize.authenticate();
         // this avoids alter:true to prevent repeated index changes causing MariaDB ER_TOO_MANY_KEYS
         await sequelize.sync();

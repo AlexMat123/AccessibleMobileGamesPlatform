@@ -65,6 +65,11 @@ function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+/**
+ * Parse a free-form transcript into a structured intent used by the frontend.
+ * @param {string} transcript Raw speech-to-text string.
+ * @returns {null | {type: string, target?: string, query?: string, tags?: string[], tag?: string, action?: string, direction?: 'up'|'down', title?: string, utterance: string}}
+ */
 export function interpretTranscript(transcript) {
   const raw = String(transcript || '').trim();
   const text = normalize(raw);

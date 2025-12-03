@@ -4,7 +4,11 @@ import User from "../models/User.js";
 
 dotenv.config();
 
-{/* Middleware to authenticate JWT token */}
+/**
+ * Express middleware that validates a JWT bearer token, attaches `{ id, isAdmin }`
+ * to `req.user`, and rejects requests with 401/403 when invalid or missing.
+ * Requires `JWT_SECRET` to be set.
+ */
 export default async function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     if (!authHeader) {

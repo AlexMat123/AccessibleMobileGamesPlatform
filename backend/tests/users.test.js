@@ -1,17 +1,19 @@
 import express from 'express';
 import request from 'supertest';
 import { jest } from '@jest/globals';
+import { Op } from 'sequelize';
 
 const mockReviewFindAll = jest.fn();
 const mockUserFindByPk = jest.fn();
 const mockGameFindByPk = jest.fn();
+const mockGameFindAll = jest.fn();
 const mockBcryptCompare = jest.fn();
 const mockBcryptGenSalt = jest.fn();
 const mockBcryptHash = jest.fn();
 
 jest.unstable_mockModule('../models/index.js', () => ({
   Review: { findAll: mockReviewFindAll },
-  Game: { findByPk: mockGameFindByPk },
+  Game: { findByPk: mockGameFindByPk, findAll: mockGameFindAll },
   User: { findByPk: mockUserFindByPk },
   Tag: {},
 }));
@@ -50,6 +52,7 @@ describe('Users routes', () => {
     mockReviewFindAll.mockReset();
     mockUserFindByPk.mockReset();
     mockGameFindByPk.mockReset();
+    mockGameFindAll.mockReset();
     mockBcryptCompare.mockReset();
     mockBcryptGenSalt.mockReset();
     mockBcryptHash.mockReset();
@@ -343,6 +346,37 @@ describe('Users routes', () => {
       const app = makeApp({ id: 1 });
       const res = await request(app).get('/api/users/1/recommended-games').expect(200);
       expect(res.body).toEqual([]);
+    });
+
+    it('returns filtered high-level tags for matching games', async () => {
+      mockUserFindByPk.mockResolvedValueOnce({
+        id: 1,
+        accessibilityPreferences: { visual: true, motor: true, cognitive: false, hearing: false },
+      });
+      // First query: find games that match at least one interest tag
+      mockGameFindAll
+        .mockResolvedValueOnce([{ id: 10 }])
+        .mockResolvedValueOnce([
+          { id: 10, title: 'Game A', platform: 'PC', rating: 4.5, thumbImages: ['/a.jpg'], tags: [{ name: 'Vision' }, { name: 'Motor' }, { name: 'Puzzle' }] },
+        ]);
+
+      const app = makeApp({ id: 1 });
+      const res = await request(app).get('/api/users/1/recommended-games').expect(200);
+
+      // First call filters by interest tags (Vision + Motor)
+      const includeArg = mockGameFindAll.mock.calls[0][0].include?.[0];
+      expect(includeArg?.where?.name?.[Op.in]).toEqual(['Vision', 'Motor']);
+
+      expect(res.body).toEqual([
+        {
+          id: 10,
+          title: 'Game A',
+          platform: 'PC',
+          rating: 4.5,
+          images: ['/a.jpg'],
+          tags: ['Vision', 'Motor'],
+        },
+      ]);
     });
   });
 });

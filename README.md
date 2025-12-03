@@ -30,6 +30,7 @@
 - Backend (MariaDB, uses your `.env`): `npm run test:backend`.
 - Backend hermetic/in-memory (SQLite, recommended locally): `npm run test:backend:int`.
 - Frontend: `npm run test:frontend` or watch mode with `npm run test:frontend:watch`.
+- Backend Postman smoke tests: `npm run test:postman` (auto-starts backend on SQLite, then runs `backend/postman/backend-api.postman_collection.json` with `backend/postman/local.postman_environment.json` via Newman).
 
 ## Docker
 

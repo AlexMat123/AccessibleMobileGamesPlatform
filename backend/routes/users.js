@@ -190,6 +190,7 @@ router.patch('/:id/password', authenticateToken, async (req, res) => {
 });
 
 // GET /api/users/:id/recommended-games
+// Builds recommendations using the user's stored accessibilityPreferences (high-level tags only).
 router.get('/:id/recommended-games', authenticateToken, async (req, res) => {
   try {
     const userId = Number(req.params.id);
