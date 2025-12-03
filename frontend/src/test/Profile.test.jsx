@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Profile from './pages/Profile.jsx';
+import Profile from '../pages/Profile.jsx';
 import * as api from '../api.js';
 
 vi.mock('../api', () => ({

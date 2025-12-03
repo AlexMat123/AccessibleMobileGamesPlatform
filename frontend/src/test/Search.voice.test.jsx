@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import Search from './pages/Search.jsx';
+import Search from '../pages/Search.jsx';
 
 // Mock API calls used by Search
 vi.mock('../api', () => ({

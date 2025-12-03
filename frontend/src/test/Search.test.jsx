@@ -26,7 +26,7 @@ vi.mock('../api', () => ({
   ]))
 }));
 
-import Search from './pages/Search.jsx';
+import Search from '../pages/Search.jsx';
 import * as api from '../api.js';
 
 function renderSearch(initialEntries = ['/search']) {

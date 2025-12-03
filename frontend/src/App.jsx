@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
 import './App.css';
 import './theme.css';
-import Home from "./test/pages/Home";
-import Search from "./test/pages/Search";
+import Home from "./pages/Home";
+import Search from "./pages/Search";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Game from "./test/pages/Game.jsx";
+import Game from "./pages/Game.jsx";
 import Navbar from './components/Navbar.jsx';
-import Login from './test/pages/Login.jsx';
-import Signup from './test/pages/Signup.jsx';
+import Login from './pages/Login.jsx';
+import Signup from './pages/Signup.jsx';
 import ToastHost from './components/ToastHost.jsx';
-import Settings from './test/pages/Settings.jsx';
-import Profile from './test/pages/Profile.jsx';
-import ReportsPage from './test/pages/Reports.jsx';
+import Settings from './pages/Settings.jsx';
+import Profile from './pages/Profile.jsx';
+import ReportsPage from './pages/Reports.jsx';
 import { loadSettings } from './settings';
 
 const applyThemeFromSettings = (settings) => {

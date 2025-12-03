@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame } from '../../api.js';
-import { fetchCurrentUser } from '../../api.js';
-import { pushToast } from '../../components/ToastHost.jsx';
-import { getAccessibilityPreferences } from '../../api.js';
-import { loadSettings } from '../../settings.js';
+import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame } from '../api.js';
+import { fetchCurrentUser } from '../api.js';
+import { pushToast } from '../components/ToastHost.jsx';
+import { getAccessibilityPreferences } from '../api.js';
+import { loadSettings } from '../settings.js';
 
 function RatingStars({ value }) {
     const v = Math.round(value || 0);

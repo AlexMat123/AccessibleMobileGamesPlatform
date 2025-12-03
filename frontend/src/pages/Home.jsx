@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { fetchGames } from "../../api.js";
+import { fetchGames } from "../api.js";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Home() {

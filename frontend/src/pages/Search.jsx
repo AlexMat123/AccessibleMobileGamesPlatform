@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { fetchGames, fetchTagGroups, searchGames } from '../../api.js';
-import { loadSettings } from '../../settings.js';
+import { fetchGames, fetchTagGroups, searchGames } from '../api.js';
+import { loadSettings } from '../settings.js';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
 
