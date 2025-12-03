@@ -27,19 +27,31 @@ build-job:       # This job runs in the build stage, which runs first.
     - echo "Compiling the code..."
     - echo "Compile complete."
 
-unit-test-job:   # This job runs in the test stage.
-  stage: test    # It only starts when the job in the build stage completes successfully.
+backend-test-job:   # Run backend tests
+  stage: test
+  image: node:20
+  cache:
+    key: npm-cache
+    paths:
+      - node_modules/
+      - backend/node_modules/
+  before_script:
+    - npm ci --prefix backend
   script:
-    - echo "Running unit tests... This will take about 60 seconds."
-    - sleep 60
-    - echo "Code coverage is 90%"
+    - npm run test:all
 
-lint-test-job:   # This job also runs in the test stage.
-  stage: test    # It can run at the same time as unit-test-job (in parallel).
+frontend-test-job:   # Run frontend tests
+  stage: test
+  image: node:20
+  cache:
+    key: npm-cache
+    paths:
+      - node_modules/
+      - frontend/node_modules/
+  before_script:
+    - npm ci --prefix frontend
   script:
-    - echo "Linting code... This will take about 10 seconds."
-    - sleep 10
-    - echo "No lint issues found."
+    - npm run test:frontend
 
 openapi-validate:
   stage: test

@@ -5,7 +5,73 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="04d5dee6-0dda-4a74-b0bb-f7c288302a2c" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/backend/node_modules/.package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/node_modules/.package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitlab-ci.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.gitlab-ci.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/config/createDatabase.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/createDatabase.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/config/seedGames.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/config/seedGames.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/app.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/app.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/middleware/auth.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/middleware/auth.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/middleware/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/middleware/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/GameReport.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/GameReport.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/GameTag.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/GameTag.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/Games.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/Games.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/Review.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/Review.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/Tag.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/Tag.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/User.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/User.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/index.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/index.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/models/tags.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/models/tags.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/routes/auth.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/routes/auth.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/routes/games.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/routes/games.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/routes/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/routes/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/routes/library.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/routes/library.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/routes/users.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/routes/users.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/backend/routes/voice.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/backend/routes/voice.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/block-navigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/block-navigation.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/prettify.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/prettify.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/coverage/sorter.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/coverage/sorter.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/middleware/auth.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/middleware/auth.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/games.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/games.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/library.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/library.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/routes/users.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/routes/users.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tests/users.test.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tests/users.test.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/voice/intent.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/voice/intent.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/base.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/base.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/block-navigation.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/block-navigation.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/clover.xml" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/clover.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/coverage-final.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/coverage-final.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/prettify.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/prettify.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/prettify.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/prettify.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/sorter.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/sorter.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/App.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/App.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/api.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/api.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/components/Navbar.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/components/Navbar.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/components/ToastHost.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/components/ToastHost.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/components/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/components/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/main.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/main.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Game.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Game.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Home.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Home.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Login.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Login.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Profile.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Profile.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Reports.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Reports.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Search.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Search.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Settings.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Settings.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/Signup.jsx.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/Signup.jsx.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/pages/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/pages/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/coverage/src/settings.js.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/coverage/src/settings.js.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/App.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/test/App.test.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/test/App.test.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/node_modules/.package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/node_modules/.package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -15,34 +81,61 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 0
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
   <component name="ProjectId" id="35Lc8RTlwML15zQPiWQPryCD2ex" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "development",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Team 13/team-13-group-project",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Batch.start.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;27-adding-test-and-comments-to-code&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Team 13/team-13-group-project&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.test.executor&quot;: &quot;Run&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\c23055508\Documents\Frameworks assignment\Working\team-13-group-project\backend\voice" />
+      <recent name="C:\Users\c23055508\Documents\Frameworks assignment\Working\team-13-group-project\frontend\src\test" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="test" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="test" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="npm.test" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-28b599e66164-intellij.indexing.shared.core-IU-242.23726.103" />
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-IU-242.23726.103" />
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.129" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.129" />
       </set>
     </attachedChunks>
   </component>
@@ -55,10 +148,20 @@
       <option name="presentableId" value="Default" />
       <updated>1762892632654</updated>
       <workItem from="1762892633720" duration="330000" />
+      <workItem from="1764771197391" duration="975000" />
+      <workItem from="1764772346038" duration="3691000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>
