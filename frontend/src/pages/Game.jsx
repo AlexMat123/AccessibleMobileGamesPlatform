@@ -243,6 +243,21 @@ export default function Game() {
     };
   }, []);
 
+  useEffect(() => {
+    if (showReviewModal) {
+      setTimeout(() => {
+        const el = reviewRatingRef.current || reviewCommentRef.current;
+        el?.focus({ preventScroll: true });
+      }, 30);
+    }
+  }, [showReviewModal]);
+
+  useEffect(() => {
+    if (showReportModal) {
+      setTimeout(() => reportTextareaRef.current?.focus({ preventScroll: true }), 30);
+    }
+  }, [showReportModal]);
+
   const voiceCommands = useMemo(() => [
     { phrase: 'Open commands', description: 'Show this voice help panel' },
     { phrase: 'Follow game / Unfollow game', description: 'Toggle follow status' },
@@ -584,6 +599,10 @@ export default function Game() {
   const maxRatingCount = Math.max(...ratingDist, 1);
   const tags = (game.tags || []).map(t => (typeof t === 'string' ? t : (t.name || t.label || ''))).filter(Boolean);
   const gameTitle = game.name || game.title || 'Game';
+  const metaId = `game-meta-${id}`;
+  const tagsId = `game-tags-${id}`;
+  const srMeta = `${game.developer || 'Unknown developer'}; ${game.category || 'Category'}; Average rating ${avgRating.toFixed(1)} from ${reviews.length} review${reviews.length === 1 ? '' : 's'}.`;
+  const srTags = tags.length ? tags.join(', ') : 'No tags listed';
 
   const actionBtnBase = `inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold ${focusVisible} ${reduceMotion}`;
   const quietBtnTone = 'theme-btn';
@@ -602,7 +621,13 @@ export default function Game() {
 
   return (
     <div className={`min-h-screen ${pageTone} ${textSizeClass}`}>
-      <main className="page-shell max-w-6xl py-8 sm:py-12 space-y-6">
+      <a
+        href="#game-main"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:px-3 focus:py-2 focus:rounded-md focus:bg-white focus:text-black focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+      <main id="game-main" className="page-shell max-w-6xl py-8 sm:py-12 space-y-6" tabIndex={-1}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <p className={`text-xs uppercase tracking-wide ${subTone}`}>Game details</p>
@@ -651,85 +676,19 @@ export default function Game() {
 
         <div className={`grid grid-cols-1 lg:grid-cols-12 ${spacingGap}`}>
           <section
-            ref={heroRef}
-            className={`lg:col-span-7 rounded-2xl border ${panelTone} overflow-hidden`}
-            aria-roledescription="carousel"
-            aria-label="Game media gallery"
+            role="region"
+            aria-label="Game overview and actions"
+            aria-labelledby="game-summary-heading"
+            aria-describedby={`${metaId} ${tagsId}`}
+            className="order-1 lg:order-2 lg:col-span-5 space-y-4"
+            tabIndex={-1}
           >
-            <div className="relative w-full h-56 sm:h-64 overflow-hidden rounded-2xl">
-              {String(currentHero).toLowerCase().endsWith('.mp4') ? (
-                <video
-                  key={currentHero}
-                  ref={heroVideoRef}
-                  src={currentHero}
-                  controls
-                  muted
-                  loop
-                  playsInline
-                  className="h-full w-full object-cover bg-black"
-                >
-                  {currentHero === '/AuroraQuestTrailer.mp4' ? (
-                    <track
-                      key={`captions-${captionsEnabled}`}
-                      ref={heroTrackRef}
-                      kind="subtitles"
-                      src="/AuroraQuestTrailer.vtt"
-                      srclang="en"
-                      label="English"
-                      default={captionsEnabled}
-                    />
-                  ) : null}
-                </video>
-              ) : (
-                <img
-                  src={currentHero}
-                  alt={`${gameTitle} media`}
-                  className="h-full w-full object-cover"
-                />
-              )}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" aria-hidden />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <button
-                  type="button"
-                  onClick={prevHero}
-                  className={`${actionBtnBase} ${quietBtnTone} bg-opacity-80`}
-                  aria-label="Previous media item"
-                >
-                  {'<'}
-                </button>
-              </div>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <button
-                  type="button"
-                  onClick={nextHero}
-                  className={`${actionBtnBase} ${quietBtnTone} bg-opacity-80`}
-                  aria-label="Next media item"
-                >
-                  {'>'}
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-2 px-4 py-3">
-              {media.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setHeroIndex(i)}
-                  aria-label={`Show media item ${i + 1}`}
-                  aria-pressed={i === heroIndex}
-                  className={`h-2.5 w-2.5 rounded-full ${i === heroIndex ? 'bg-lime-500' : 'bg-slate-400/70'} ${focusVisible}`}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section className="lg:col-span-5 space-y-4">
             <div className={`rounded-2xl border ${panelTone} p-4 space-y-4`}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className={`text-sm font-semibold ${headingTone}`}>{gameTitle}</p>
+                  <p id="game-summary-heading" className={`text-sm font-semibold ${headingTone}`}>{gameTitle}</p>
                   <p className={`text-xs ${subTone}`}>
-                    {game.developer || 'Unknown developer'} · {game.category || 'Category'}
+                    {game.developer || 'Unknown developer'} - {game.category || 'Category'}
                   </p>
                 </div>
                 <div className="text-right">
@@ -753,6 +712,8 @@ export default function Game() {
                   ))}
                 </div>
               )}
+              <p className="sr-only" id={tagsId}>Tags: {srTags}</p>
+              <p className="sr-only" id={metaId}>{srMeta}</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="Quick actions">
                 <button
@@ -828,6 +789,78 @@ export default function Game() {
                 <span className={subTone}>Release date</span>
                 <span className={`font-semibold ${headingTone}`}>{date}</span>
               </div>
+            </div>
+          </section>
+          <section
+            ref={heroRef}
+            className={`order-2 lg:order-1 lg:col-span-7 rounded-2xl border ${panelTone} overflow-hidden`}
+            aria-roledescription="carousel"
+            aria-label="Game media gallery"
+          >
+            <div className="relative w-full h-56 sm:h-64 overflow-hidden rounded-2xl">
+              {String(currentHero).toLowerCase().endsWith('.mp4') ? (
+                <video
+                  key={currentHero}
+                  ref={heroVideoRef}
+                  src={currentHero}
+                  controls
+                  muted
+                  loop
+                  playsInline
+                  className="h-full w-full object-cover bg-black"
+                >
+                  {currentHero === '/AuroraQuestTrailer.mp4' ? (
+                    <track
+                      key={`captions-${captionsEnabled}`}
+                      ref={heroTrackRef}
+                      kind="subtitles"
+                      src="/AuroraQuestTrailer.vtt"
+                      srclang="en"
+                      label="English"
+                      default={captionsEnabled}
+                    />
+                  ) : null}
+                </video>
+              ) : (
+                <img
+                  src={currentHero}
+                  alt={`${gameTitle} media`}
+                  className="h-full w-full object-cover"
+                />
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" aria-hidden />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                <button
+                  type="button"
+                  onClick={prevHero}
+                  className={`${actionBtnBase} ${quietBtnTone} bg-opacity-80`}
+                  aria-label="Previous media item"
+                >
+                  {'<'}
+                </button>
+              </div>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <button
+                  type="button"
+                  onClick={nextHero}
+                  className={`${actionBtnBase} ${quietBtnTone} bg-opacity-80`}
+                  aria-label="Next media item"
+                >
+                  {'>'}
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 px-4 py-3">
+              {media.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setHeroIndex(i)}
+                  aria-label={`Show media item ${i + 1}`}
+                  aria-pressed={i === heroIndex}
+                  className={`h-2.5 w-2.5 rounded-full ${i === heroIndex ? 'bg-lime-500' : 'bg-slate-400/70'} ${focusVisible}`}
+                />
+              ))}
             </div>
           </section>
         </div>
@@ -958,7 +991,7 @@ export default function Game() {
               </button>
             </div>
             <form onSubmit={handleSubmitReview} className="space-y-4 px-4 py-4">
-              {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+              {submitError && <p className="text-sm text-red-600" role="alert" id="review-submit-error">{submitError}</p>}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="review-rating">Rating (1-5)</label>
                 <select
@@ -968,6 +1001,7 @@ export default function Game() {
                   onChange={(e) => setReviewRating(e.target.value)}
                   className={`w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   required
+                  aria-describedby={submitError ? 'review-submit-error' : undefined}
                 >
                   {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
@@ -982,6 +1016,7 @@ export default function Game() {
                   className={`w-full rounded-md border px-3 py-2 text-sm ${focusVisible} ${inputTone}`}
                   required
                   rows={4}
+                  aria-describedby={submitError ? 'review-submit-error' : undefined}
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
@@ -1023,7 +1058,7 @@ export default function Game() {
               </button>
             </div>
             <form onSubmit={handleSubmitReport} className="space-y-4 px-4 py-4">
-              {reportSubmitError && <p className="text-sm text-red-600">{reportSubmitError}</p>}
+              {reportSubmitError && <p className="text-sm text-red-600" role="alert" id="report-submit-error">{reportSubmitError}</p>}
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="report-message">
                   Why are you reporting this game?
@@ -1035,10 +1070,11 @@ export default function Game() {
                   value={reportMessage}
                   onChange={(e) => setReportMessage(e.target.value)}
                   aria-invalid={!!reportError}
+                  aria-describedby={`${reportSubmitError ? 'report-submit-error ' : ''}${reportError ? 'report-error' : ''}`.trim() || undefined}
                   data-voice-report-textarea
                   rows={4}
                 />
-                {reportError && <p className="text-xs text-red-600 mt-1">{reportError}</p>}
+                {reportError && <p className="text-xs text-red-600 mt-1" id="report-error" role="alert">{reportError}</p>}
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button
