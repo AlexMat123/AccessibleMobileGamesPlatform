@@ -33,6 +33,7 @@ function stripFiller(text) {
   let t = normalize(text);
   const fillers = [
     'hey platform',
+    'platform',
     'can you',
     'could you',
     'please',
@@ -87,24 +88,6 @@ export function interpretTranscript(transcript) {
     return { type: 'navigate', target: 'search', utterance: stripped };
   }
 
-  // command to navigate to the library page and its subsections
-  if (includesAny(stripped, NAV_LIBRARY) || stripped.includes('go to library') || stripped.includes('open my library')) {
-    return { type: 'navigate', target: 'library', utterance: stripped };
-  }
-  if (stripped.includes('go to wishlist') || stripped.includes('open wishlist') || includesAny(stripped, NAV_WISHLIST)) {
-    return { type: 'navigate', target: 'wishlist', utterance: stripped };
-  }
-  if (stripped.includes('go to favourites') || stripped.includes('go to favorites') || stripped.includes('open favourites') || stripped.includes('open favorites') || includesAny(stripped, NAV_FAVOURITES)) {
-    return { type: 'navigate', target: 'favourites', utterance: stripped };
-  }
-
-  if (includesAny(stripped, KEYWORDS.scrollUp)) {
-    return { type: 'scroll', direction: 'up', utterance: stripped };
-  }
-  if (includesAny(stripped, KEYWORDS.scrollDown)) {
-    return { type: 'scroll', direction: 'down', utterance: stripped };
-  }
-
   // command to remove games form wishilit or favourites
   const removeMatch = stripped.match(/^(?:remove|delete)\s+(.+?)\s+from\s+(favourites|favorites|wishlist)\b/);
   if (removeMatch) {
@@ -121,6 +104,24 @@ export function interpretTranscript(transcript) {
     const listRaw = moveMatch[2].toLowerCase();
     const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
     return { type: 'library', action: 'move', list, title, utterance: stripped };
+  }
+
+  // command to navigate to the library page and its subsections
+  if (includesAny(stripped, NAV_LIBRARY) || stripped.includes('go to library') || stripped.includes('open my library')) {
+    return { type: 'navigate', target: 'library', utterance: stripped };
+  }
+  if (stripped.includes('go to wishlist') || stripped.includes('open wishlist') || includesAny(stripped, NAV_WISHLIST)) {
+    return { type: 'navigate', target: 'wishlist', utterance: stripped };
+  }
+  if (stripped.includes('go to favourites') || stripped.includes('go to favorites') || stripped.includes('open favourites') || stripped.includes('open favorites') || includesAny(stripped, NAV_FAVOURITES)) {
+    return { type: 'navigate', target: 'favourites', utterance: stripped };
+  }
+
+  if (includesAny(stripped, KEYWORDS.scrollUp)) {
+    return { type: 'scroll', direction: 'up', utterance: stripped };
+  }
+  if (includesAny(stripped, KEYWORDS.scrollDown)) {
+    return { type: 'scroll', direction: 'down', utterance: stripped };
   }
 
   // command to apply filters

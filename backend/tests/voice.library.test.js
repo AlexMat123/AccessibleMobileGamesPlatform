@@ -38,6 +38,6 @@ describe('Voice interpreter - library commands', () => {
       .post('/api/voice/interpret')
       .send({ transcript: 'platform add game to favourites' })
       .expect(200);
-    expect(res.body.intent).toEqual({ type: 'game', action: 'favourites', utterance: 'platform add game to favourites' });
+    expect(res.body.intent).toEqual({ type: 'game', action: 'favourites', utterance: 'add game to favourites' });
   });
 });
