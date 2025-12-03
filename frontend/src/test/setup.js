@@ -1,8 +1,4 @@
-import { expect, afterEach } from 'vitest';
-import { cleanup } from '@testing-library/react';
-import * as matchers from '@testing-library/jest-dom/matchers';
+import '@testing-library/jest-dom/vitest';
 
-expect.extend(matchers);
+// You can put any global test setup here (e.g. mocks) in future.
 
-// Ensure React Testing Library cleans up between tests so DOM isn't duplicated.
-afterEach(() => cleanup());
