@@ -1,6 +1,6 @@
 import profile from '../assets/profile.jpg';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword, getHelpfulVotes } from '../api';
+import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword, getHelpfulVotes } from '../api.js';
 import { pushToast } from '../components/ToastHost.jsx';
 
 export default function Profile() {

@@ -48,7 +48,15 @@ describe('Games API (mocked DB)', () => {
     const res = await request(app).get('/api/games/search').expect(200);
 
     expect(res.body).toEqual([
-      { id: 3, title: 'Gamma', platform: 'PC', releaseDate: null, rating: 5, imageUrl: null, tags: ['Adventure','Strategy'] }
+      {
+        id: 3,
+        title: 'Gamma',
+        platform: 'PC',
+        releaseDate: null,
+        rating: 5,
+        images: [],
+        tags: ['Adventure', 'Strategy']
+      }
     ]);
     expect(mockFindAll).toHaveBeenCalled();
   });

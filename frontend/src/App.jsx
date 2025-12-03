@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
   applyThemeFromSettings(loadSettings());
 }
 
-// function to handle voice commands in library
+// Global listener to route voice navigation commands (library tabs, opening games) to the appropriate pages.
 function VoiceNavigator() {
   const navigate = useNavigate();
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getGameReports, fetchCurrentUser, resolveGameReport, deleteGame } from '../api';
+import { getGameReports, fetchCurrentUser, resolveGameReport, deleteGame } from '../api.js';
 import { pushToast } from '../components/ToastHost.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 

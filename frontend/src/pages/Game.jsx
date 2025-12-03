@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame, voteOnReview } from '../api';
+import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame } from '../api';
 import { fetchCurrentUser } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
-import { getAccessibilityPreferences } from '../api';
-import { loadSettings } from '../settings';
+import { getAccessibilityPreferences } from '../api.js';
+import { loadSettings } from '../settings.js';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
 
@@ -739,7 +739,7 @@ export default function Game() {
             <div className={`rounded-2xl border ${panelTone} p-4 space-y-4`}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p id="game-summary-heading" className={`text-sm font-semibold ${headingTone}`}>{gameTitle}</p>
+                  <p id="game-summary-heading" className={`text-sm font-semibold ${headingTone}`}>Game summary</p>
                   <p className={`text-xs ${subTone}`}>
                     {game.developer || 'Unknown developer'} - {game.category || 'Category'}
                   </p>

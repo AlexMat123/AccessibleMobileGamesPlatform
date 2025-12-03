@@ -61,6 +61,7 @@ router.get('/search', async (req, res) => {
     const q = String(req.query.q || '').trim();
     if (q.length < 2) return res.json([]);
 
+    // Prefer prefix matches, then anywhere matches, then alphabetical by length for predictable UX.
     const escPrefix = sequelize.escape(`${q}%`);
     const escAnywhere = sequelize.escape(`%${q}%`);
 
@@ -230,7 +231,7 @@ router.post('/:id/reports', authenticateToken, async (req, res) => {
             status: false,
         });
 
-        // Per your request, just return the status code; no body needed
+        // Per spec: just return status; no JSON body required
         return res.sendStatus(201);
     } catch (e) {
         console.error('Error handling game report:', e);

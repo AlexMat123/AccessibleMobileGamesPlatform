@@ -90,6 +90,11 @@ const sampleReviews = [
     { username: 'charlie', gameTitle: 'Game B', rating: 3, comment: 'Good RPG but a bit slow-paced.' }
 ];
 
+/**
+ * Idempotently seeds tags, users, games, and reviews.
+ * When `reset` is true, truncates existing data before seeding.
+ * Intended for dev/startup and integration/test runs.
+ */
 export async function seedGames({ reset = false } = {}) {
     await sequelize.transaction(async (t) => {
         if (reset) {

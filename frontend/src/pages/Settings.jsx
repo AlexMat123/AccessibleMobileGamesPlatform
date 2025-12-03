@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { loadSettings, saveSettings } from '../settings';
+import { loadSettings, saveSettings } from '../settings.js';
 
 const focusRing = 'focus-visible:outline focus-visible:outline-4 focus-visible:outline-lime-400 focus-visible:outline-offset-2';
 

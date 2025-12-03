@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
+/**
+ * Ensure the configured MariaDB database exists (no-op if already present).
+ * Uses connection credentials from `backend/.env`.
+ */
 export async function createDatabaseIfNotExists() {
   const conn = await mariadb.createConnection({
     host: process.env.DB_HOST,

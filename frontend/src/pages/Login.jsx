@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { loginUser } from '../api';
+import { loginUser } from '../api.js';
 import { pushToast } from '../components/ToastHost.jsx';
 import { useNavigate } from 'react-router-dom';
 
