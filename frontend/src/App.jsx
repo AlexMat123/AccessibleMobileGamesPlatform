@@ -14,6 +14,7 @@ import Profile from './pages/Profile.jsx';
 import ReportsPage from './pages/Reports.jsx';
 import { loadSettings } from './settings';
 import Library from './pages/Library.jsx';
+import { searchGames } from './api.js';
 
 const applyThemeFromSettings = (settings) => {
   if (typeof document === 'undefined') return;
@@ -99,6 +100,29 @@ function VoiceNavigator() {
           }, 150);
           return;
         }
+      }
+      // Handle opening specific games globally
+      if (type === 'game-card' && detail?.action === 'open' && detail.title) {
+        const title = normalize(detail.title || '');
+        if (title === 'library' || title === 'my library') {
+          e.preventDefault?.();
+          navigate('/library');
+          return;
+        }
+        e.preventDefault?.();
+        (async () => {
+          try {
+            const results = await searchGames({ q: detail.title });
+            if (!results || results.length === 0) return;
+            const needle = title;
+            const match =
+              results.find(g => normalize(g.name || g.title) === needle) ||
+              results.find(g => normalize(g.name || g.title).includes(needle)) ||
+              results[0];
+            if (match && match.id != null) navigate(`/games/${match.id}`);
+          } catch {}
+        })();
+        return;
       }
       // fallback, some controllers emit game-card for "open library"
       if (type === 'game-card' && detail?.action === 'open') {

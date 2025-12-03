@@ -147,6 +147,16 @@ export function interpretTranscript(transcript) {
     return { type: 'search', query: query || stripped, utterance: stripped };
   }
 
+  // Open game by title (e.g., "open tetris", "play aurora quest")
+  const openGameMatch = stripped.match(/^(?:open|play|launch)\s+(.+)$/i);
+  if (openGameMatch) {
+    const title = openGameMatch[1].trim();
+    const navWords = ['library', 'my library', 'search', 'settings', 'accessibility'];
+    if (!navWords.includes(title.toLowerCase())) {
+      return { type: 'game-card', action: 'open', title, utterance: stripped };
+    }
+  }
+
   return null;
 }
 
