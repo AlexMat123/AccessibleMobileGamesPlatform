@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame } from '../api';
+import { getGame, createReviewForGame, getReviewsForGame, followGame, unfollowGame, getFollowedGames, reportGame, voteOnReview } from '../api';
 import { fetchCurrentUser } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 import { getAccessibilityPreferences } from '../api';
@@ -876,6 +876,40 @@ export default function Game() {
                             </div>
                             <div><RatingStars value={r.rating} /></div>
                             <p style={{ margin: '4px 0' }}>{r.comment || 'No comment provided.'}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                                <button
+                                  aria-label="Like review"
+                                  onClick={async () => {
+                                    try {
+                                      const desired = r.myVote === 1 ? 0 : 1;
+                                      await voteOnReview(r.id, desired);
+                                      r.likes = (r.likes || 0) + (desired === 1 ? (r.myVote === 1 ? -1 : 1) : (r.myVote === 1 ? -1 : 0));
+                                      if (r.myVote === -1 && desired === 1) r.dislikes = Math.max(0, (r.dislikes || 0) - 1);
+                                      if (desired === 0 && r.myVote === -1) r.dislikes = r.dislikes || 0;
+                                      r.myVote = desired;
+                                      const next = [...reviews];
+                                      setGame(g => ({ ...g, reviews: next }));
+                                    } catch {}
+                                  }}
+                                  className={`px-2 py-1 rounded text-xs ${r.myVote===1 ? 'theme-btn' : 'theme-subtle border theme-border'}`}
+                                >👍 {r.likes || 0}</button>
+                                <button
+                                  aria-label="Dislike review"
+                                  onClick={async () => {
+                                    try {
+                                      const desired = r.myVote === -1 ? 0 : -1;
+                                      await voteOnReview(r.id, desired);
+                                      r.dislikes = (r.dislikes || 0) + (desired === -1 ? (r.myVote === -1 ? -1 : 1) : (r.myVote === -1 ? -1 : 0));
+                                      if (r.myVote === 1 && desired === -1) r.likes = Math.max(0, (r.likes || 0) - 1);
+                                      if (desired === 0 && r.myVote === 1) r.likes = r.likes || 0;
+                                      r.myVote = desired;
+                                      const next = [...reviews];
+                                      setGame(g => ({ ...g, reviews: next }));
+                                    } catch {}
+                                  }}
+                                  className={`px-2 py-1 rounded text-xs ${r.myVote===-1 ? 'theme-btn' : 'theme-subtle border theme-border'}`}
+                                >👎 {r.dislikes || 0}</button>
+                            </div>
                         </div>
                     ))}
 
