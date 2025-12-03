@@ -33,6 +33,7 @@ function stripFiller(text) {
   let t = normalize(text);
   const fillers = [
     'hey platform',
+    'platform',
     'can you',
     'could you',
     'please',
@@ -44,11 +45,14 @@ function stripFiller(text) {
     'could you maybe',
     'maybe you can',
     'can you maybe',
-    'would you'
+    'would you',
+    'no command parsed'
   ];
   fillers.forEach((f) => {
     t = t.replace(f, ' ');
   });
+  // also trim any leading 'no command parsed' artifacts
+  t = t.replace(/^no\s+command\s+parsed\s+/i, ' ');
   return t.replace(/\s+/g, ' ').trim();
 }
 
@@ -145,6 +149,82 @@ export function interpretTranscript(transcript) {
   if (includesAny(stripped, KEYWORDS.searchVerbs)) {
     const query = stripped.replace(/^(search|find|look for|show|show me)\s*/i, '').trim();
     return { type: 'search', query: query || stripped, utterance: stripped };
+  }
+
+  // Profile accessibility preferences: enable/disable/toggle
+  const prefMatch = stripped.match(/^(?:enable|turn on|disable|turn off|toggle)\s+(visual|motor|cognitive|hearing)\s*(?:impairment\s|accessibility)?$/i);
+  if (prefMatch) {
+    const area = prefMatch[1].toLowerCase();
+    const verb = stripped.split(/\s+/)[0]; // enable|disable|toggle
+    let value;
+    if (/enable|turn on/i.test(verb)) value = true;
+    else if (/disable|turn off/i.test(verb)) value = false;
+    // toggle -> omit value to let frontend toggle
+    return { type: 'profile', action: 'set-pref', area, ...(value !== undefined ? { value } : {}), utterance: stripped };
+  }
+  // Save preferences on profile
+  if (/^(?:save|confirm)\s+(?:prefs|preferences)$/i.test(stripped)) {
+    return { type: 'profile', action: 'save-preferences', utterance: stripped };
+  }
+
+  // Edit profile modal
+  if (/^edit\s+profile$/i.test(stripped)) {
+    return { type: 'profile', action: 'edit-profile', utterance: stripped };
+  }
+
+  // Set profile fields: username and email
+  // Examples:
+  // - "set username to Alex"
+  // - "change my username to gamer42"
+  // - "update email to alex@example.com"
+  // - "my email is alex@example.com"
+  const setUsernameMatch = stripped.match(/^(?:set|change|update)\s+(?:my\s+)?username\s+(?:to|as)\s+(.+)$/i);
+  if (setUsernameMatch) {
+    const value = setUsernameMatch[1].trim();
+    return { type: 'profile', action: 'set-field', field: 'username', value, utterance: stripped };
+  }
+  const setEmailMatch = stripped.match(/^(?:set|change|update)\s+(?:my\s+)?email\s+(?:to|as)\s+(.+)$/i);
+  if (setEmailMatch) {
+    const value = setEmailMatch[1].trim();
+    return { type: 'profile', action: 'set-field', field: 'email', value, utterance: stripped };
+  }
+  const myEmailIsMatch = stripped.match(/^my\s+email\s+(?:is|'s)\s+(.+)$/i);
+  if (myEmailIsMatch) {
+    const value = myEmailIsMatch[1].trim();
+    return { type: 'profile', action: 'set-field', field: 'email', value, utterance: stripped };
+  }
+
+  // Confirm update or cancel edit
+  if (/^(?:save|update)\s+profile$/i.test(stripped)) {
+    return { type: 'profile', action: 'update-profile', utterance: stripped };
+  }
+  if (/^(?:cancel|discard)\s+(?:edit|changes)$/i.test(stripped)) {
+    return { type: 'profile', action: 'cancel-edit', utterance: stripped };
+  }
+
+  // Open change password modal
+  if (/^(?:open|show)?\s*change\s+password$/i.test(stripped) || /^change\s+password$/i.test(stripped)) {
+    return { type: 'profile', action: 'change-password', utterance: stripped };
+  }
+
+  // Set password fields
+  const setCurrentPwd = stripped.match(/^(?:set|type|enter|fill)\s+(?:the\s+)?current\s+password\s+(?:to|as\s+)?(.+)/i);
+  if (setCurrentPwd) {
+    const value = setCurrentPwd[1].trim();
+    return { type: 'profile', action: 'set-password-field', field: 'currentPassword', value, utterance: stripped };
+  }
+  const setNewPwd = stripped.match(/^(?:set|type|enter|fill)\s+(?:the\s+)?new\s+password\s+(?:to|as\s+)?(.+)/i);
+  if (setNewPwd) {
+    const value = setNewPwd[1].trim();
+    return { type: 'profile', action: 'set-password-field', field: 'newPassword', value, utterance: stripped };
+  }
+
+  // Submit or cancel password change
+  if (/^(?:update|confirm)\s+(?:password|change password)$/i.test(stripped)) {
+    return { type: 'profile', action: 'submit-password', utterance: stripped };
+  }
+  if (/^(?:cancel|close)\s+(?:password|change password)$/i.test(stripped)) {
+    return { type: 'profile', action: 'cancel-password', utterance: stripped };
   }
 
   // Open game by title (e.g., "open tetris", "play aurora quest")

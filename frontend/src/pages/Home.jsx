@@ -299,10 +299,10 @@ export default function Home() {
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`w-11 h-11 rounded-full flex items-center justify-center bg-white text-slate-900 shadow-lg border theme-border hover:opacity-90`}
+      className="w-11 h-11 rounded-full flex items-center justify-center bg-white text-slate-900 shadow-lg border theme-border hover:opacity-90 leading-none text-lg font-semibold"
       style={{ zIndex: 20 }}
     >
-      {children}
+      <span className="flex items-center justify-center leading-none">{children}</span>
     </button>
   );
 
@@ -485,13 +485,13 @@ export default function Home() {
         </header>
 
         {fg && (
-          <section ref={featuredSectionRef} className={`${cardTone} p-6 mt-6`} aria-label="Featured and newest games">
+          <section ref={featuredSectionRef} className={`${cardTone} p-4 sm:p-5 mt-4`} aria-label="Featured and newest games">
             <div className="sr-only" aria-live="polite">
               {featuredAnnouncement}
             </div>
-            <div className="flex flex-col gap-6 lg:flex-row">
-              <div className="flex flex-col items-center justify-center lg:w-1/2 gap-4">
-                <div className="relative w-full flex items-center justify-center">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+              <div className="flex flex-col items-center justify-center lg:w-1/2 gap-3 max-w-3xl mx-auto">
+                <div className="relative w-full flex items-center justify-center pb-8">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-2 z-20 pointer-events-none">
                     <div className="pointer-events-auto">
                       <CarouselButton onClick={prevFeatured} label="Previous featured game">
@@ -510,17 +510,17 @@ export default function Home() {
                     <div className="flex items-center justify-center">
                       {featuredWindow().map((g, idx, arr) => {
                         const isCenter = idx === 1 || arr.length === 1;
-                        const scale = isCenter ? "scale-100" : "scale-90";
-                        const maxWidth = isCenter ? "max-w-md" : "max-w-[8rem]";
-                        const offset = !isCenter ? (idx === 0 ? -24 : 24) : 0;
-                        const overlap = isCenter ? "mx-4 z-10" : "mx-[-28px] z-0";
+                        const maxWidth = isCenter ? "max-w-sm md:max-w-md" : "max-w-[6rem]";
+                        const offset = !isCenter ? (idx === 0 ? -18 : 18) : 0;
+                        const overlap = isCenter ? "mx-3 z-10" : "mx-[-18px] z-0";
+                        const scale = isCenter ? 0.95 : 0.85;
                         return (
                           <div
                             key={g.id}
-                            className={`transition duration-300 relative ${maxWidth} aspect-video rounded-xl overflow-hidden shadow-md border theme-border theme-subtle ${scale} ${overlap}`}
+                            className={`transition duration-300 relative ${maxWidth} aspect-video rounded-xl overflow-hidden shadow-md border theme-border theme-subtle ${overlap}`}
                             style={{
-                              opacity: isCenter ? 1 : 0.25,
-                              transform: `translateX(${offset}px) scale(${isCenter ? 1 : 0.9})`,
+                              opacity: isCenter ? 1 : 0.35,
+                              transform: `translateX(${offset}px) scale(${scale})`,
                             }}
                             role="group"
                             aria-label={`Slide ${featuredIndex + 1} of ${featuredGames.length}: ${g.title}. Platform ${g.platform || "unknown"}. Rating ${(g.rating || 0).toFixed(1)}. Tags ${(g.tags || []).join(", ")}`}
@@ -546,9 +546,7 @@ export default function Home() {
                       })}
                     </div>
                   </div>
-                </div>
-                <div className="w-full space-y-2" aria-live="polite">
-                  <div className="flex justify-center gap-2 mt-1" aria-hidden="true">
+                  <div className="absolute -bottom-1 left-0 right-0 flex justify-center gap-2" aria-hidden="true">
                     {featuredGames.map((g, i) => (
                       <button
                         key={g.id}
@@ -562,8 +560,8 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="lg:w-1/2 flex flex-col justify-between space-y-4 min-h-[20rem]">
-                <div className="space-y-3">
+              <div className="lg:w-1/2 flex flex-col justify-between space-y-3 min-h-[16rem]">
+                <div className="space-y-2">
                   <div className="flex justify-between items-start gap-3 flex-wrap">
                     <h2 className="text-2xl font-semibold theme-text">{fg.title}</h2>
                     <p className={smallMeta}>

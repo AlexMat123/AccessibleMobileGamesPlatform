@@ -145,6 +145,12 @@ const gameActions = [
   [/^(previous|prev|back) (gallery|carousel)$/, () => ({ type: 'game', action: 'prev-additional' })]
 ];
 
+const passwordActions = [
+  [/^(confirm|submit|update)\s+password$/, () => ({ type: 'profile', action: 'submit-password' })],
+  [/^(confirm|submit|update)\s+change\s+password$/, () => ({ type: 'profile', action: 'submit-password' })],
+  [/^(cancel|close)\s+(?:password|change\s+password)$/i, () => ({ type: 'profile', action: 'cancel-password' })],
+];
+
 const authActions = [
   // Navigation aliases
   [/^(log in|login|sign in)$/, () => ({ type: 'navigate', target: 'login' })],
@@ -167,19 +173,21 @@ const authActions = [
     form: 'signup'
   })],
   // Dictate into the last focused field
-  [/^(type|enter|dictate|write|fill in)\s+(.+)/, (_, value) => ({ type: 'auth', action: 'type', value: value.trim() })],
+  [/^(type|enter|dictate|write|fill in)\s+(.+)/, (_, value) => ({ type: 'auth', action: 'type', value: (value || '').trim() })],
   // Field setting
   [/^(set|fill|enter|type)\s+(email address|email|username|user name|identifier)\s+(.+)/, (_, field, value) => {
     const normField = field.includes('user') || field === 'username' ? 'username' : field.includes('identifier') ? 'identifier' : 'email';
     const form = normField === 'username' ? 'signup' : undefined;
-    return { type: 'auth', action: 'set-field', field: normField === 'email' ? 'email' : normField, value: value.trim(), form };
+    const raw = (value || '').trim();
+    const cleaned = raw.replace(/^to\s+/i, '').trim();
+    return { type: 'auth', action: 'set-field', field: normField === 'email' ? 'email' : normField, value: cleaned, form };
   }],
-  [/^(set|fill|enter|type)\s+password\s+(.+)/, (_, value) => ({ type: 'auth', action: 'set-field', field: 'password', value: value.trim() })],
+  [/^(set|fill|enter|type)\s+password\s+(.+)/, (_, value) => ({ type: 'auth', action: 'set-field', field: 'password', value: (value || '').trim() })],
   [/^(set|fill|enter|type)\s+(confirm|confirm password|repeat password)\s+(.+)/, (_, __, value) => ({
     type: 'auth',
     action: 'set-field',
     field: 'confirm',
-    value: value.trim(),
+    value: (value || '').trim(),
     form: 'signup'
   })],
   // Submit / clear
@@ -270,9 +278,11 @@ function levenshtein(a, b) {
 function stripWakeWordLoose(input = '') {
   const wakeWord = getWakeWord();
   const normalised = input.toLowerCase().replace(/[.,!?]/g, '').trim();
-  const slice = normalised.slice(0, wakeWord.length + 4); // allow minor slips
+  // Allow a few mistakes (e.g., "hay plaform") based on wake word length
+  const tolerance = Math.max(2, Math.ceil(wakeWord.length * 0.25));
+  const slice = normalised.slice(0, wakeWord.length + tolerance);
   const distance = levenshtein(slice.slice(0, wakeWord.length), wakeWord);
-  if (distance <= 2) return normalised.slice(wakeWord.length).trim();
+  if (distance <= tolerance) return normalised.slice(wakeWord.length).trim();
   return null;
 }
 
@@ -409,6 +419,50 @@ function wakeWordFallback(command) {
   return { type: 'settings', action: 'set-wake-word', value: word };
 }
 
+// Curated phrases for page-level commands to allow tolerant matching without heavy overlap.
+const FUZZY_COMMANDS = [
+  { phrase: 'follow game', intent: { type: 'game', action: 'follow' } },
+  { phrase: 'unfollow game', intent: { type: 'game', action: 'unfollow' } },
+  { phrase: 'add to wishlist', intent: { type: 'game', action: 'wishlist' } },
+  { phrase: 'open reviews', intent: { type: 'game', action: 'open-reviews' } },
+  { phrase: 'write review', intent: { type: 'game', action: 'write-review' } },
+  { phrase: 'submit review', intent: { type: 'game', action: 'submit-review' } },
+  { phrase: 'cancel review', intent: { type: 'game', action: 'cancel-review' } },
+  { phrase: 'report game', intent: { type: 'game', action: 'report' } },
+  { phrase: 'next image', intent: { type: 'game', action: 'next-image' } },
+  { phrase: 'previous image', intent: { type: 'game', action: 'prev-image' } },
+  { phrase: 'next gallery', intent: { type: 'game', action: 'next-additional' } },
+  { phrase: 'previous gallery', intent: { type: 'game', action: 'prev-additional' } },
+  { phrase: 'edit profile', intent: { type: 'profile', action: 'edit-profile' } },
+  { phrase: 'change password', intent: { type: 'profile', action: 'change-password' } },
+  { phrase: 'save preferences', intent: { type: 'profile', action: 'save-preferences' } },
+  { phrase: 'update profile', intent: { type: 'profile', action: 'update-profile' } },
+  { phrase: 'cancel edit', intent: { type: 'profile', action: 'cancel-edit' } },
+  { phrase: 'cancel password', intent: { type: 'profile', action: 'cancel-password' } },
+  { phrase: 'focus stats', intent: { type: 'profile', action: 'focus', target: 'stats' } },
+  { phrase: 'focus reviews', intent: { type: 'profile', action: 'focus', target: 'reviews' } },
+  { phrase: 'focus followed games', intent: { type: 'profile', action: 'focus', target: 'followed' } },
+  { phrase: 'show voice commands', intent: { type: 'commands', action: 'open' } },
+  { phrase: 'hide voice commands', intent: { type: 'commands', action: 'close' } }
+];
+
+function fuzzyCommandMatch(command) {
+  const normalized = command.toLowerCase().trim();
+  let best = null;
+  for (const entry of FUZZY_COMMANDS) {
+    const target = entry.phrase.toLowerCase().trim();
+    const tolerance = Math.max(1, Math.ceil(target.length * 0.25));
+    const slice = normalized.slice(0, target.length + tolerance);
+    const dist = levenshtein(slice.slice(0, target.length), target);
+    if (dist <= tolerance) {
+      if (!best || dist < best.dist) {
+        best = { dist, intent: { ...entry.intent, utterance: command } };
+      }
+    }
+  }
+  return best ? best.intent : null;
+}
+
 export function parseCommand(rawTranscript) {
   let command = stripWakeWord(rawTranscript);
   if (!command) command = stripWakeWordLoose(rawTranscript);
@@ -435,12 +489,14 @@ export function parseCommand(rawTranscript) {
     match(command, gameCards) ||
     ratingFallback(command) ||
     basicFallback(command) ||
+    match(command, passwordActions) ||
     match(command, authActions) ||
     textSizeFallback(command) ||
     buttonSizeFallback(command) ||
     spacingFallback(command) ||
     wakeWordFallback(command) ||
-    forgivingFilterMatch(command);
+    forgivingFilterMatch(command) ||
+    fuzzyCommandMatch(command);
 
   if (result) return { ...result, utterance: command };
 
