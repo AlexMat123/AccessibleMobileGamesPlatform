@@ -12,6 +12,7 @@ export default function Library() {
   const [sortBy, setSortBy] = useState('relevance');
   const [selectedTags, setSelectedTags] = useState(() => new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [commandsOpen, setCommandsOpen] = useState(false);
 
   const [favourites, setFavourites] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -340,6 +341,17 @@ export default function Library() {
   const cardTone = 'theme-surface border theme-border rounded-2xl shadow-lg';
   const subtleCard = 'theme-subtle border theme-border rounded-xl';
   const smallMeta = 'text-sm theme-muted';
+  const voiceCommands = [
+    { phrase: 'Show favourites / Show wishlist', description: 'Switch between library tabs' },
+    { phrase: 'Search for "<game>"', description: 'Fill the search box with your query' },
+    { phrase: 'Filter by <tag>', description: 'Add one or more tags to the filters' },
+    { phrase: 'Reset filters', description: 'Clear all selected tags' },
+    { phrase: 'Sort by rating / title / relevance', description: 'Change the sort order' },
+    { phrase: 'Open <game>', description: 'Focus and open a game card' },
+    { phrase: 'Move <game> to wishlist / favourites', description: 'Move a game between lists' },
+    { phrase: 'Remove <game> from favourites / wishlist', description: 'Delete a game from a list' },
+    { phrase: 'Scroll up / Scroll down', description: 'Scroll the page view' },
+  ];
 
   const renderCard = (g) => (
     <div key={g.id} className={`relative flex items-start gap-4 ${cardTone} p-4`} data-voice-title={g.title || g.name}>
@@ -385,7 +397,46 @@ export default function Library() {
     <div className={`${shellTone} min-h-screen flex justify-center py-10 lg:pb-20`}>
       <main className="page-shell w-full max-w-6xl space-y-8">
         <section className={`${cardTone} p-6`}>
-          <h1 className="text-2xl font-bold theme-text mb-6">My favourites / wishlist</h1>
+          <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
+            <h1 className="text-2xl font-bold theme-text">My favourites / wishlist</h1>
+            <button
+              type="button"
+              onClick={() => setCommandsOpen((v) => !v)}
+              className="inline-flex items-center gap-2 rounded-md border theme-border theme-surface px-4 py-2 text-sm font-semibold theme-text shadow-sm transition hover:-translate-y-[1px] hover:shadow focus-visible:translate-y-0"
+              aria-expanded={commandsOpen}
+              aria-controls="library-voice-commands"
+            >
+              {commandsOpen ? 'Hide voice commands' : 'Show voice commands'}
+            </button>
+          </div>
+
+          {commandsOpen && (
+            <section
+              id="library-voice-commands"
+              className="rounded-xl border theme-border theme-surface px-4 py-3 text-sm theme-text mb-4"
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold theme-text">Voice commands for Library</p>
+                <button
+                  type="button"
+                  className="text-xs font-semibold underline theme-muted"
+                  onClick={() => setCommandsOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {voiceCommands.map((cmd) => (
+                  <li key={cmd.phrase}>
+                    <span className="font-semibold">{cmd.phrase}</span>
+                    <span className="ml-2 text-xs theme-muted">{cmd.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           <div className="flex gap-2 mb-4">
             <button onClick={() => setTab('favourites')} className={`flex-1 rounded-md px-4 py-2 text-sm font-medium ${tab === 'favourites' ? 'theme-btn' : 'theme-subtle border theme-border'}`}>Favourites</button>
             <button onClick={() => setTab('wishlist')} className={`flex-1 rounded-md px-4 py-2 text-sm font-medium ${tab === 'wishlist' ? 'theme-btn' : 'theme-subtle border theme-border'}`}>Wishlist</button>

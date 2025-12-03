@@ -18,6 +18,8 @@ const navigation = [
   [/^(open )?(filters|filter panel)$/, () => ({ type: 'ui', target: 'filters', action: 'open' })],
   [/^(open )?favourites?$/, () => ({ type: 'navigate', target: 'favourites' })],
   [/^(go to|open) search$/, () => ({ type: 'navigate', target: 'search' })],
+  [/^(open|show) (commands|voice commands)$/, () => ({ type: 'commands', action: 'open' })],
+  [/^(close|hide) (commands|voice commands)$/, () => ({ type: 'commands', action: 'close' })],
   [/^(go to|open) profile$/, () => ({ type: 'navigate', target: 'profile' })],
   [/^(go to|open|show) login$/, () => ({ type: 'navigate', target: 'login' })],
   [/^(go to|open|show) (sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
@@ -147,7 +149,7 @@ const authActions = [
   // Navigation aliases
   [/^(log in|login|sign in)$/, () => ({ type: 'navigate', target: 'login' })],
   [/^(sign up|signup|register)$/, () => ({ type: 'navigate', target: 'signup' })],
-  [/^spell (e-?mail|email|password|username|user name|login|identifier)$/, (_, field) => ({
+  [/^spell (e-?mail|email|password|username|user name|login|identifier|confirm(?:ed)? password|confirm|repeat password)$/, (_, field) => ({
     type: 'spell',
     action: 'start',
     field: normaliseField(field)

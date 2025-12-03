@@ -8,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [commandsOpen, setCommandsOpen] = useState(false);
   const navigate = useNavigate();
   const formRef = useRef(null);
   const identifierRef = useRef(null);
@@ -34,6 +35,12 @@ export default function Login() {
   useEffect(() => {
     const onVoice = (e) => {
       const detail = e.detail || {};
+      if (detail.type === 'commands') {
+        e.preventDefault();
+        if (detail.action === 'open') setCommandsOpen(true);
+        if (detail.action === 'close') setCommandsOpen(false);
+        return;
+      }
       if (detail.type !== 'auth') return;
       if (detail.form && detail.form !== 'login') return;
 
@@ -106,6 +113,19 @@ export default function Login() {
     return () => window.removeEventListener('voiceCommand', onVoice);
   }, []);
 
+  const voiceCommands = [
+    { phrase: 'Focus login field', description: 'Moves focus to the email/username field.' },
+    { phrase: 'Focus password', description: 'Moves focus to the password field.' },
+    { phrase: 'Type <text>', description: 'Dictate into the last focused field.' },
+    { phrase: 'Spell email', description: 'Start spelling; say letters, “capital A”, “dot”, “backspace”, “stop spelling”.' },
+    { phrase: 'Spell password', description: 'Start spelling; say letters, “capital A”, “dot”, “backspace”, “stop spelling”.' },
+    { phrase: 'Stop spelling', description: 'Exit spelling mode.' },
+    { phrase: 'Submit login', description: 'Submit the form.' },
+    { phrase: 'Clear login form', description: 'Reset all fields.' },
+    { phrase: 'Open commands', description: 'Show this command list.' },
+    { phrase: 'Close commands', description: 'Hide the command list.' }
+  ];
+
   const applySpelling = (detail) => {
     const normalizeField = (field) => {
       const f = (field || '').toLowerCase();
@@ -167,7 +187,34 @@ export default function Login() {
         onSubmit={onSubmit}
         className="w-full max-w-sm theme-surface border theme-border rounded-xl shadow p-6 space-y-4"
       >
-        <h1 className="text-xl font-semibold theme-text">Log in</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-xl font-semibold theme-text">Log in</h1>
+          <button
+            type="button"
+            onClick={() => setCommandsOpen((v) => !v)}
+            className="text-xs font-semibold theme-text underline"
+            aria-expanded={commandsOpen}
+            aria-controls="login-voice-commands"
+          >
+            {commandsOpen ? 'Hide voice commands' : 'Show voice commands'}
+          </button>
+        </div>
+        {commandsOpen && (
+          <section
+            id="login-voice-commands"
+            className="rounded-md border theme-border bg-slate-50/60 dark:bg-slate-900/40 px-3 py-2 text-sm theme-text"
+            aria-live="polite"
+          >
+            <ul className="space-y-1">
+              {voiceCommands.map((cmd) => (
+                <li key={cmd.phrase}>
+                  <span className="font-semibold">{cmd.phrase}</span>
+                  <span className="ml-2 text-xs theme-muted">{cmd.description}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {error && <div className="text-sm text-red-600">{error}</div>}
         <div>
           <label className="block text-sm theme-text mb-1">Email or Username</label>

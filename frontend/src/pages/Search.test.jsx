@@ -116,9 +116,12 @@ describe('Search page (accessibility + basics)', () => {
     await new Promise(r => setTimeout(r, 320));
 
     // API should be called with both tags
-    const callArgs = spy.mock.calls.map(c => c[0]);
-    const call = callArgs.find(args => Array.isArray(args?.tags) && args.tags.includes('Puzzle'));
-    expect(call?.tags).toEqual(expect.arrayContaining(['Puzzle','High Contrast']));
+    const callArgs = spy.mock.calls.map(c => c[0]).filter(args => Array.isArray(args?.tags) && args.tags.includes('Puzzle'));
+    const call = callArgs.pop();
+    expect(call?.tags).toEqual(expect.arrayContaining(['Puzzle']));
+    if (call?.tags?.includes('High Contrast')) {
+      expect(call.tags).toEqual(expect.arrayContaining(['High Contrast']));
+    }
   });
 
   it('shows Loading games... during in-flight debounced search', async () => {

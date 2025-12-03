@@ -20,6 +20,7 @@ export default function Search() {
   const [selectedTags, setSelectedTags] = useState(() => new Set());
   const [selectedGenre, setSelectedGenre] = useState('');
   const [sortBy, setSortBy] = useState('relevance');
+  const [commandsOpen, setCommandsOpen] = useState(false);
 
   const [serverResults, setServerResults] = useState([]);
   const [serverLoading, setServerLoading] = useState(false);
@@ -266,6 +267,19 @@ export default function Search() {
     cognition: 'Cognitive'
   };
 
+  const voiceCommands = useMemo(() => [
+    { phrase: 'Search for <term>', description: 'Fill the search box and jump to results.' },
+    { phrase: 'Filter by <tag>', description: 'Toggle an accessibility tag, e.g., “filter by motor”.' },
+    { phrase: 'Reset filters', description: 'Clear search, tags, and genre.' },
+    { phrase: 'Open filters', description: 'Scroll to the filters panel.' },
+    { phrase: 'Open genre dropdown', description: 'Focus the genre selector.' },
+    { phrase: 'Sort by rating/newest/title', description: 'Change how results are ordered.' },
+    { phrase: 'Open <game name>', description: 'Open a specific game card from results.' },
+    { phrase: 'Scroll down/up', description: 'Scroll the results list.' },
+    { phrase: 'Open commands', description: 'Show this command list.' },
+    { phrase: 'Close commands', description: 'Hide the command list.' },
+  ], []);
+
   const canonicalCategoryName = (name = '') => {
     const needle = normalizeText(name);
     const fromGroups = categories.find((c) => {
@@ -414,6 +428,13 @@ export default function Search() {
       const type = detail.type;
       if (!type) return;
       console.info('[voice][search] command', detail);
+
+      if (type === 'commands') {
+        e.preventDefault();
+        if (detail.action === 'close') setCommandsOpen(false);
+        else setCommandsOpen(true);
+        return;
+      }
 
       if (type === 'search' && detail.query) {
         e.preventDefault();
@@ -601,7 +622,51 @@ export default function Search() {
     <div className={`min-h-screen ${pageTone} ${textSizeClass}`}>
       <main className="page-shell max-w-6xl py-8 sm:py-12">
         <header className="space-y-4">
-          <h1 className="text-3xl font-bold sm:text-4xl">Search</h1>
+          <div className="flex flex-wrap items-center gap-3 justify-between">
+            <h1 className="text-3xl font-bold sm:text-4xl">Search</h1>
+            <button
+              type="button"
+              onClick={() => setCommandsOpen((v) => !v)}
+              className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${focusVisible} ${
+                settings.highContrastMode
+                  ? 'border-lime-400 bg-slate-900 text-lime-100 hover:bg-slate-800'
+                  : settings.theme === 'dark'
+                    ? 'border-slate-700 bg-slate-800 text-slate-100 hover:bg-slate-700'
+                    : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+              }`}
+              aria-expanded={commandsOpen}
+              aria-controls="voice-commands-panel"
+            >
+              {commandsOpen ? 'Hide voice commands' : 'Show voice commands'}
+            </button>
+          </div>
+
+          {commandsOpen && (
+            <section
+              id="voice-commands-panel"
+              className={`rounded-xl border px-4 py-3 ${sectionTone}`}
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className={`text-sm font-semibold ${headingTone}`}>Voice commands for this page</p>
+                <button
+                  type="button"
+                  className={`text-xs font-semibold underline ${subTone} ${focusVisible}`}
+                  onClick={() => setCommandsOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+              <ul className="mt-2 space-y-1 text-sm">
+                {voiceCommands.map((cmd) => (
+                  <li key={cmd.phrase} className={`${subTone}`}>
+                    <span className="font-semibold text-lime-600 dark:text-lime-300">{cmd.phrase}</span>
+                    <span className="ml-2 text-xs opacity-80">{cmd.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </header>
 
         {/* Search bar */}
