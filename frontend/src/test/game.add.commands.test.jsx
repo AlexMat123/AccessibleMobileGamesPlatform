@@ -41,5 +41,5 @@ it('adds current game to wishlist via voice and does not navigate', async () => 
   });
 
   const stored = JSON.parse(localStorage.getItem('wishlist:1')) || [];
-  expect(stored.includes(7)).toBe(true);
+  expect(stored.some(g => (g?.id ?? g) === 7)).toBe(true);
 });
