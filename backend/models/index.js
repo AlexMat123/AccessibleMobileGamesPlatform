@@ -4,6 +4,7 @@ import sequelize from '../config/db.js';
 import  User from './User.js';
 import  Review from './Review.js';
 import GameReport from './GameReport.js';
+import ReviewVote from './ReviewVote.js';
 
 // Define many\-to\-many associations after models are initialized
 Game.belongsToMany(Tag, {
@@ -59,6 +60,11 @@ GameReport.belongsTo(Game, { as: 'game', foreignKey: 'gameId' });
 User.hasMany(GameReport, { as: 'gameReports', foreignKey: 'userId' });
 GameReport.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 
+Review.hasMany(ReviewVote, { as: 'votes', foreignKey: 'reviewId' });
+ReviewVote.belongsTo(Review, { as: 'review', foreignKey: 'reviewId' });
+User.hasMany(ReviewVote, { as: 'reviewVotes', foreignKey: 'userId' });
+ReviewVote.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
 // Export initialized models
-export { Game, Tag, User, Review, GameReport, sequelize };
-export default { Game, Tag, User, Review, GameReport, sequelize };
+export { Game, Tag, User, Review, GameReport, ReviewVote, sequelize };
+export default { Game, Tag, User, Review, GameReport, ReviewVote, sequelize };

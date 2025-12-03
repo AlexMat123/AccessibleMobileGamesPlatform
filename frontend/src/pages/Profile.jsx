@@ -1,6 +1,6 @@
 import profile from '../assets/profile.jpg';
 import { useEffect, useState } from 'react';
-import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword } from '../api';
+import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword, getHelpfulVotes } from '../api';
 import { pushToast } from '../components/ToastHost.jsx';
 
 export default function Profile() {
@@ -16,6 +16,7 @@ export default function Profile() {
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [followedGames, setFollowedGames] = useState([]);
   const [fgIndex, setFgIndex] = useState(0); // carousel index
+  const [helpfulVotes, setHelpfulVotes] = useState(0);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({ username: '', email: '' });
@@ -68,6 +69,11 @@ export default function Profile() {
         try {
           const games = await getFollowedGames(data.id);
           if (mounted) setFollowedGames(games);
+        } catch { /* ignore */ }
+        // load helpful votes
+        try {
+          const hv = await getHelpfulVotes(data.id);
+          if (mounted) setHelpfulVotes(Number(hv.helpfulVotes || 0));
         } catch { /* ignore */ }
       } catch (e) {
         if (!mounted) return;
@@ -179,7 +185,7 @@ export default function Profile() {
                   <StatBox label="Favourites" value={0} />
                   <StatBox label="Watchlist" value={0} />
                   <StatBox label="Reviews" value={reviews.length} />
-                  <StatBox label="Helpful Votes" value={0} />
+                  <StatBox label="Helpful Votes" value={helpfulVotes} />
                 </div>                {/* Accessibility needs (auto height) */}
                 <div className="theme-surface border theme-border rounded-xl shadow p-4 flex flex-col">
                   <div>

@@ -1,5 +1,5 @@
 import express from 'express';
-import { Review, Game, User, Tag } from '../models/index.js';
+import { Review, Game, User, Tag, ReviewVote } from '../models/index.js';
 import authenticateToken from '../middleware/auth.js';
 import { Op, literal } from 'sequelize';
 import bcrypt from 'bcryptjs';
@@ -255,5 +255,24 @@ router.get('/:id/recommended-games', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/users/:id/helpful-votes - total likes received on this user's reviews
+router.get('/:id/helpful-votes', authenticateToken, async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    if (Number.isNaN(userId)) return res.status(400).json({ message: 'Invalid user id' });
+    if (req.user?.id !== userId) return res.status(403).json({ message: 'Forbidden' });
+
+    // Count votes with value=1 on reviews authored by this user
+    const count = await ReviewVote.count({
+      where: { value: 1 },
+      include: [{ model: Review, as: 'review', where: { userId }, attributes: [] }]
+    });
+
+    res.json({ helpfulVotes: count });
+  } catch (e) {
+    console.error('Helpful votes error:', e);
+    res.status(500).json({ message: 'Failed to load helpful votes' });
+  }
+});
 
 export default router;
