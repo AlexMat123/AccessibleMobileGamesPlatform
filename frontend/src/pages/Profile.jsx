@@ -27,9 +27,167 @@ export default function Profile() {
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdError, setPwdError] = useState('');
 
+  const [helpfulVotes, setHelpfulVotes] = useState(0);
+
   // for carousel display
   const VISIBLE = 5;
   const getWindow = (arr, start, size) => Array.from({ length: Math.min(size, arr.length) }, (_, k) => arr[(start + k) % arr.length]);
+
+  // voice feedback style and helper
+  const flashClass = 'voice-flash';
+  useEffect(() => {
+    const styleId = 'voice-flash-style-profile';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `.${flashClass}{outline:3px solid #a5f3fc;outline-offset:3px;transition: outline-color .4s ease}`;
+    document.head.appendChild(style);
+  }, []);
+  const focusAndFlash = (el) => { if (!el) return; try { el.focus?.({ preventScroll: true }); } catch {} el.classList.add(flashClass); setTimeout(()=>el.classList.remove(flashClass), 1000); };
+  const norm = (s='') => String(s).toLowerCase().replace(/[.,!?]/g,'').trim();
+
+  // Voice commands for the Profile page
+  useEffect(() => {
+    const onVoice = (e) => {
+      const d = e.detail || {};
+      const type = d.type;
+      if (!type) return;
+
+      // Open edit profile modal
+      if (type === 'profile' && d.action === 'edit-profile') {
+        e.preventDefault?.();
+        setShowEdit(true);
+        setTimeout(() => focusAndFlash(document.querySelector('input[type="text"]')), 50);
+        return;
+      }
+      // Open change password modal
+      if (type === 'profile' && d.action === 'change-password') {
+        e.preventDefault?.();
+        setShowPwd(true);
+        setTimeout(() => focusAndFlash(document.querySelector('input[type="password"]')), 50);
+        return;
+      }
+      // Set password fields via voice
+      if (type === 'profile' && d.action === 'set-password-field' && d.field && typeof d.value === 'string') {
+        e.preventDefault?.();
+        if (!showPwd) setShowPwd(true);
+        const field = d.field;
+        if (field === 'currentPassword' || field === 'newPassword') {
+          setPwdForm(p => ({ ...p, [field]: d.value }));
+          setTimeout(() => {
+            const selector = field === 'currentPassword' ? 'input[type="password"]' : 'input[type="password"]:nth-of-type(2)';
+            const el = document.querySelector(selector);
+            if (el) { try { el.value = d.value; } catch {} focusAndFlash(el); }
+          }, 60);
+        }
+        return;
+      }
+      // Submit change password
+      if (type === 'profile' && d.action === 'submit-password') {
+        e.preventDefault?.();
+        if (!showPwd) setShowPwd(true);
+        setTimeout(() => {
+          // Prefer submitting the form element
+          const modal = document.querySelector('.fixed.inset-0');
+          const form = modal ? modal.querySelector('form') : document.querySelector('form');
+          if (form && typeof form.requestSubmit === 'function') {
+            focusAndFlash(form.querySelector('button[type="submit"]'));
+            form.requestSubmit();
+            return;
+          }
+          // Fallback: click the submit button
+          const btn = Array.from(document.querySelectorAll('button')).find(b => /change password|update|submit/i.test(b.textContent || ''))
+            || document.querySelector('button[type="submit"]');
+          if (btn) { focusAndFlash(btn); btn.click(); }
+        }, 80);
+        return;
+      }
+      // Cancel change password
+      if (type === 'profile' && d.action === 'cancel-password') {
+        e.preventDefault?.();
+        setShowPwd(false);
+        return;
+      }
+      // Save accessibility preferences
+      if (type === 'profile' && d.action === 'save-preferences') {
+        e.preventDefault?.();
+        const btn = document.querySelector('button[type="submit"]');
+        focusAndFlash(btn);
+        btn?.click();
+        return;
+      }
+      // Toggle a specific accessibility pref: { area: 'visual'|'motor'|'cognitive'|'hearing', value?: boolean }
+      if (type === 'profile' && d.action === 'set-pref' && d.area) {
+        const area = norm(d.area);
+        const val = d.value;
+        if (['visual','motor','cognitive','hearing'].includes(area)) {
+          e.preventDefault?.();
+          if (typeof val === 'boolean') {
+            setPrefs(p => ({ ...p, [area]: val }));
+          } else {
+            // toggle if value not provided
+            setPrefs(p => ({ ...p, [area]: !p[area] }));
+          }
+          const chk = document.getElementById(`pref-${area}`);
+          focusAndFlash(chk);
+        }
+        return;
+      }
+      // Set profile fields (username/email) and open edit modal if needed
+      if (type === 'profile' && d.action === 'set-field' && d.field && typeof d.value === 'string') {
+        e.preventDefault?.();
+        const field = d.field === 'user name' ? 'username' : d.field;
+        if (field === 'username' || field === 'email') {
+          if (!showEdit) setShowEdit(true);
+          setEditForm(f => ({ ...f, [field]: d.value }));
+          setTimeout(() => {
+            const selector = field === 'username' ? 'input[type="text"]' : 'input[type="email"]';
+            const el = document.querySelector(selector);
+            if (el) {
+              try { el.value = d.value; } catch {}
+              focusAndFlash(el);
+            }
+          }, 60);
+        }
+        return;
+      }
+      // Update profile (submit edit form)
+      if (type === 'profile' && d.action === 'update-profile') {
+        e.preventDefault?.();
+        if (!showEdit) setShowEdit(true);
+        setTimeout(() => {
+          const btn = Array.from(document.querySelectorAll('button')).find(b => /update profile/i.test(b.textContent || ''));
+          if (btn) { focusAndFlash(btn); btn.click(); }
+        }, 80);
+        return;
+      }
+      // Cancel edit profile
+      if (type === 'profile' && d.action === 'cancel-edit') {
+        e.preventDefault?.();
+        if (showEdit) setShowEdit(false);
+        return;
+      }
+      // Focus sections
+      if (type === 'profile' && d.action === 'focus' && d.target) {
+        const t = norm(d.target);
+        const sel = t.includes('reviews') ? '[aria-label="User reviews list"]' : t.includes('followed') ? 'h3:text("Followed Games")' : t.includes('stats') ? '[aria-label="User statistics"]' : null;
+        if (sel) {
+          const el = document.querySelector('[aria-label="User reviews list"]') || document.querySelector('[aria-label="User statistics"]');
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          focusAndFlash(el);
+        }
+        return;
+      }
+      // Page scroll
+      if (type === 'scroll') {
+        const dir = d.direction;
+        window.scrollBy({ top: dir === 'up' ? -400 : 400, behavior: 'smooth' });
+        return;
+      }
+    };
+    window.addEventListener('voiceCommand', onVoice);
+    return () => window.removeEventListener('voiceCommand', onVoice);
+  }, [setShowEdit, setShowPwd, setPrefs, showEdit, editForm, showPwd]);
 
   useEffect(() => {
     let mounted = true;

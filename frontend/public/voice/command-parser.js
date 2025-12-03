@@ -145,6 +145,12 @@ const gameActions = [
   [/^(previous|prev|back) (gallery|carousel)$/, () => ({ type: 'game', action: 'prev-additional' })]
 ];
 
+const passwordActions = [
+  [/^(confirm|submit|update)\s+password$/, () => ({ type: 'profile', action: 'submit-password' })],
+  [/^(confirm|submit|update)\s+change\s+password$/, () => ({ type: 'profile', action: 'submit-password' })],
+  [/^(cancel|close)\s+(?:password|change\s+password)$/i, () => ({ type: 'profile', action: 'cancel-password' })],
+];
+
 const authActions = [
   // Navigation aliases
   [/^(log in|login|sign in)$/, () => ({ type: 'navigate', target: 'login' })],
@@ -167,19 +173,21 @@ const authActions = [
     form: 'signup'
   })],
   // Dictate into the last focused field
-  [/^(type|enter|dictate|write|fill in)\s+(.+)/, (_, value) => ({ type: 'auth', action: 'type', value: value.trim() })],
+  [/^(type|enter|dictate|write|fill in)\s+(.+)/, (_, value) => ({ type: 'auth', action: 'type', value: (value || '').trim() })],
   // Field setting
   [/^(set|fill|enter|type)\s+(email address|email|username|user name|identifier)\s+(.+)/, (_, field, value) => {
     const normField = field.includes('user') || field === 'username' ? 'username' : field.includes('identifier') ? 'identifier' : 'email';
     const form = normField === 'username' ? 'signup' : undefined;
-    return { type: 'auth', action: 'set-field', field: normField === 'email' ? 'email' : normField, value: value.trim(), form };
+    const raw = (value || '').trim();
+    const cleaned = raw.replace(/^to\s+/i, '').trim();
+    return { type: 'auth', action: 'set-field', field: normField === 'email' ? 'email' : normField, value: cleaned, form };
   }],
-  [/^(set|fill|enter|type)\s+password\s+(.+)/, (_, value) => ({ type: 'auth', action: 'set-field', field: 'password', value: value.trim() })],
+  [/^(set|fill|enter|type)\s+password\s+(.+)/, (_, value) => ({ type: 'auth', action: 'set-field', field: 'password', value: (value || '').trim() })],
   [/^(set|fill|enter|type)\s+(confirm|confirm password|repeat password)\s+(.+)/, (_, __, value) => ({
     type: 'auth',
     action: 'set-field',
     field: 'confirm',
-    value: value.trim(),
+    value: (value || '').trim(),
     form: 'signup'
   })],
   // Submit / clear
@@ -435,6 +443,7 @@ export function parseCommand(rawTranscript) {
     match(command, gameCards) ||
     ratingFallback(command) ||
     basicFallback(command) ||
+    match(command, passwordActions) ||
     match(command, authActions) ||
     textSizeFallback(command) ||
     buttonSizeFallback(command) ||
