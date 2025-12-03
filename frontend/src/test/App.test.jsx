@@ -1,26 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import App from '../App.jsx';
 
-// Mock all the page components
-vi.mock('./pages/Home', () => ({ default: () => <div data-testid="home-page">Home Page</div> }));
-vi.mock('./pages/Login', () => ({ default: () => <div>Login Page</div> }));
-vi.mock('./pages/Signup', () => ({ default: () => <div>Signup Page</div> }));
-vi.mock('./pages/Search', () => ({ default: () => <div>Search Page</div> }));
-vi.mock('./pages/Game', () => ({ default: () => <div>Game Page</div> }));
-vi.mock('./pages/Profile', () => ({ default: () => <div>Profile Page</div> }));
-vi.mock('./pages/Settings', () => ({ default: () => <div>Settings Page</div> }));
-vi.mock('./pages/Reports', () => ({ default: () => <div>Reports Page</div> }));
+// Mock all the page components - paths relative to App.jsx location
+vi.mock('../pages/Home', () => ({ default: () => <div data-testid="home-page">Home Page</div> }));
+vi.mock('../pages/Login', () => ({ default: () => <div>Login Page</div> }));
+vi.mock('../pages/Signup', () => ({ default: () => <div>Signup Page</div> }));
+vi.mock('../pages/Search', () => ({ default: () => <div>Search Page</div> }));
+vi.mock('../pages/Game', () => ({ default: () => <div>Game Page</div> }));
+vi.mock('../pages/Profile', () => ({ default: () => <div>Profile Page</div> }));
+vi.mock('../pages/Settings', () => ({ default: () => <div>Settings Page</div> }));
+vi.mock('../pages/Reports', () => ({ default: () => <div>Reports Page</div> }));
 
 // Mock components
-vi.mock('./components/Navbar', () => ({ default: () => <nav data-testid="navbar">Navbar</nav> }));
-vi.mock('./components/ToastHost', () => ({
+vi.mock('../components/Navbar', () => ({ default: () => <nav data-testid="navbar">Navbar</nav> }));
+vi.mock('../components/ToastHost', () => ({
   default: () => <div data-testid="toast-host">ToastHost</div>,
   pushToast: vi.fn()
 }));
 
 // Mock settings
-vi.mock('./settings', () => ({
+vi.mock('../settings', () => ({
   loadSettings: vi.fn(() => ({
     theme: 'light',
     highContrastMode: false,
