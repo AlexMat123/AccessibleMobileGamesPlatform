@@ -310,7 +310,40 @@ export default function Game() {
                     pushToast('Download action not implemented yet');
                     break;
                 case 'wishlist':
-                    pushToast('Wishlist action not implemented yet');
+                    // Add current game to wishlist
+                    e.preventDefault?.();
+                    try {
+                        const me = currentUser;
+                        if (!me || !game) { pushToast('Sign in to use wishlist'); break; }
+                        const key = `wishlist:${me.id}`;
+                        const raw = localStorage.getItem(key);
+                        const ids = raw ? JSON.parse(raw) : [];
+                        const exists = ids.some((i) => (i.id ?? i) === game.id);
+                        const idItem = game.id;
+                        const next = exists ? ids : [...ids, idItem];
+                        localStorage.setItem(key, JSON.stringify(next));
+                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+                        pushToast(exists ? 'Already in wishlist' : 'Added to wishlist');
+                        focusAndFlash(document.body);
+                    } catch { /* ignore */ }
+                    break;
+                case 'favourites':
+                    // Add current game to favourites
+                    e.preventDefault?.();
+                    try {
+                        const me = currentUser;
+                        if (!me || !game) { pushToast('Sign in to use favourites'); break; }
+                        const key = `favourites:${me.id}`;
+                        const raw = localStorage.getItem(key);
+                        const ids = raw ? JSON.parse(raw) : [];
+                        const exists = ids.some((i) => (i.id ?? i) === game.id);
+                        const idItem = game.id;
+                        const next = exists ? ids : [...ids, idItem];
+                        localStorage.setItem(key, JSON.stringify(next));
+                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+                        pushToast(exists ? 'Already in favourites' : 'Added to favourites');
+                        focusAndFlash(document.body);
+                    } catch { /* ignore */ }
                     break;
                 case 'report':
                     if (!currentUser) {
@@ -382,7 +415,7 @@ export default function Game() {
         };
         window.addEventListener('voiceCommand', onVoice);
         return () => window.removeEventListener('voiceCommand', onVoice);
-    }, []);
+    }, [currentUser, game]);
 
     const openReviewModal = (opts = {}) => {
         const preserve = opts.preserve === true;
@@ -644,15 +677,39 @@ export default function Game() {
                                     setFollowBusy(false);
                                 }
                             }}>{followBusy ? (isFollowed ? 'Unfollowing…' : 'Following…') : (isFollowed ? 'Unfollow Game' : 'Follow Game')}</button>
-                            <button style={secBtn}>Add to Wishlist</button>
-                            {/*<button style={secBtn} aria-label="Favourite">❤</button>*/}
-                            <button style={dangerBtn} onClick={() => {
-                                if (!currentUser) {
-                                    pushToast('Please log in to report this game');
-                                    return;
-                                }
-                                openReportModal();
-                            }}>Report Game</button>
+                            <button style={secBtn} onClick={async () => {
+                                try {
+                                    if (!currentUser) { pushToast('Log in to add to wishlist'); return; }
+                                    const key = `wishlist:${currentUser.id}`;
+                                    const raw = localStorage.getItem(key);
+                                    const list = raw ? JSON.parse(raw) : [];
+                                    const item = { id: game.id, title: game.name, imageUrl: (Array.isArray(game.images)&&game.images[0])||'/placeholder1.png', rating: game.rating, tags: (game.tags||[]).map(t=>t.name) };
+                                    if (!list.find(g => g.id === item.id)) {
+                                        localStorage.setItem(key, JSON.stringify([...list, item]));
+                                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+                                        pushToast('Added to wishlist');
+                                    } else {
+                                        pushToast('Already in wishlist');
+                                    }
+                                } catch (e) { pushToast('Wishlist error'); }
+                            }}>❤ Wishlist</button>
+                            <button style={secBtn} onClick={async () => {
+                                try {
+                                    if (!currentUser) { pushToast('Log in to add favourites'); return; }
+                                    const key = `favourites:${currentUser.id}`;
+                                    const raw = localStorage.getItem(key);
+                                    const list = raw ? JSON.parse(raw) : [];
+                                    const item = { id: game.id, title: game.name, imageUrl: (Array.isArray(game.images)&&game.images[0])||'/placeholder1.png', rating: game.rating, tags: (game.tags||[]).map(t=>t.name) };
+                                    if (!list.find(g => g.id === item.id)) {
+                                        localStorage.setItem(key, JSON.stringify([...list, item]));
+                                        window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+                                        pushToast('Added to favourites');
+                                    } else {
+                                        pushToast('Already a favourite');
+                                    }
+                                } catch (e) { pushToast('Favourites error'); }
+                            }}>★ Favourites</button>
+                            <button style={dangerBtn}>Report Game</button>
                         </div>
                         <div style={{ fontSize: 10, marginTop: 12, color: 'var(--text-muted)' }}>Release Date: {date}</div>
                     </div>

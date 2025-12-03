@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { fetchGames } from "../api";
+import { fetchGames, fetchCurrentUser, followGame } from "../api";
 import { Link, useNavigate } from "react-router-dom";
+import { pushToast } from "../components/ToastHost.jsx";
 
 export default function Home() {
   const [games, setGames] = useState([]);
@@ -236,10 +237,11 @@ export default function Home() {
   };
 
   const getImageUrl = (game) => {
-    if (game && Array.isArray(game.images) && game.images.length > 0) {
-      return game.images[0];
-    }
-    return null;
+    if (!game) return '/placeholder1.png';
+    if (game.imageUrl) return game.imageUrl;
+    if (Array.isArray(game.images) && game.images.length > 0) return game.images[0];
+    if (Array.isArray(game.thumbImages) && game.thumbImages.length > 0) return game.thumbImages[0];
+    return '/placeholder1.png';
   };
 
   const formatDate = (dateString) => {
@@ -376,6 +378,49 @@ export default function Home() {
     </section>
   );
 
+  const addToWishlist = async (game) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { pushToast('Please log in to use wishlist'); return; }
+      const me = await fetchCurrentUser();
+      const key = `wishlist:${me.id}`;
+      const raw = localStorage.getItem(key);
+      const list = raw ? JSON.parse(raw) : [];
+      const item = { id: game.id, title: game.title || game.name, imageUrl: getImageUrl(game), rating: game.rating, tags: game.tags };
+      if (list.find((g) => g.id === item.id)) {
+        pushToast('Already in wishlist');
+        return;
+      }
+      const next = [...list, item];
+      localStorage.setItem(key, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'wishlist', gameId: game.id } }));
+      pushToast('Added to wishlist');
+    } catch (e) {
+      pushToast('Wishlist error');
+      console.error(e);
+    }
+  };
+
+  const addToFavourites = async (game) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { pushToast('Please log in to use favourites'); return; }
+      const me = await fetchCurrentUser();
+      const key = `favourites:${me.id}`;
+      const raw = localStorage.getItem(key);
+      const list = raw ? JSON.parse(raw) : [];
+      const item = { id: game.id, title: game.title || game.name, imageUrl: getImageUrl(game), rating: game.rating, tags: game.tags };
+      if (list.find((g) => g.id === item.id)) { pushToast('Already a favourite'); return; }
+      const next = [...list, item];
+      localStorage.setItem(key, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('library:updated', { detail: { type: 'favourites', gameId: game.id } }));
+      pushToast('Added to favourites');
+    } catch (e) {
+      pushToast('Favourites error');
+      console.error(e);
+    }
+  };
+
   return (
     <div className={`home-page ${shellTone} min-h-screen`} ref={homePageRef}>
       <main className="page-shell max-w-6xl space-y-12 pb-16" id="page-content" role="main">
@@ -493,12 +538,14 @@ export default function Home() {
                   <button
                     className="theme-btn rounded-lg px-5 py-2 text-sm sm:text-base font-semibold inline-flex items-center justify-center hover:opacity-90"
                     type="button"
+                    onClick={() => addToWishlist(fg)}
                   >
                     Add to wishlist
                   </button>
                   <button
                     className="theme-subtle border theme-border rounded-lg px-5 py-2 text-sm sm:text-base font-semibold inline-flex items-center justify-center hover:opacity-90"
                     type="button"
+                    onClick={() => addToFavourites(fg)}
                   >
                     Add to favourites
                   </button>
