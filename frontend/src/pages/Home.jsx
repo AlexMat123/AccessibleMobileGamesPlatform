@@ -448,7 +448,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setCommandsOpen((v) => !v)}
-                className="rounded-lg px-3 py-2 text-xs font-semibold underline theme-text"
+                className="inline-flex items-center gap-2 rounded-md border theme-border theme-surface px-4 py-2 text-sm font-semibold theme-text shadow-sm transition hover:-translate-y-[1px] hover:shadow focus-visible:translate-y-0"
                 aria-expanded={commandsOpen}
                 aria-controls="home-voice-commands"
               >
