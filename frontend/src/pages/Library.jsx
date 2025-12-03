@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchCurrentUser } from '../api.js';
 import { getGame } from '../api.js';
@@ -13,6 +13,7 @@ export default function Library() {
   const [selectedTags, setSelectedTags] = useState(() => new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [commandsOpen, setCommandsOpen] = useState(false);
+  const commandsBtnRef = useRef(null);
 
   const [favourites, setFavourites] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -38,6 +39,17 @@ export default function Library() {
       const detail = e.detail || {};
       const { type } = detail;
       if (!type) return;
+
+      if (type === 'commands') {
+        e.preventDefault?.();
+        const shouldOpen = detail.action !== 'close';
+        setCommandsOpen(shouldOpen);
+        setTimeout(() => {
+          const btn = commandsBtnRef.current || document.querySelector('[aria-controls="library-voice-commands"]');
+          focusAndFlash(btn);
+        }, 30);
+        return;
+      }
 
       // query for searching
       if (type === 'search' && detail.query != null) {
@@ -342,6 +354,7 @@ export default function Library() {
   const subtleCard = 'theme-subtle border theme-border rounded-xl';
   const smallMeta = 'text-sm theme-muted';
   const voiceCommands = [
+    { phrase: 'Open commands / Close commands', description: 'Show or hide this help panel' },
     { phrase: 'Show favourites / Show wishlist', description: 'Switch between library tabs' },
     { phrase: 'Search for "<game>"', description: 'Fill the search box with your query' },
     { phrase: 'Filter by <tag>', description: 'Add one or more tags to the filters' },
@@ -402,6 +415,7 @@ export default function Library() {
             <button
               type="button"
               onClick={() => setCommandsOpen((v) => !v)}
+              ref={commandsBtnRef}
               className="inline-flex items-center gap-2 rounded-md border theme-border theme-surface px-4 py-2 text-sm font-semibold theme-text shadow-sm transition hover:-translate-y-[1px] hover:shadow focus-visible:translate-y-0"
               aria-expanded={commandsOpen}
               aria-controls="library-voice-commands"
