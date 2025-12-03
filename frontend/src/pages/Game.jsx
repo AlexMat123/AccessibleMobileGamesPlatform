@@ -739,7 +739,7 @@ export default function Game() {
             <div className={`rounded-2xl border ${panelTone} p-4 space-y-4`}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p id="game-summary-heading" className={`text-sm font-semibold ${headingTone}`}>{gameTitle}</p>
+                  <p id="game-summary-heading" className={`text-sm font-semibold ${headingTone}`}>Game summary</p>
                   <p className={`text-xs ${subTone}`}>
                     {game.developer || 'Unknown developer'} - {game.category || 'Category'}
                   </p>

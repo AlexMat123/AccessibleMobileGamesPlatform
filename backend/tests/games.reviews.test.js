@@ -14,6 +14,7 @@ jest.unstable_mockModule('../models/index.js', () => ({
   },
   User: {},
   GameReport: {},
+  ReviewVote: {},
 }));
 
 const authMock = jest.fn((req, _res, next) => {
@@ -100,6 +101,10 @@ describe('Game reviews routes', () => {
         as: 'user',
         attributes: ['id', 'username', 'email'],
       });
+      expect(opts.include[1]).toMatchObject({
+        as: 'votes',
+        attributes: ['userId', 'value'],
+      });
 
       expect(res.body).toEqual([
         {
@@ -107,6 +112,9 @@ describe('Game reviews routes', () => {
           rating: 5,
           comment: 'Great',
           createdAt: '2024-01-01',
+          likes: 0,
+          dislikes: 0,
+          myVote: 0,
           user: { id: 2, username: 'u1', email: 'e@example.com' },
         },
       ]);

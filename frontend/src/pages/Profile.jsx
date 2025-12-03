@@ -1,5 +1,5 @@
 import profile from '../assets/profile.jpg';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchCurrentUser, fetchUserReviews, getAccessibilityPreferences, updateAccessibilityPreferences, getFollowedGames, updateUserProfile, changeUserPassword, getHelpfulVotes } from '../api.js';
 import { pushToast } from '../components/ToastHost.jsx';
 

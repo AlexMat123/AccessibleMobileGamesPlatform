@@ -14,6 +14,7 @@ jest.unstable_mockModule('../models/index.js', () => ({
   Review: {},
   User: {},
   GameReport: {},
+  ReviewVote: {},
 }));
 
 jest.unstable_mockModule('../middleware/auth.js', () => ({

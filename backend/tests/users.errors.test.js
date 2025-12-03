@@ -11,6 +11,8 @@ jest.unstable_mockModule('../models/index.js', () => ({
   Review: { findAll: mockReviewFindAll },
   Game: { findAll: mockGameFindAll },
   Tag: {},
+  GameReport: {},
+  ReviewVote: {},
 }));
 
 const authMock = jest.fn((req, _res, next) => {

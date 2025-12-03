@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Profile from '../pages/Profile.jsx';
 import * as api from '../api.js';
+import { pushToast } from '../components/ToastHost.jsx';
 
 vi.mock('../api', () => ({
   fetchCurrentUser: vi.fn(),
@@ -12,6 +13,7 @@ vi.mock('../api', () => ({
   getFollowedGames: vi.fn(),
   updateUserProfile: vi.fn(),
   changeUserPassword: vi.fn(),
+  getHelpfulVotes: vi.fn(),
 }));
 
 vi.mock('../components/ToastHost.jsx', () => ({
@@ -170,6 +172,135 @@ describe('Profile page', () => {
       expect(api.getFollowedGames).toHaveBeenCalled();
       // Should not crash - error is ignored
     });
+  });
+
+  it('saves accessibility preferences and shows toast', async () => {
+    api.fetchCurrentUser.mockResolvedValueOnce(mockUser);
+    api.fetchUserReviews.mockResolvedValueOnce([]);
+    api.getAccessibilityPreferences.mockResolvedValueOnce({
+      visual: false, motor: false, cognitive: false, hearing: false,
+    });
+    api.getFollowedGames.mockResolvedValueOnce([]);
+    api.getHelpfulVotes.mockResolvedValueOnce({ helpfulVotes: 2 });
+    api.updateAccessibilityPreferences.mockResolvedValueOnce({
+      visual: true, motor: false, cognitive: true, hearing: false,
+    });
+
+    renderProfile();
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /profile/i })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByLabelText(/Visual Impairments/i));
+    fireEvent.click(screen.getByLabelText(/Cognitive Support/i));
+    fireEvent.click(screen.getByRole('button', { name: /confirm preferences/i }));
+
+    await waitFor(() => {
+      expect(api.updateAccessibilityPreferences).toHaveBeenCalledWith(1, {
+        visual: true, motor: false, cognitive: true, hearing: false,
+      });
+    });
+    expect(pushToast).toHaveBeenCalledWith('Accessibility preferences updated');
+  });
+
+  it('shows error when saving accessibility preferences fails', async () => {
+    api.fetchCurrentUser.mockResolvedValueOnce(mockUser);
+    api.fetchUserReviews.mockResolvedValueOnce([]);
+    api.getAccessibilityPreferences.mockResolvedValueOnce({
+      visual: false, motor: false, cognitive: false, hearing: false,
+    });
+    api.getFollowedGames.mockResolvedValueOnce([]);
+    api.getHelpfulVotes.mockResolvedValueOnce({ helpfulVotes: 0 });
+    api.updateAccessibilityPreferences.mockRejectedValueOnce(new Error('nope'));
+
+    renderProfile();
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /profile/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /confirm preferences/i }));
+
+    await waitFor(() => expect(screen.getByText(/nope/i)).toBeInTheDocument());
+  });
+
+  it('updates profile via modal and closes on success', async () => {
+    api.fetchCurrentUser.mockResolvedValueOnce(mockUser);
+    api.fetchUserReviews.mockResolvedValueOnce([]);
+    api.getAccessibilityPreferences.mockResolvedValueOnce({});
+    api.getFollowedGames.mockResolvedValueOnce([]);
+    api.getHelpfulVotes.mockResolvedValueOnce({ helpfulVotes: 0 });
+    api.updateUserProfile.mockResolvedValueOnce({ username: 'newuser', email: 'new@example.com' });
+
+    renderProfile();
+
+    const editBtn = await screen.findByRole('button', { name: /edit profile/i });
+    fireEvent.click(editBtn);
+
+    const [usernameInput, emailInput] = screen.getAllByRole('textbox');
+    fireEvent.change(usernameInput, { target: { value: 'newuser' } });
+    fireEvent.change(emailInput, { target: { value: 'new@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    await waitFor(() => expect(api.updateUserProfile).toHaveBeenCalledWith(1, { username: 'newuser', email: 'new@example.com' }));
+    expect(pushToast).toHaveBeenCalledWith('Profile updated');
+    await waitFor(() => expect(screen.queryByRole('button', { name: /update profile/i })).not.toBeInTheDocument());
+    expect(screen.getAllByText(/newuser/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows edit error when profile update fails', async () => {
+    api.fetchCurrentUser.mockResolvedValueOnce(mockUser);
+    api.fetchUserReviews.mockResolvedValueOnce([]);
+    api.getAccessibilityPreferences.mockResolvedValueOnce({});
+    api.getFollowedGames.mockResolvedValueOnce([]);
+    api.getHelpfulVotes.mockResolvedValueOnce({ helpfulVotes: 0 });
+    api.updateUserProfile.mockRejectedValueOnce(new Error('bad update'));
+
+    renderProfile();
+
+    const editBtn = await screen.findByRole('button', { name: /edit profile/i });
+    fireEvent.click(editBtn);
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    await waitFor(() => expect(screen.getByText(/bad update/i)).toBeInTheDocument());
+  });
+
+  it('changes password and closes modal on success', async () => {
+    api.fetchCurrentUser.mockResolvedValueOnce(mockUser);
+    api.fetchUserReviews.mockResolvedValueOnce([]);
+    api.getAccessibilityPreferences.mockResolvedValueOnce({});
+    api.getFollowedGames.mockResolvedValueOnce([]);
+    api.getHelpfulVotes.mockResolvedValueOnce({ helpfulVotes: 0 });
+    api.changeUserPassword.mockResolvedValueOnce({});
+
+    renderProfile();
+
+    const changePwdBtn = await screen.findByRole('button', { name: /change password/i });
+    fireEvent.click(changePwdBtn);
+    await screen.findByRole('heading', { name: /change password/i });
+    const pwdInputs = document.querySelectorAll('input[type="password"]');
+    expect(pwdInputs.length).toBeGreaterThanOrEqual(2);
+    fireEvent.change(pwdInputs[0], { target: { value: 'oldpass' } });
+    fireEvent.change(pwdInputs[1], { target: { value: 'newpass' } });
+    fireEvent.click(screen.getByRole('button', { name: /update password/i }));
+
+    await waitFor(() => expect(api.changeUserPassword).toHaveBeenCalledWith(1, 'oldpass', 'newpass'));
+    expect(pushToast).toHaveBeenCalledWith('Password updated');
+    await waitFor(() => expect(screen.queryByRole('button', { name: /update password/i })).not.toBeInTheDocument());
+  });
+
+  it('shows password error when change fails', async () => {
+    api.fetchCurrentUser.mockResolvedValueOnce(mockUser);
+    api.fetchUserReviews.mockResolvedValueOnce([]);
+    api.getAccessibilityPreferences.mockResolvedValueOnce({});
+    api.getFollowedGames.mockResolvedValueOnce([]);
+    api.getHelpfulVotes.mockResolvedValueOnce({ helpfulVotes: 0 });
+    api.changeUserPassword.mockRejectedValueOnce(new Error('bad pwd'));
+
+    renderProfile();
+
+    const changePwdBtn = await screen.findByRole('button', { name: /change password/i });
+    fireEvent.click(changePwdBtn);
+    await screen.findByRole('heading', { name: /change password/i });
+    fireEvent.click(screen.getByRole('button', { name: /update password/i }));
+
+    await waitFor(() => expect(screen.getByText(/bad pwd/i)).toBeInTheDocument());
   });
 });
 

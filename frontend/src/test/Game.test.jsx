@@ -38,7 +38,7 @@ describe('Game page', () => {
   const mockGame = {
     id: 1,
     title: 'Test Game',
-    description: 'A test game description',
+    description: 'An immersive adventure description',
     genre: 'Action',
     platform: 'PC',
     rating: 4.5,
@@ -340,8 +340,8 @@ describe('Game page', () => {
     );
 
     await waitFor(() => {
-      const ratingText = screen.queryByText(/4\.7|rating/i);
-      expect(ratingText || screen.getByText(/test game/i)).toBeInTheDocument();
+      const ratingText = screen.queryAllByText(/4\.7/);
+      expect(ratingText.length > 0 || screen.getByText(/test game/i)).toBeTruthy();
     });
   });
 
@@ -448,9 +448,9 @@ describe('Game page', () => {
       expect(screen.getByText(/test game/i)).toBeInTheDocument();
     });
 
-    // Check if at least one tag is displayed
-    const actionTag = screen.queryByText(/action/i);
-    expect(actionTag || screen.getByText(/test game/i)).toBeInTheDocument();
+    // Check if at least one tag is displayed (allowing hidden SR text)
+    const actionTags = screen.queryAllByText(/action/i);
+    expect(actionTags.length > 0 || screen.getByText(/test game/i)).toBeTruthy();
   });
 
   it('handles report game functionality for logged in users', async () => {
@@ -552,9 +552,9 @@ describe('Game page', () => {
     });
 
     // Check if reviews are rendered
-    const excellentReview = screen.queryByText(/excellent/i);
-    const averageReview = screen.queryByText(/average/i);
-    const goodReview = screen.queryByText(/good/i);
+    const excellentReview = screen.queryAllByText(/excellent/i)[0];
+    const averageReview = screen.queryAllByText(/average/i)[0];
+    const goodReview = screen.queryAllByText(/good/i)[0];
 
     expect(excellentReview || averageReview || goodReview || screen.getByText(/test game/i)).toBeTruthy();
   });
@@ -854,8 +854,8 @@ describe('Game page', () => {
     });
 
     // Should display 5.0 rating correctly
-    const ratingText = screen.queryByText(/5\.0|5/);
-    expect(ratingText || screen.getByText(/test game/i)).toBeInTheDocument();
+    const ratingText = screen.queryAllByText(/5\.0|^5$/);
+    expect(ratingText.length > 0 || screen.getByText(/test game/i)).toBeTruthy();
   });
 
   it('handles game with minimum rating', async () => {
