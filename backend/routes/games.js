@@ -1,6 +1,6 @@
 // javascript
 import express from 'express';
-import { Game, Tag, Review, User, GameReport } from '../models/index.js';
+import { Game, Tag, Review, User, GameReport, ReviewVote } from '../models/index.js';
 import authenticateToken  from '../middleware/auth.js';
 import { Op, literal } from 'sequelize';
 import sequelize from '../config/db.js';
@@ -125,23 +125,79 @@ const serializeGame = (g) => {
 router.get('/:id/reviews', async (req, res) => {
     try {
         const gameId = req.params.id;
+        const auth = req.headers.authorization || '';
+        const [, token] = auth.split(' ');
+        let currentUserId = null;
+        try {
+          if (token) {
+            const jwt = (await import('jsonwebtoken')).default;
+            const payload = jwt.verify(token, process.env.JWT_SECRET);
+            currentUserId = payload?.id || null;
+          }
+        } catch {}
+
         const reviews = await Review.findAll({
             where: { gameId },
             include: [
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['id', 'username', 'email'],
-                },
+                { model: User, as: 'user', attributes: ['id', 'username', 'email'] },
+                { model: ReviewVote, as: 'votes', attributes: ['userId', 'value'] },
             ],
             order: [['createdAt', 'DESC']],
         });
 
-        res.json(reviews);
+        const data = reviews.map(r => {
+          const likes = (r.votes || []).filter(v => v.value === 1).length;
+          const dislikes = (r.votes || []).filter(v => v.value === -1).length;
+          const myVote = (r.votes || []).find(v => v.userId === currentUserId)?.value || 0;
+          return {
+            id: r.id,
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.createdAt,
+            user: r.user ? { id: r.user.id, username: r.user.username, email: r.user.email } : null,
+            likes,
+            dislikes,
+            myVote
+          };
+        });
+
+        res.json(data);
     } catch (e) {
         console.error('Error fetching reviews:', e);
         res.status(500).json({ message: 'Failed to fetch reviews' });
     }
+});
+
+router.post('/reviews/:reviewId/vote', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const reviewId = Number(req.params.reviewId);
+    let { value } = req.body || {};
+    value = Number(value);
+    if (![1, -1, 0].includes(value)) return res.status(400).json({ message: 'value must be 1 (like), -1 (dislike) or 0 (clear)' });
+
+    const review = await Review.findByPk(reviewId);
+    if (!review) return res.status(404).json({ message: 'Review not found' });
+
+    if (value === 0) {
+      await ReviewVote.destroy({ where: { userId, reviewId } });
+      return res.json({ ok: true, value: 0 });
+    }
+
+    const [vote] = await ReviewVote.findOrCreate({
+      where: { userId, reviewId },
+      defaults: { userId, reviewId, value }
+    });
+    if (vote.value !== value) {
+      vote.value = value;
+      await vote.save();
+    }
+
+    res.json({ ok: true, value: vote.value });
+  } catch (e) {
+    console.error('Vote error:', e);
+    res.status(500).json({ message: 'Failed to vote' });
+  }
 });
 
 router.post('/:id/reports', authenticateToken, async (req, res) => {

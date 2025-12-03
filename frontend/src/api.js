@@ -229,3 +229,27 @@ export async function deleteGame(id) {
   }
   return { ok: true, status: res.status };
 }
+
+export async function voteOnReview(reviewId, value) {
+  const res = await fetch(`${API_URL}/games/reviews/${reviewId}/vote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ value })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to vote');
+  }
+  return res.json();
+}
+
+export async function getHelpfulVotes(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/helpful-votes`, {
+    headers: { ...authHeaders() }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to load helpful votes');
+  }
+  return res.json();
+}

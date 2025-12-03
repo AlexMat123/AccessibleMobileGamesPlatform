@@ -407,13 +407,13 @@ export default function Settings() {
                     onToggle={() => setCaptionsAlways(v => !v)}
                     styles={toggleStyles}
                   />
-                  <ToggleRow
+                  {/* <ToggleRow
                     label="Replace audio alerts with visual indicators"
                     description="Flash banners or subtle pulses instead of sounds."
                     active={visualAlerts}
                     onToggle={() => setVisualAlerts(v => !v)}
                     styles={toggleStyles}
-                  />
+                  /> */}
                 </div>
               </div>
 
