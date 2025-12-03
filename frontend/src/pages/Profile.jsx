@@ -17,6 +17,8 @@ export default function Profile() {
   const [followedGames, setFollowedGames] = useState([]);
   const [fgIndex, setFgIndex] = useState(0); // carousel index
   const [helpfulVotes, setHelpfulVotes] = useState(0);
+  const [favCount, setFavCount] = useState(0);
+  const [wlCount, setWlCount] = useState(0);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({ username: '', email: '' });
@@ -84,6 +86,40 @@ export default function Profile() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  useEffect(() => {
+    function parseList(raw) {
+      try {
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch {
+        return [];
+      }
+    }
+    function recalcCounts(u) {
+      if (!u?.id) { setFavCount(0); setWlCount(0); return; }
+      const favRaw = localStorage.getItem(`favourites:${u.id}`);
+      const wlRaw = localStorage.getItem(`wishlist:${u.id}`);
+      const favs = parseList(favRaw);
+      const wls = parseList(wlRaw);
+      setFavCount(favs.length);
+      setWlCount(wls.length);
+    }
+    recalcCounts(user);
+    const onLibUpdated = (e) => { recalcCounts(user); };
+    const onStorage = (e) => {
+      if (!user?.id) return;
+      if (e && typeof e.key === 'string' && (e.key === `favourites:${user.id}` || e.key === `wishlist:${user.id}`)) {
+        recalcCounts(user);
+      }
+    };
+    window.addEventListener('library:updated', onLibUpdated);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('library:updated', onLibUpdated);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [user]);
 
   // resetting carousel index when list changes
   useEffect(() => { setFgIndex(0); }, [followedGames]);
@@ -182,8 +218,8 @@ export default function Profile() {
               <div className="lg:col-span-2 flex flex-col">
                 {/* Stats row */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6" aria-label="User statistics">
-                  <StatBox label="Favourites" value={0} />
-                  <StatBox label="Watchlist" value={0} />
+                  <StatBox label="Favourites" value={favCount} />
+                  <StatBox label="Watchlist" value={wlCount} />
                   <StatBox label="Reviews" value={reviews.length} />
                   <StatBox label="Helpful Votes" value={helpfulVotes} />
                 </div>                {/* Accessibility needs (auto height) */}

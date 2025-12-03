@@ -36,8 +36,6 @@ const applyThemeFromSettings = (settings) => {
 
 // Apply theme immediately on first load to avoid white flash before React mounts.
 if (typeof window !== 'undefined') {
-  // Force logged-out state on app start
-  try { localStorage.removeItem('token'); } catch {}
   applyThemeFromSettings(loadSettings());
 }
 
