@@ -419,6 +419,50 @@ function wakeWordFallback(command) {
   return { type: 'settings', action: 'set-wake-word', value: word };
 }
 
+// Curated phrases for page-level commands to allow tolerant matching without heavy overlap.
+const FUZZY_COMMANDS = [
+  { phrase: 'follow game', intent: { type: 'game', action: 'follow' } },
+  { phrase: 'unfollow game', intent: { type: 'game', action: 'unfollow' } },
+  { phrase: 'add to wishlist', intent: { type: 'game', action: 'wishlist' } },
+  { phrase: 'open reviews', intent: { type: 'game', action: 'open-reviews' } },
+  { phrase: 'write review', intent: { type: 'game', action: 'write-review' } },
+  { phrase: 'submit review', intent: { type: 'game', action: 'submit-review' } },
+  { phrase: 'cancel review', intent: { type: 'game', action: 'cancel-review' } },
+  { phrase: 'report game', intent: { type: 'game', action: 'report' } },
+  { phrase: 'next image', intent: { type: 'game', action: 'next-image' } },
+  { phrase: 'previous image', intent: { type: 'game', action: 'prev-image' } },
+  { phrase: 'next gallery', intent: { type: 'game', action: 'next-additional' } },
+  { phrase: 'previous gallery', intent: { type: 'game', action: 'prev-additional' } },
+  { phrase: 'edit profile', intent: { type: 'profile', action: 'edit-profile' } },
+  { phrase: 'change password', intent: { type: 'profile', action: 'change-password' } },
+  { phrase: 'save preferences', intent: { type: 'profile', action: 'save-preferences' } },
+  { phrase: 'update profile', intent: { type: 'profile', action: 'update-profile' } },
+  { phrase: 'cancel edit', intent: { type: 'profile', action: 'cancel-edit' } },
+  { phrase: 'cancel password', intent: { type: 'profile', action: 'cancel-password' } },
+  { phrase: 'focus stats', intent: { type: 'profile', action: 'focus', target: 'stats' } },
+  { phrase: 'focus reviews', intent: { type: 'profile', action: 'focus', target: 'reviews' } },
+  { phrase: 'focus followed games', intent: { type: 'profile', action: 'focus', target: 'followed' } },
+  { phrase: 'show voice commands', intent: { type: 'commands', action: 'open' } },
+  { phrase: 'hide voice commands', intent: { type: 'commands', action: 'close' } }
+];
+
+function fuzzyCommandMatch(command) {
+  const normalized = command.toLowerCase().trim();
+  let best = null;
+  for (const entry of FUZZY_COMMANDS) {
+    const target = entry.phrase.toLowerCase().trim();
+    const tolerance = Math.max(1, Math.ceil(target.length * 0.25));
+    const slice = normalized.slice(0, target.length + tolerance);
+    const dist = levenshtein(slice.slice(0, target.length), target);
+    if (dist <= tolerance) {
+      if (!best || dist < best.dist) {
+        best = { dist, intent: { ...entry.intent, utterance: command } };
+      }
+    }
+  }
+  return best ? best.intent : null;
+}
+
 export function parseCommand(rawTranscript) {
   let command = stripWakeWord(rawTranscript);
   if (!command) command = stripWakeWordLoose(rawTranscript);
@@ -451,7 +495,8 @@ export function parseCommand(rawTranscript) {
     buttonSizeFallback(command) ||
     spacingFallback(command) ||
     wakeWordFallback(command) ||
-    forgivingFilterMatch(command);
+    forgivingFilterMatch(command) ||
+    fuzzyCommandMatch(command);
 
   if (result) return { ...result, utterance: command };
 
