@@ -308,9 +308,9 @@ export default function Home() {
 
   const CardHoverDetails = ({ game, tagsKey, tagsSlice }) => (
     <div className={`absolute left-0 top-full mt-1 w-full ${cardTone} p-3 space-y-1 text-xs z-20 pointer-events-none`}>
-      <h4 className="text-sm font-semibold theme-text truncate" title={game.title}>
+      <p className="text-sm font-semibold theme-text truncate" title={game.title}>
         {game.title}
-      </h4>
+      </p>
       <p className={smallMeta} title={`${game.developer || "N/A"} • ${game.category || "N/A"}`}>
         {game.developer || "N/A"} • {game.category || "N/A"}
       </p>
