@@ -57,7 +57,6 @@ export function createVoiceListener({ onTranscript, onStatus }) {
       .join(' ')
       .trim();
     if (transcript) {
-      console.info('[voice] transcript', transcript);
       onTranscript?.(transcript);
     }
   };
