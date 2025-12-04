@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, cleanup } from '@testing-library/react';
 
 vi.mock('../pages/Home', () => ({ default: () => <div>Home Page</div> }));
 vi.mock('../pages/Search', () => ({ default: () => <div>Search Page</div> }));
@@ -30,6 +30,7 @@ describe('App VoiceNavigator', () => {
     window.history.pushState({}, '', '/');
   });
   afterEach(() => {
+    cleanup();
     vi.useRealTimers();
   });
 
