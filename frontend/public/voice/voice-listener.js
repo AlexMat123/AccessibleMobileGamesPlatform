@@ -21,9 +21,11 @@ export function createVoiceListener({ onTranscript, onStatus }) {
   recognition.lang = 'en-US';
 
   let running = false;
+  let blocked = false;
 
   recognition.onstart = () => {
     running = true;
+    blocked = false;
     const wakeWord = getWakeWord();
     onStatus?.(`Listening... say "${wakeWord}"`);
     console.info('[voice] mic started');
@@ -31,6 +33,9 @@ export function createVoiceListener({ onTranscript, onStatus }) {
 
   recognition.onend = () => {
     running = false;
+    if (blocked) {
+      return;
+    }
     onStatus?.('Reconnecting mic...');
     console.info('[voice] mic stopped, restarting');
     setTimeout(() => {
@@ -45,6 +50,13 @@ export function createVoiceListener({ onTranscript, onStatus }) {
   };
 
   recognition.onerror = (e) => {
+    if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed' || e?.error === 'aborted') {
+      blocked = true;
+      running = false;
+      onStatus?.('Mic blocked. Enable microphone access to use voice.');
+      console.warn('[voice] mic blocked or permission denied', e);
+      return;
+    }
     onStatus?.(`Mic error: ${e.error}`);
     console.error('[voice] mic error', e);
   };
@@ -63,11 +75,20 @@ export function createVoiceListener({ onTranscript, onStatus }) {
 
   return {
     start() {
+      if (blocked) {
+        onStatus?.('Mic blocked. Enable microphone access to use voice.');
+        return;
+      }
       if (running) return;
       try {
         recognition.start();
         onStatus?.('Starting mic...');
       } catch (e) {
+        if (e && e.name === 'NotAllowedError') {
+          blocked = true;
+          onStatus?.('Mic blocked. Enable microphone access to use voice.');
+          return;
+        }
         onStatus?.(`Unable to start mic: ${e.message}`);
       }
     },
