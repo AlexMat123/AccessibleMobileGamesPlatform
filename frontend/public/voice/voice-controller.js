@@ -216,6 +216,11 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     const lower = raw.toLowerCase();
     const wakeWord = getWakeWord();
     const heardWake = looksLikeWakeWord(lower, wakeWord);
+    const wakeIndex = heardWake ? lower.indexOf(normalize(wakeWord)) : -1;
+    const trimmedRaw =
+      heardWake && wakeIndex >= 0
+        ? raw.slice(wakeIndex).trim()
+        : raw;
 
     // If we're spelling, bypass the wake word gate so the user can keep dictating characters.
     if (spellSession) {
@@ -250,11 +255,12 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     let cmd = parseCommand(raw);
     // Allow follow-up commands within the wake window without repeating wake word
     if (!cmd && isAwake) {
-      cmd = parseCommand(`${wakeWord} ${raw}`);
+      const wakePrefixed = trimmedRaw.startsWith(wakeWord) ? trimmedRaw : `${wakeWord} ${trimmedRaw}`;
+      cmd = parseCommand(wakePrefixed);
     }
     let usedRemote = false;
     if (!cmd && isAwake) {
-      cmd = await interpretTranscriptRemote(raw);
+      cmd = await interpretTranscriptRemote(trimmedRaw);
       usedRemote = Boolean(cmd);
     }
     if (!cmd) {
