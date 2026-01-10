@@ -17,7 +17,7 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     if (clearTimer) clearTimeout(clearTimer);
     if (ttlMs > 0) {
       clearTimer = setTimeout(() => {
-        updateStatus('Say "hey platform" 👋');
+        updateStatus('Say "hey platform" to start listening');
       }, ttlMs);
     }
   };
@@ -216,6 +216,11 @@ import { interpretTranscriptRemote } from './voice-remote.js';
     const lower = raw.toLowerCase();
     const wakeWord = getWakeWord();
     const heardWake = looksLikeWakeWord(lower, wakeWord);
+    const wakeIndex = heardWake ? lower.indexOf(normalize(wakeWord)) : -1;
+    const trimmedRaw =
+      heardWake && wakeIndex >= 0
+        ? raw.slice(wakeIndex).trim()
+        : raw;
 
     // If we're spelling, bypass the wake word gate so the user can keep dictating characters.
     if (spellSession) {
@@ -236,45 +241,40 @@ import { interpretTranscriptRemote } from './voice-remote.js';
       return;
     }
 
-    // Refresh wake window when wake word is spoken
     if (heardWake) {
       awakeUntil = Date.now() + WAKE_WINDOW_MS;
-      setStatus(`Wake word detected. Listening briefly…`, WAKE_WINDOW_MS);
+      setStatus('Wake word detected. Listening briefly...', WAKE_WINDOW_MS);
     }
 
     const isAwake = Date.now() < awakeUntil;
     if (!isAwake && !heardWake) {
-      // Ignore chatter when not awake; prompt for wake word.
-      setStatus(`Say "${wakeWord}" 👋`);
+      // Ignore chatter when not awake; do not surface transcripts.
       return;
     }
-
-    // Show the raw transcript so users can see what was heard.
-    setStatus(`Heard: ${raw}`, 2500);
 
     let cmd = parseCommand(raw);
     // Allow follow-up commands within the wake window without repeating wake word
     if (!cmd && isAwake) {
-      cmd = parseCommand(`${wakeWord} ${raw}`);
+      const wakePrefixed = trimmedRaw.startsWith(wakeWord) ? trimmedRaw : `${wakeWord} ${trimmedRaw}`;
+      cmd = parseCommand(wakePrefixed);
     }
     let usedRemote = false;
     if (!cmd && isAwake) {
-      cmd = await interpretTranscriptRemote(raw);
+      cmd = await interpretTranscriptRemote(trimmedRaw);
       usedRemote = Boolean(cmd);
     }
     if (!cmd) {
-      if (Date.now() > awakeUntil) {
-        setStatus(`Heard: "${raw}". Wake window expired. Say "${wakeWord}" 👋`, 2500);
-      } else {
-        setStatus(`Heard: "${raw}". No command parsed.`, 2000);
-      }
-      console.info('[voice] no command parsed', raw);
+      // Stay quiet until we recognise a command to avoid showing stray transcripts.
       return;
     }
     // Extend wake window on each recognised command
     awakeUntil = 0; // close window after handling a command
-    console.info('[voice] parsed command', cmd);
-    setStatus(`Command: ${cmd.type}${cmd.query ? ` "${cmd.query}"` : ''}${cmd.tag ? ` "${cmd.tag}"` : ''}${Array.isArray(cmd.tags) ? ` [${cmd.tags.join(', ')}]` : ''}${usedRemote ? ' (remote)' : ''}`, 2500);
+    setStatus(
+      `Command: ${cmd.type}${cmd.query ? ` "${cmd.query}"` : ''}${cmd.tag ? ` "${cmd.tag}"` : ''}${
+        Array.isArray(cmd.tags) ? ` [${cmd.tags.join(', ')}]` : ''
+      }${usedRemote ? ' (remote)' : ''}`,
+      2500
+    );
     announceCommand(cmd);
     if (cmd.type === 'spell' && cmd.action === 'start') {
       spellSession = { field: cmd.field || 'email' };

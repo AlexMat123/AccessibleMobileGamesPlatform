@@ -32,6 +32,7 @@ export default function Search() {
   const resultsRef = useRef(null);
   const genreSelectRef = useRef(null);
   const sortSelectRef = useRef(null);
+  const timeoutsRef = useRef(new Set());
 
   // Category accordion open state
   const [openCategories, setOpenCategories] = useState(() => new Set());
@@ -306,11 +307,25 @@ export default function Search() {
     document.head.appendChild(style);
   }, []);
 
+  const clearTrackedTimeouts = () => {
+    timeoutsRef.current.forEach(clearTimeout);
+    timeoutsRef.current.clear();
+  };
+
+  const trackTimeout = (fn, delay) => {
+    const id = setTimeout(() => {
+      timeoutsRef.current.delete(id);
+      fn();
+    }, delay);
+    timeoutsRef.current.add(id);
+    return id;
+  };
+
   const focusAndFlash = (el) => {
     if (!el) return;
     if (typeof el.focus === 'function') el.focus({ preventScroll: true });
     el.classList.add(flashClass);
-    setTimeout(() => el.classList.remove(flashClass), 1200);
+    trackTimeout(() => el.classList.remove(flashClass), 1200);
   };
 
   const clickTagButton = (tag) => {
@@ -347,7 +362,7 @@ export default function Search() {
     });
 
     // Try to click the actual accordion button so ARIA state is accurate.
-    setTimeout(() => {
+    trackTimeout(() => {
       const btnCandidates = [
         document.querySelector(`[aria-label="${targetCat} dropdown"]`),
         document.getElementById(`cat-btn-${slugify(targetCat)}`),
@@ -464,21 +479,21 @@ export default function Search() {
 
           if (genre) {
             setQuery('');
-            setTimeout(() => {
+            trackTimeout(() => {
               setGenreByVoice(genre);
             }, offset);
           } else if (tag) {
             setQuery('');
             const attempt = () => clickTagButton(tag);
-            setTimeout(attempt, offset);
-            setTimeout(() => {
+            trackTimeout(attempt, offset);
+            trackTimeout(() => {
               const clicked = attempt();
               if (!clicked) setSelectedTags(prev => new Set([...prev, tag]));
             }, offset + 120);
           } else {
             toggleTag(spokenTag);
             console.info('[voice][search] fallback toggle for tag text', spokenTag);
-            setTimeout(() => {
+            trackTimeout(() => {
               const btns = Array.from(document.querySelectorAll('button[data-voice-tag]'));
               const needle = normalizeText(spokenTag);
               const btn = btns.find(b => {
@@ -550,15 +565,20 @@ export default function Search() {
           card.scrollIntoView({ behavior: settings.reduceMotion ? 'auto' : 'smooth', block: 'center' });
           focusAndFlash(card);
           if (detail.action === 'open') {
-            setTimeout(() => card.click(), 120);
+            trackTimeout(() => card.click(), 120);
           }
         }
         return;
       }
     };
     window.addEventListener('voiceCommand', onVoice);
-    return () => window.removeEventListener('voiceCommand', onVoice);
+    return () => {
+      window.removeEventListener('voiceCommand', onVoice);
+      clearTrackedTimeouts();
+    };
   }, [genreOptions, allTags, tagsByCategory, categories]);
+
+  useEffect(() => () => clearTrackedTimeouts(), []);
 
   const findGameCardByTitle = (title = '') => {
     const needle = normalizeText(title);

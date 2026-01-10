@@ -44,6 +44,20 @@ function VoiceNavigator() {
   const navigate = useNavigate();
   useEffect(() => {
     const normalize = (s = '') => String(s).toLowerCase().replace(/[.,!?]/g, '').trim();
+    let alive = true;
+    const timeouts = new Set();
+    const trackTimeout = (fn, delay) => {
+      const id = setTimeout(() => {
+        timeouts.delete(id);
+        if (alive) fn();
+      }, delay);
+      timeouts.add(id);
+      return id;
+    };
+    const clearTrackedTimeouts = () => {
+      timeouts.forEach(clearTimeout);
+      timeouts.clear();
+    };
     const onVoice = (e) => {
       const detail = e.detail || {};
       const type = detail?.type;
@@ -68,7 +82,7 @@ function VoiceNavigator() {
           }
           // Default behaviour: just navigate and switch tabs, with remove/move bridging
           navigate('/library');
-          setTimeout(() => {
+          trackTimeout(() => {
             // this prevents duplicate tab switching dispatches
             if (window.__voiceTabSwitching) return;
             window.__voiceTabSwitching = true;
@@ -84,7 +98,7 @@ function VoiceNavigator() {
               const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
               const evtRemove = new CustomEvent('voiceCommand', { detail: { type: 'library', action: 'remove', list, title } });
               // slight delay to allow Library to render list
-              setTimeout(() => window.dispatchEvent(evtRemove), 150);
+              trackTimeout(() => window.dispatchEvent(evtRemove), 150);
             }
             // If the original utterance asked to move, extract title and target list and invoke move
             const mMove = utter.match(/(?:move|transfer|shift)\s+(.+?)\s+to\s+(favourites|favorites|wishlist)/i);
@@ -93,10 +107,10 @@ function VoiceNavigator() {
               const listRaw = mMove[2].toLowerCase();
               const list = listRaw === 'wishlist' ? 'wishlist' : 'favourites';
               const evtMove = new CustomEvent('voiceCommand', { detail: { type: 'library', action: 'move', list, title } });
-              setTimeout(() => window.dispatchEvent(evtMove), 180);
+              trackTimeout(() => window.dispatchEvent(evtMove), 180);
             }
             // clear guard after a short debounce window
-            setTimeout(() => { window.__voiceTabSwitching = false; }, 500);
+            trackTimeout(() => { window.__voiceTabSwitching = false; }, 500);
           }, 150);
           return;
         }
@@ -113,6 +127,7 @@ function VoiceNavigator() {
         (async () => {
           try {
             const results = await searchGames({ q: detail.title });
+            if (!alive) return;
             if (!results || results.length === 0) return;
             const needle = title;
             const match =
@@ -135,7 +150,11 @@ function VoiceNavigator() {
       }
     };
     window.addEventListener('voiceCommand', onVoice);
-    return () => window.removeEventListener('voiceCommand', onVoice);
+    return () => {
+      alive = false;
+      window.removeEventListener('voiceCommand', onVoice);
+      clearTrackedTimeouts();
+    };
   }, [navigate]);
   return null;
 }
