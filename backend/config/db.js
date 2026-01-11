@@ -30,6 +30,10 @@ if (process.env.DB_DIALECT === 'sqlite') {
             host: process.env.DB_HOST || '127.0.0.1',
             port: Number(process.env.DB_PORT) || 3306,
             dialect: 'mariadb',
+            dialectOptions: {
+                // Railway/MySQL may require public key retrieval for caching_sha2_password.
+                allowPublicKeyRetrieval: true
+            },
             logging: false
         }
     );
