@@ -15,7 +15,9 @@ export async function createDatabaseIfNotExists() {
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER,
-    password: process.env.DB_PASS
+    password: process.env.DB_PASS,
+    // Railway/MySQL may require public key retrieval for caching_sha2_password.
+    allowPublicKeyRetrieval: true
   });
   try {
     const dbName = process.env.DB_NAME;
